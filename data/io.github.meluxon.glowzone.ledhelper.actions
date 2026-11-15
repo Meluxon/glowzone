@@ -1,6 +1,6 @@
 [Domain]
 Name=Glowzone
-Icon=org.glowzone.Glowzone
+Icon=io.github.meluxon.Glowzone
 
 # Policy=yes: the user in the active local session may use these actions
 # without a password – the same trust the udev "uaccess" rule gives for the
@@ -8,7 +8,7 @@ Icon=org.glowzone.Glowzone
 # To require your own password instead, change Policy to auth_self and add
 # Persistence=session.
 
-[org.glowzone.ledhelper.status]
+[io.github.meluxon.glowzone.ledhelper.status]
 Name=Read the state of the case lights
 Name[de]=Zustand der Gehäusebeleuchtung lesen
 Name[fr]=Lire l’état de l’éclairage du boîtier
@@ -22,7 +22,7 @@ Description[pl]=Odczyt stanu oświetlenia obudowy
 Policy=yes
 PolicyInactive=no
 
-[org.glowzone.ledhelper.layout]
+[io.github.meluxon.glowzone.ledhelper.layout]
 Name=Check which fans the BIOS detects
 Name[de]=Prüfen, welche Lüfter das BIOS erkennt
 Name[fr]=Vérifier quels ventilateurs le BIOS détecte
@@ -36,7 +36,7 @@ Description[pl]=Sprawdzenie, które wentylatory wykrywa BIOS
 Policy=yes
 PolicyInactive=no
 
-[org.glowzone.ledhelper.setled]
+[io.github.meluxon.glowzone.ledhelper.setled]
 Name=Change the case lights
 Name[de]=Gehäusebeleuchtung ändern
 Name[fr]=Modifier l’éclairage du boîtier

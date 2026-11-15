@@ -13,7 +13,7 @@ Other models need their own profile – see *Adding a model*.
 
 > **Vibecoded.** This project was written with an AI assistant (Claude) and
 > reviewed by me, for my own machine. It works for me; read the code before you
-> trust it with yours. Bug reports and captures from other models are welcome.
+> trust it with yours. [Bug reports](https://github.com/Meluxon/glowzone/issues) and captures from other models are welcome.
 
 **Status:** complete for the supported model – window, command-line tool,
 profiles and a BIOS fan-detection check.
@@ -162,12 +162,12 @@ until reboot (`sudo rmmod acpi_call`).
 | Path | Purpose |
 |---|---|
 | `/usr/bin/glowzone` | the program (window and CLI) |
-| `/usr/share/applications/org.glowzone.Glowzone.desktop` | menu entry |
-| `/usr/share/icons/hicolor/{scalable,16x16,22x22}/apps/org.glowzone.Glowzone.svg` | icon |
+| `/usr/share/applications/io.github.meluxon.Glowzone.desktop` | menu entry |
+| `/usr/share/icons/hicolor/{scalable,16x16,22x22}/apps/io.github.meluxon.Glowzone.svg` | icon |
 | `<KAuth helper dir>/glowzone_helper` (Arch: `/usr/lib/kf6/kauth/`) | root helper |
-| `/usr/share/dbus-1/system.d/org.glowzone.ledhelper.conf` | D-Bus policy |
-| `/usr/share/dbus-1/system-services/org.glowzone.ledhelper.service` | starts the helper on demand |
-| `/usr/share/polkit-1/actions/org.glowzone.ledhelper.policy` | polkit actions |
+| `/usr/share/dbus-1/system.d/io.github.meluxon.glowzone.ledhelper.conf` | D-Bus policy |
+| `/usr/share/dbus-1/system-services/io.github.meluxon.glowzone.ledhelper.service` | starts the helper on demand |
+| `/usr/share/polkit-1/actions/io.github.meluxon.glowzone.ledhelper.policy` | polkit actions |
 | `/usr/lib/udev/rules.d/70-glowzone.rules` | fan controller access for the logged-in user |
 | `/usr/share/locale/*/LC_MESSAGES/glowzone.mo` | translations |
 
@@ -193,7 +193,7 @@ until reboot (`sudo rmmod acpi_call`).
 * All three actions are allowed without a password for the active local
   session (the same trust as for the fans) and denied otherwise. To require
   your password instead, set `Policy=auth_self` and `Persistence=session` in
-  `data/org.glowzone.ledhelper.actions` and rebuild.
+  `data/io.github.meluxon.glowzone.ledhelper.actions` and rebuild.
 
 ## Translations
 
@@ -215,8 +215,8 @@ request against `po/<lang>/glowzone.po` is enough.
 
 Translate `po/<lang>/glowzone.po` with Lokalize or Poedit. A new language is
 just a new `po/<lang>/glowzone.po` (start with `msginit -i po/glowzone.pot`).
-The polkit texts live in `data/org.glowzone.ledhelper.actions` (`Name[xx]=`),
-the menu entry texts in `data/org.glowzone.Glowzone.desktop` (`Comment[xx]=` etc.).
+The polkit texts live in `data/io.github.meluxon.glowzone.ledhelper.actions` (`Name[xx]=`),
+the menu entry texts in `data/io.github.meluxon.Glowzone.desktop` (`Comment[xx]=` etc.).
 
 To try another language without changing your session:
 
@@ -254,8 +254,7 @@ build-fuzz/bin/fuzz_setled -max_total_time=300
 It feeds random requests to the helper for every supported model and stops at
 the first ACPI call outside what that model allows.
 
-The reverse-DNS IDs (`org.glowzone.*`) are placeholders until the project has a
-public home; they are set in `CMakeLists.txt`.
+The reverse-DNS IDs (`io.github.meluxon.*`) are set in `CMakeLists.txt`.
 
 ## License
 

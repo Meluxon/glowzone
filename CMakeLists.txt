@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 cmake_minimum_required(VERSION 3.22)
-project(glowzone VERSION 0.7.0 LANGUAGES CXX)
+project(glowzone VERSION 0.7.1 LANGUAGES CXX)
 
 set(QT_MIN_VERSION "6.7.0")   # 6.7: QStandardPaths::StateLocation
 set(KF_MIN_VERSION "6.0.0")
@@ -26,10 +26,10 @@ pkg_check_modules(HIDAPI REQUIRED IMPORTED_TARGET hidapi-hidraw)
 
 add_definitions(-DTRANSLATION_DOMAIN=\"glowzone\")
 
-# Reverse-DNS identifiers baked into installed file names. Decide on the final
-# namespace before the first public release; changing it later renames files.
-set(GLOWZONE_APP_ID "org.glowzone.Glowzone")
-set(GLOWZONE_HELPER_ID "org.glowzone.ledhelper")
+# Reverse-DNS identifiers, from the GitHub home (github.com/Meluxon/glowzone).
+# They name installed files and the helper's D-Bus service – keep them stable.
+set(GLOWZONE_APP_ID "io.github.meluxon.Glowzone")
+set(GLOWZONE_HELPER_ID "io.github.meluxon.glowzone.ledhelper")
 
 configure_file(config-glowzone.h.in ${CMAKE_CURRENT_BINARY_DIR}/config-glowzone.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})

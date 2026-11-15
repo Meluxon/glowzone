@@ -31,7 +31,9 @@ int main(int argc, char **argv)
                      KAboutLicense::GPL_V2,
                      i18n("© 2026 Meluxon"));
     about.setLicense(KAboutLicense::GPL_V2, KAboutLicense::OrLaterVersions);
-    about.setOrganizationDomain(QByteArrayLiteral("glowzone.org"));
+    about.setOrganizationDomain(QByteArrayLiteral("meluxon.github.io"));
+    about.setHomepage(QStringLiteral("https://github.com/Meluxon/glowzone"));
+    about.setBugAddress(QByteArrayLiteral("https://github.com/Meluxon/glowzone/issues"));
     about.setDesktopFileName(QStringLiteral(GLOWZONE_APP_ID));
     KAboutData::setApplicationData(about);
 

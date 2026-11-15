@@ -6,11 +6,11 @@
 # For an AUR release, source=() will point at a release tarball instead.
 
 pkgname=glowzone
-pkgver=0.7.0
+pkgver=0.7.1
 pkgrel=1
 pkgdesc='Lighting control for supported Lenovo desktops (fan LEDs and case lights)'
 arch=('x86_64')
-# url=''   # set once the repository is public
+url='https://github.com/Meluxon/glowzone'
 license=('GPL-2.0-or-later')
 depends=(
   'gcc-libs'

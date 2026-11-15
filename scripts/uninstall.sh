@@ -91,10 +91,10 @@ echo "Checking for leftover files..."
 leftovers=$(
     {
         for f in /usr/bin/glowzone \
-            /usr/share/dbus-1/system.d/org.glowzone.ledhelper.conf \
-            /usr/share/dbus-1/system-services/org.glowzone.ledhelper.service \
-            /usr/share/polkit-1/actions/org.glowzone.ledhelper.policy \
-            /usr/share/applications/org.glowzone.Glowzone.desktop \
+            /usr/share/dbus-1/system.d/io.github.meluxon.glowzone.ledhelper.conf \
+            /usr/share/dbus-1/system-services/io.github.meluxon.glowzone.ledhelper.service \
+            /usr/share/polkit-1/actions/io.github.meluxon.glowzone.ledhelper.policy \
+            /usr/share/applications/io.github.meluxon.Glowzone.desktop \
             /usr/lib/udev/rules.d/70-glowzone.rules \
             /lib/udev/rules.d/70-glowzone.rules \
             /usr/share/glowzone \
@@ -103,7 +103,7 @@ leftovers=$(
         done
         find /usr/lib /usr/libexec -name glowzone_helper 2>/dev/null
         find /usr/share/locale -path '*/LC_MESSAGES/glowzone.mo' 2>/dev/null
-        find /usr/share/icons -name 'org.glowzone.Glowzone.*' 2>/dev/null
+        find /usr/share/icons -name 'io.github.meluxon.Glowzone.*' 2>/dev/null
     } | sort -u
 )
 if [ -n "$leftovers" ]; then
