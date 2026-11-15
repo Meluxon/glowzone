@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 14:39+0100\n"
+"POT-Creation-Date: 2026-11-15 17:00+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -80,6 +80,14 @@ msgstr ""
 
 #: src/cli/commands.cpp
 #, kde-format
+msgid ""
+"Note: LEDs following the CPU temperature only change colour while Glowzone "
+"is running (the window, or in the background). Start it with “glowzone” or "
+"“glowzone --background”."
+msgstr ""
+
+#: src/cli/commands.cpp
+#, kde-format
 msgid "Computer: %1"
 msgstr ""
 
@@ -97,6 +105,21 @@ msgstr ""
 #, kde-format
 msgctxt "@info fan position: description"
 msgid "%1: %2"
+msgstr ""
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "the colours follow it"
+msgstr ""
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "not followed – Glowzone isn’t running"
+msgstr ""
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "CPU temperature: %1 °C (%2)"
 msgstr ""
 
 #: src/cli/commands.cpp
@@ -336,7 +359,9 @@ msgstr ""
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "Run glowzone without arguments to open the window."
+msgid ""
+"Run glowzone without arguments to open the window, or with --background to "
+"start in the system tray."
 msgstr ""
 
 #: src/cli/commands.cpp
@@ -404,7 +429,7 @@ msgstr ""
 msgid "“reset” takes no arguments."
 msgstr ""
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gui/app.cpp
 #, kde-format
 msgid "Glowzone"
 msgstr ""
@@ -412,6 +437,22 @@ msgstr ""
 #: src/cli/main.cpp src/gui/aboutdialog.cpp
 #, kde-format
 msgid "© 2026 Meluxon"
+msgstr ""
+
+#: src/core/cputemperature.cpp
+#, kde-format
+msgid "The CPU sensor “%1” of %2 was not found."
+msgstr ""
+
+#: src/core/cputemperature.cpp
+#, kde-format
+msgid ""
+"The CPU temperature sensor (%1) was not found. Is its kernel module loaded?"
+msgstr ""
+
+#: src/core/cputemperature.cpp
+#, kde-format
+msgid "The CPU temperature could not be read from %1."
 msgstr ""
 
 #: src/core/eclights.cpp
@@ -480,7 +521,7 @@ msgstr ""
 msgid "Sending to the fan LED controller failed: %1"
 msgstr ""
 
-#: src/core/fanstate.cpp
+#: src/core/fanstate.cpp src/core/settings.cpp
 #, kde-format
 msgid "Could not create the directory for %1."
 msgstr ""
@@ -610,6 +651,11 @@ msgctxt "@item fan LED mode"
 msgid "Random"
 msgstr ""
 
+#: src/core/ite8297.cpp
+msgctxt "@item fan LED mode"
+msgid "CPU temperature"
+msgstr ""
+
 #: src/core/messages.cpp
 #, kde-format
 msgctxt "@info unknown DMI value"
@@ -647,6 +693,22 @@ msgstr ""
 #: src/core/profiles.cpp
 #, kde-format
 msgid "A profile called “%1” already exists."
+msgstr ""
+
+#: src/core/settings.cpp
+#, kde-format
+msgid "Could not remove %1."
+msgstr ""
+
+#: src/core/settings.cpp
+#, kde-format
+msgctxt "@info autostart entry"
+msgid "Keeps the fan lighting running in the background"
+msgstr ""
+
+#: src/core/settings.cpp
+#, kde-format
+msgid "Could not write %1: %2"
 msgstr ""
 
 #: src/gui/aboutdialog.cpp
@@ -775,6 +837,42 @@ msgctxt "@info:tooltip"
 msgid "Copy version and hardware details, e.g. for a bug report"
 msgstr ""
 
+#: src/gui/app.cpp
+#, kde-format
+msgctxt "@title:window"
+msgid "Start at Login"
+msgstr ""
+
+#: src/gui/app.cpp
+#, kde-format
+msgctxt "@action:inmenu"
+msgid "Hide Glowzone"
+msgstr ""
+
+#: src/gui/app.cpp
+#, kde-format
+msgctxt "@action:inmenu"
+msgid "Show Glowzone"
+msgstr ""
+
+#: src/gui/app.cpp src/gui/mainwindow.cpp
+#, kde-format
+msgctxt "@action:inmenu"
+msgid "Quit"
+msgstr ""
+
+#: src/gui/app.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "Running in the background"
+msgstr ""
+
+#: src/gui/app.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "Fans follow the CPU temperature: %1 °C"
+msgstr ""
+
 #: src/gui/colourbutton.cpp
 #, kde-format
 msgctxt "@info:tooltip"
@@ -831,6 +929,12 @@ msgstr ""
 
 #: src/gui/forms.cpp
 #, kde-format
+msgctxt "@label CPU temperature now"
+msgid "Temperature:"
+msgstr ""
+
+#: src/gui/forms.cpp
+#, kde-format
 msgctxt "@label:chooser"
 msgid "Colour:"
 msgstr ""
@@ -845,6 +949,32 @@ msgstr ""
 #, kde-format
 msgctxt "@label:slider"
 msgid "Brightness:"
+msgstr ""
+
+#: src/gui/forms.cpp
+#, kde-format
+msgctxt "@info CPU temperature"
+msgid "Not available"
+msgstr ""
+
+#: src/gui/forms.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid ""
+"The colour shows how warm the CPU is. It only changes while Glowzone is "
+"running."
+msgstr ""
+
+#: src/gui/forms.cpp
+#, kde-format
+msgctxt "@info CPU temperature in degrees Celsius"
+msgid "%1 °C"
+msgstr ""
+
+#: src/gui/forms.cpp
+#, kde-format
+msgctxt "@info CPU temperature not read yet"
+msgid "Reading…"
 msgstr ""
 
 #: src/gui/gui.cpp
@@ -867,14 +997,34 @@ msgstr ""
 
 #: src/gui/mainwindow.cpp
 #, kde-format
-msgctxt "@action:inmenu"
-msgid "About Glowzone"
+msgctxt "@option:check"
+msgid "Keep Running in Background"
+msgstr ""
+
+#: src/gui/mainwindow.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid ""
+"Closing the window keeps Glowzone in the system tray, so fans following the "
+"CPU temperature keep changing colour."
+msgstr ""
+
+#: src/gui/mainwindow.cpp
+#, kde-format
+msgctxt "@option:check"
+msgid "Start at Login"
+msgstr ""
+
+#: src/gui/mainwindow.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "Start Glowzone in the system tray when you log in."
 msgstr ""
 
 #: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@action:inmenu"
-msgid "Quit"
+msgid "About Glowzone"
 msgstr ""
 
 #: src/gui/mainwindow.cpp
@@ -899,6 +1049,19 @@ msgstr ""
 #, kde-format
 msgctxt "@action:button"
 msgid "Save as New…"
+msgstr ""
+
+#: src/gui/mainwindow.cpp
+#, kde-format
+msgid ""
+"Fans following the CPU temperature only change colour while Glowzone is "
+"running. Closing the window quits it."
+msgstr ""
+
+#: src/gui/mainwindow.cpp
+#, kde-format
+msgctxt "@action:button"
+msgid "Keep Running in Background"
 msgstr ""
 
 #: src/gui/mainwindow.cpp

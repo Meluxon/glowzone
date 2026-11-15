@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 14:39+0100\n"
+"POT-Creation-Date: 2026-11-15 17:00+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: French\n"
@@ -79,6 +79,11 @@ msgstr "%1, luminosité %2"
 
 #: src/cli/commands.cpp
 #, kde-format
+msgid "Note: LEDs following the CPU temperature only change colour while Glowzone is running (the window, or in the background). Start it with “glowzone” or “glowzone --background”."
+msgstr "Remarque : les LED qui suivent la température du processeur ne changent de couleur que lorsque Glowzone est en cours d’exécution (la fenêtre, ou en arrière-plan). Lancez-le avec « glowzone » ou « glowzone --background »."
+
+#: src/cli/commands.cpp
+#, kde-format
 msgid "Computer: %1"
 msgstr "Ordinateur : %1"
 
@@ -97,6 +102,21 @@ msgstr "inconnu (pas encore réglé par Glowzone)"
 msgctxt "@info fan position: description"
 msgid "%1: %2"
 msgstr "%1 : %2"
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "the colours follow it"
+msgstr "les couleurs la suivent"
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "not followed – Glowzone isn’t running"
+msgstr "non suivie – Glowzone n’est pas lancé"
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "CPU temperature: %1 °C (%2)"
+msgstr "Température du processeur : %1 °C (%2)"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -327,8 +347,8 @@ msgstr "Supprimer un profil"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "Run glowzone without arguments to open the window."
-msgstr "Lancez glowzone sans argument pour ouvrir la fenêtre."
+msgid "Run glowzone without arguments to open the window, or with --background to start in the system tray."
+msgstr "Lancez glowzone sans argument pour ouvrir la fenêtre, ou avec --background pour le démarrer dans la zone de notification."
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -395,7 +415,7 @@ msgstr "« status » n’accepte aucun argument."
 msgid "“reset” takes no arguments."
 msgstr "« reset » n’accepte aucun argument."
 
-#: src/cli/main.cpp
+#: src/cli/main.cpp src/gui/app.cpp
 #, kde-format
 msgid "Glowzone"
 msgstr "Glowzone"
@@ -404,6 +424,21 @@ msgstr "Glowzone"
 #, kde-format
 msgid "© 2026 Meluxon"
 msgstr "© 2026 Meluxon"
+
+#: src/core/cputemperature.cpp
+#, kde-format
+msgid "The CPU sensor “%1” of %2 was not found."
+msgstr "Le capteur du processeur « %1 » de %2 est introuvable."
+
+#: src/core/cputemperature.cpp
+#, kde-format
+msgid "The CPU temperature sensor (%1) was not found. Is its kernel module loaded?"
+msgstr "Le capteur de température du processeur (%1) est introuvable. Son module noyau est-il chargé ?"
+
+#: src/core/cputemperature.cpp
+#, kde-format
+msgid "The CPU temperature could not be read from %1."
+msgstr "Impossible de lire la température du processeur depuis %1."
 
 #: src/core/eclights.cpp
 msgctxt "@item light mode"
@@ -470,7 +505,7 @@ msgstr "Contrôleur de LED des ventilateurs %1 introuvable ou inaccessible (%2).
 msgid "Sending to the fan LED controller failed: %1"
 msgstr "Échec de l’envoi au contrôleur de LED des ventilateurs : %1"
 
-#: src/core/fanstate.cpp
+#: src/core/fanstate.cpp src/core/settings.cpp
 #, kde-format
 msgid "Could not create the directory for %1."
 msgstr "Impossible de créer le répertoire pour %1."
@@ -596,6 +631,11 @@ msgctxt "@item fan LED mode"
 msgid "Random"
 msgstr "Aléatoire"
 
+#: src/core/ite8297.cpp
+msgctxt "@item fan LED mode"
+msgid "CPU temperature"
+msgstr "Température du processeur"
+
 #: src/core/messages.cpp
 #, kde-format
 msgctxt "@info unknown DMI value"
@@ -636,6 +676,22 @@ msgstr "Impossible de supprimer %1."
 #, kde-format
 msgid "A profile called “%1” already exists."
 msgstr "Un profil nommé « %1 » existe déjà."
+
+#: src/core/settings.cpp
+#, kde-format
+msgid "Could not remove %1."
+msgstr "Impossible de supprimer %1."
+
+#: src/core/settings.cpp
+#, kde-format
+msgctxt "@info autostart entry"
+msgid "Keeps the fan lighting running in the background"
+msgstr "Garde l’éclairage des ventilateurs actif en arrière-plan"
+
+#: src/core/settings.cpp
+#, kde-format
+msgid "Could not write %1: %2"
+msgstr "Impossible d’écrire %1 : %2"
 
 #: src/gui/aboutdialog.cpp
 #, kde-format
@@ -761,6 +817,42 @@ msgctxt "@info:tooltip"
 msgid "Copy version and hardware details, e.g. for a bug report"
 msgstr "Copier la version et les détails du matériel, par ex. pour un rapport de bogue"
 
+#: src/gui/app.cpp
+#, kde-format
+msgctxt "@title:window"
+msgid "Start at Login"
+msgstr "Démarrer à la connexion"
+
+#: src/gui/app.cpp
+#, kde-format
+msgctxt "@action:inmenu"
+msgid "Hide Glowzone"
+msgstr "Masquer Glowzone"
+
+#: src/gui/app.cpp
+#, kde-format
+msgctxt "@action:inmenu"
+msgid "Show Glowzone"
+msgstr "Afficher Glowzone"
+
+#: src/gui/app.cpp src/gui/mainwindow.cpp
+#, kde-format
+msgctxt "@action:inmenu"
+msgid "Quit"
+msgstr "Quitter"
+
+#: src/gui/app.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "Running in the background"
+msgstr "En cours d’exécution en arrière-plan"
+
+#: src/gui/app.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "Fans follow the CPU temperature: %1 °C"
+msgstr "Les ventilateurs suivent la température du processeur : %1 °C"
+
 #: src/gui/colourbutton.cpp
 #, kde-format
 msgctxt "@info:tooltip"
@@ -817,6 +909,12 @@ msgstr "Mode :"
 
 #: src/gui/forms.cpp
 #, kde-format
+msgctxt "@label CPU temperature now"
+msgid "Temperature:"
+msgstr "Température :"
+
+#: src/gui/forms.cpp
+#, kde-format
 msgctxt "@label:chooser"
 msgid "Colour:"
 msgstr "Couleur :"
@@ -832,6 +930,30 @@ msgstr "Vitesse :"
 msgctxt "@label:slider"
 msgid "Brightness:"
 msgstr "Luminosité :"
+
+#: src/gui/forms.cpp
+#, kde-format
+msgctxt "@info CPU temperature"
+msgid "Not available"
+msgstr "Non disponible"
+
+#: src/gui/forms.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "The colour shows how warm the CPU is. It only changes while Glowzone is running."
+msgstr "La couleur indique la chaleur du processeur. Elle ne change que lorsque Glowzone est en cours d’exécution."
+
+#: src/gui/forms.cpp
+#, kde-format
+msgctxt "@info CPU temperature in degrees Celsius"
+msgid "%1 °C"
+msgstr "%1 °C"
+
+#: src/gui/forms.cpp
+#, kde-format
+msgctxt "@info CPU temperature not read yet"
+msgid "Reading…"
+msgstr "Lecture…"
 
 #: src/gui/gui.cpp
 #, kde-format
@@ -853,15 +975,33 @@ msgstr "Menu"
 
 #: src/gui/mainwindow.cpp
 #, kde-format
-msgctxt "@action:inmenu"
-msgid "About Glowzone"
-msgstr "À propos de Glowzone"
+msgctxt "@option:check"
+msgid "Keep Running in Background"
+msgstr "Continuer en arrière-plan"
+
+#: src/gui/mainwindow.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "Closing the window keeps Glowzone in the system tray, so fans following the CPU temperature keep changing colour."
+msgstr "La fermeture de la fenêtre laisse Glowzone dans la zone de notification, pour que les ventilateurs qui suivent la température du processeur continuent de changer de couleur."
+
+#: src/gui/mainwindow.cpp
+#, kde-format
+msgctxt "@option:check"
+msgid "Start at Login"
+msgstr "Démarrer à la connexion"
+
+#: src/gui/mainwindow.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "Start Glowzone in the system tray when you log in."
+msgstr "Démarrer Glowzone dans la zone de notification à l’ouverture de session."
 
 #: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@action:inmenu"
-msgid "Quit"
-msgstr "Quitter"
+msgid "About Glowzone"
+msgstr "À propos de Glowzone"
 
 #: src/gui/mainwindow.cpp
 #, kde-format
@@ -886,6 +1026,17 @@ msgstr "Enregistrer"
 msgctxt "@action:button"
 msgid "Save as New…"
 msgstr "Enregistrer comme nouveau…"
+
+#: src/gui/mainwindow.cpp
+#, kde-format
+msgid "Fans following the CPU temperature only change colour while Glowzone is running. Closing the window quits it."
+msgstr "Les ventilateurs qui suivent la température du processeur ne changent de couleur que lorsque Glowzone est en cours d’exécution. Fermer la fenêtre le quitte."
+
+#: src/gui/mainwindow.cpp
+#, kde-format
+msgctxt "@action:button"
+msgid "Keep Running in Background"
+msgstr "Continuer en arrière-plan"
 
 #: src/gui/mainwindow.cpp
 #, kde-format
