@@ -11,6 +11,8 @@ namespace Glowzone::Gui
 
 using namespace Ite8297;
 
+enum ErrorSource { FanErrors = 1, LightErrors = 2 };
+
 Lighting::Lighting(const ModelProfile &model, QObject *parent)
     : QObject(parent)
     , m_model(model)
@@ -18,21 +20,20 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
     , m_fanApplier(new FanApplier(model, this))
     , m_lightApplier(new LightApplier(*m_helper, this))
 {
-    const FanState::Headers saved = FanState::load(model);
-    for (const FanDef &fan : model.fans) {
-        for (const LedDef &led : fan.leds) {
-            if (saved.contains(led.header)) {
-                m_fans.insert(led.header, saved.value(led.header));
-            }
-        }
-        if (fan.isDouble()) {
-            const QString id = QLatin1String(fan.id);
-            m_links.insert(id, Settings::linked(id).value_or(FanState::defaultLinked(fan, saved)));
-        }
-    }
+    loadFans();
 
-    connect(m_fanApplier, &FanApplier::failed, this, &Lighting::error);
-    connect(m_fanApplier, &FanApplier::applied, this, &Lighting::errorCleared);
+    connect(m_fanApplier, &FanApplier::failed, this, [this](const QString &text) {
+        // Show what was last sent successfully, not values that never arrived.
+        loadFans();
+        setError(text, FanErrors);
+        Q_EMIT changed();
+    });
+    connect(m_fanApplier, &FanApplier::applied, this, [this] {
+        clearError(FanErrors);
+    });
+    connect(m_lightApplier, &LightApplier::succeeded, this, [this] {
+        clearError(LightErrors);
+    });
     connect(m_lightApplier, &LightApplier::stateChanged, this, [this](const QList<EcLightState> &lights) {
         for (const EcLightState &l : lights) {
             m_lights.insert(l.index, l);
@@ -43,7 +44,7 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
     });
     connect(m_lightApplier, &LightApplier::failed, this, [this](const QString &text) {
         if (m_lightsLoaded) {
-            Q_EMIT error(text);
+            setError(text, LightErrors);
         } else {
             m_lightsFailed = true;
             Q_EMIT problem(text);
@@ -224,7 +225,50 @@ void Lighting::turnAllOff()
 
 bool Lighting::isBusy() const
 {
-    return m_lightApplier->isBusy();
+    return m_fanApplier->isBusy() || m_lightApplier->isBusy();
+}
+
+void Lighting::loadFans()
+{
+    const FanState::Headers saved = FanState::load(m_model);
+    m_fans.clear();
+    for (const FanDef &fan : m_model.fans) {
+        for (const LedDef &led : fan.leds) {
+            if (saved.contains(led.header)) {
+                m_fans.insert(led.header, saved.value(led.header));
+            }
+        }
+        if (fan.isDouble()) {
+            const QString id = QLatin1String(fan.id);
+            m_links.insert(id, Settings::linked(id).value_or(FanState::defaultLinked(fan, saved)));
+        }
+    }
+}
+
+void Lighting::reloadFromDisk()
+{
+    if (isBusy()) {
+        return;
+    }
+    loadFans();
+    if (m_lightsLoaded) {
+        m_lightApplier->refresh();
+    }
+    Q_EMIT changed();
+}
+
+void Lighting::setError(const QString &text, int source)
+{
+    m_errorSource = source;
+    Q_EMIT error(text);
+}
+
+void Lighting::clearError(int source)
+{
+    if (m_errorSource == source) {
+        m_errorSource = 0;
+        Q_EMIT errorCleared();
+    }
 }
 
 void Lighting::finish()

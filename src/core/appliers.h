@@ -28,6 +28,7 @@ public:
     bool open(QString *error);
     void queue(const QList<Ite8297::HeaderSetting> &settings);
     void flushNow();
+    bool isBusy() const { return !m_pending.isEmpty(); }
 
 Q_SIGNALS:
     void failed(const QString &error);
@@ -61,6 +62,7 @@ public:
 
 Q_SIGNALS:
     void stateChanged(const QList<Glowzone::EcLightState> &lights);
+    void succeeded(); // a call went through (after an error: it's over)
     void failed(const QString &error);
     void layoutRead(int code);
     void idle();

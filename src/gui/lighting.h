@@ -65,6 +65,10 @@ public:
 
     void turnAllOff();
 
+    // Reads again what the CLI may have changed meanwhile: the fan state, the
+    // split choices and the case lights. Skipped while a change is being sent.
+    void reloadFromDisk();
+
     // Send anything still pending; idle() follows when done.
     bool isBusy() const;
     void finish();
@@ -88,6 +92,10 @@ private:
     bool m_layoutChecked = false;
 
     void checkFanLayout();
+    void loadFans();
+    void setError(const QString &text, int source);
+    void clearError(int source);
+    int m_errorSource = 0; // which queue the shown error came from (0: none)
     std::unique_ptr<KAuthHelperCalls> m_helper;
     FanApplier *m_fanApplier;
     LightApplier *m_lightApplier;

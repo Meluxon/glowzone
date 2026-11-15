@@ -168,6 +168,7 @@ void LightApplier::startNext()
             for (const EcLightState &l : r.lights) {
                 m_known.insert(l.index, l);
             }
+            Q_EMIT succeeded();
             if (m_pending.isEmpty() && !m_timer.isActive()) {
                 Q_EMIT stateChanged(r.lights);
             }

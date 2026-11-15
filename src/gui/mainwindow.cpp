@@ -409,6 +409,24 @@ void MainWindow::showError(const QString &text)
     showMessage(m_errorMessage);
 }
 
+// Coming back to the window: pick up what the CLI (e.g. a profile shortcut)
+// changed meanwhile. Not more often than every few seconds – reading the
+// case lights is a call to the root helper.
+void MainWindow::changeEvent(QEvent *event)
+{
+    QMainWindow::changeEvent(event);
+    if (event->type() != QEvent::ActivationChange || !isActiveWindow() || m_lighting->isBusy()) {
+        return;
+    }
+    if (m_lastReload.isValid() && m_lastReload.elapsed() < 5000) {
+        return;
+    }
+    m_lastReload.start();
+    m_currentProfile = Settings::currentProfile();
+    m_lighting->reloadFromDisk();
+    reloadProfiles();
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     Settings::setWindowSize(size());

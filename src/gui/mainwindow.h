@@ -4,6 +4,7 @@
 
 #include "core/profiles.h"
 
+#include <QElapsedTimer>
 #include <QMainWindow>
 
 class KMessageWidget;
@@ -34,6 +35,7 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    void changeEvent(QEvent *event) override;
 
 private:
     QWidget *buildSidebarPanel();
@@ -72,6 +74,7 @@ private:
     QStringList m_problems;
     QList<Profile> m_profiles;
     QString m_currentProfile;
+    QElapsedTimer m_lastReload; // the CLI may change things while the window is open
 };
 
 } // namespace Glowzone::Gui
