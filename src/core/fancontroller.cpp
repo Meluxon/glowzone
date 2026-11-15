@@ -36,7 +36,23 @@ bool FanController::open(QString *error)
         *error = i18n("Could not initialise HID access: %1", hidError(nullptr));
         return false;
     }
-    m_dev = hid_open(m_model.usbVendorId, m_model.usbProductId, nullptr);
+    // Pick the lighting interface by its usage. If the device reports only
+    // one interface without usage information, that one is it.
+    QByteArray path;
+    int interfaces = 0;
+    hid_device_info *list = hid_enumerate(m_model.usbVendorId, m_model.usbProductId);
+    for (const hid_device_info *d = list; d; d = d->next) {
+        ++interfaces;
+        if (d->usage_page == Ite8297::UsagePage && d->usage == Ite8297::Usage) {
+            path = d->path;
+        }
+    }
+    if (path.isEmpty() && interfaces == 1 && list->usage_page == 0) {
+        path = list->path;
+    }
+    hid_free_enumeration(list);
+
+    m_dev = path.isEmpty() ? nullptr : hid_open_path(path.constData());
     if (!m_dev) {
         const QString id = QStringLiteral("%1:%2")
                                .arg(m_model.usbVendorId, 4, 16, QLatin1Char('0'))

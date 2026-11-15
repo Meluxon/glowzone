@@ -19,6 +19,10 @@ namespace Glowzone::Ite8297
 inline constexpr quint8 ReportId = 0xCC;
 inline constexpr int ReportSize = 64;
 
+// The HID interface that takes these reports (the device may have others).
+inline constexpr quint16 UsagePage = 0xFF89;
+inline constexpr quint16 Usage = 0xCC;
+
 // Mode byte of the settings report. Assumption: the value means the same effect
 // on every Lenovo model with this controller (true for every model known so
 // far); a model only offers a subset. A model whose firmware numbers its effects
