@@ -91,6 +91,7 @@ private:
     QList<Profile> m_profiles;
     QString m_currentProfile;
     QElapsedTimer m_lastReload; // the CLI may change things while the window is open
+    bool m_closing = false; // deleted once closed (WA_DeleteOnClose), so never reset
 };
 
 } // namespace Glowzone::Gui

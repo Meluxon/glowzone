@@ -498,11 +498,13 @@ void MainWindow::showError(const QString &text)
 
 // Coming back to the window: pick up what the CLI (e.g. a profile shortcut)
 // changed meanwhile. Not more often than every few seconds – reading the
-// case lights is a call to the root helper.
+// case lights is a call to the root helper. Not while closing: on Wayland the
+// window can report itself active once more after the close event, and the
+// call would then reach KAuth after the window is gone.
 void MainWindow::changeEvent(QEvent *event)
 {
     QMainWindow::changeEvent(event);
-    if (event->type() != QEvent::ActivationChange || !isActiveWindow() || m_lighting->isBusy()) {
+    if (event->type() != QEvent::ActivationChange || m_closing || !isActiveWindow() || m_lighting->isBusy()) {
         return;
     }
     if (m_lastReload.isValid() && m_lastReload.elapsed() < 5000) {
@@ -519,6 +521,7 @@ void MainWindow::changeEvent(QEvent *event)
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     Settings::setWindowSize(size());
+    m_closing = true;
     event->accept();
     Q_EMIT closed();
 }
