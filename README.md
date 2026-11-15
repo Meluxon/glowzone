@@ -28,7 +28,9 @@ profiles and a BIOS fan-detection check.
 Glowzone **only runs on supported models**. It checks DMI vendor, product
 version and board name against the profiles above and refuses to do anything
 otherwise; the root helper repeats that check on its own and also
-asks the BIOS whether the lights exist before touching them. There is no
+asks the BIOS whether the lights exist before touching them. What the helper
+accepts, and how that is tested and fuzzed, is described under
+*[Security model](#security-model)*. There is no
 `--force`: header wiring differs between models, so a new model needs its own
 profile (see *Adding a model*).
 

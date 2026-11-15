@@ -8,6 +8,8 @@
 namespace Glowzone
 {
 
+static int s_hidUsers = 0; // FanControllers that called hid_init()
+
 static QString hidError(hid_device *dev)
 {
     const wchar_t *e = hid_error(dev);
@@ -24,7 +26,9 @@ FanController::~FanController()
     if (m_dev) {
         hid_close(m_dev);
     }
-    hid_exit();
+    if (m_hidInitialised && --s_hidUsers == 0) {
+        hid_exit();
+    }
 }
 
 bool FanController::open(QString *error)
@@ -32,9 +36,13 @@ bool FanController::open(QString *error)
     if (m_dev) {
         return true;
     }
-    if (hid_init() != 0) {
-        *error = i18n("Could not initialise HID access: %1", hidError(nullptr));
-        return false;
+    if (!m_hidInitialised) {
+        if (s_hidUsers == 0 && hid_init() != 0) {
+            *error = i18n("Could not initialise HID access: %1", hidError(nullptr));
+            return false;
+        }
+        ++s_hidUsers;
+        m_hidInitialised = true;
     }
     // Pick the lighting interface by its usage. If the device reports only
     // one interface without usage information, that one is it.

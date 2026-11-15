@@ -13,9 +13,37 @@
 #include <QCommandLineParser>
 #include <memory>
 
+// The window when there are no arguments – or only Qt's own (e.g.
+// "-style fusion", "--reverse"), which QApplication takes. Anything else is
+// the CLI.
+static bool wantsWindow(int argc, char **argv)
+{
+    static const QByteArrayList withValue{"-display", "-geometry", "-name", "-platform", "-platformpluginpath",
+                                          "-platformtheme", "-plugin", "-qmljsdebugger", "-qwindowgeometry", "-qwindowicon",
+                                          "-qwindowtitle", "-session", "-style", "-stylesheet", "-title"};
+    static const QByteArrayList flags{"-reverse", "-widgetcount", "-nograb", "-dograb", "-sync"};
+    for (int i = 1; i < argc; ++i) {
+        QByteArray arg(argv[i]);
+        if (arg.startsWith("--")) {
+            arg.remove(0, 1); // Qt accepts both -style and --style
+        }
+        const qsizetype eq = arg.indexOf('=');
+        const QByteArray name = eq >= 0 ? arg.left(eq) : arg;
+        if (flags.contains(name)) {
+            continue;
+        }
+        if (withValue.contains(name)) {
+            i += eq >= 0 ? 0 : 1; // "-style fusion" or "-style=fusion"
+            continue;
+        }
+        return false;
+    }
+    return true;
+}
+
 int main(int argc, char **argv)
 {
-    const bool gui = argc <= 1;
+    const bool gui = wantsWindow(argc, argv);
     std::unique_ptr<QCoreApplication> app;
     if (gui) {
         app = std::make_unique<QApplication>(argc, argv);

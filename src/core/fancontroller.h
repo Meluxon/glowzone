@@ -29,6 +29,7 @@ public:
 private:
     const ModelProfile &m_model;
     hid_device_ *m_dev = nullptr;
+    bool m_hidInitialised = false; // hidapi's init/exit are process-wide: counted
 };
 
 } // namespace Glowzone

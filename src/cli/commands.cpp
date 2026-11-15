@@ -451,8 +451,8 @@ int cmdProfileApply(const ModelProfile &model, const QString &name)
             exitCode = ExitFailed;
         }
     }
-    Settings::setCurrentProfile(profile->name);
     if (exitCode == ExitOk) {
+        Settings::setCurrentProfile(profile->name);
         out() << i18n("Applied profile “%1”.", profile->name) << Qt::endl;
     }
     return exitCode;
@@ -519,16 +519,17 @@ int cmdProfileDelete(const ModelProfile &model, const QString &name)
 
 int cmdProfileRename(const ModelProfile &model, const QString &oldName, const QString &newName)
 {
+    const auto old = Profiles::find(model, oldName); // the name as stored, not as typed
     QString error;
-    if (!Profiles::rename(model, oldName, newName, &error)) {
-        err() << error << Qt::endl;
+    if (!old || !Profiles::rename(model, oldName, newName, &error)) {
+        err() << (old ? error : i18n("There is no profile called “%1”.", oldName)) << Qt::endl;
         return ExitFailed;
     }
     const QString clean = Profiles::cleanName(newName);
-    if (Settings::currentProfile().compare(oldName, Qt::CaseInsensitive) == 0) {
+    if (Settings::currentProfile().compare(old->name, Qt::CaseInsensitive) == 0) {
         Settings::setCurrentProfile(clean);
     }
-    out() << i18n("Renamed profile “%1” to “%2”.", oldName, clean) << Qt::endl;
+    out() << i18n("Renamed profile “%1” to “%2”.", old->name, clean) << Qt::endl;
     return ExitOk;
 }
 

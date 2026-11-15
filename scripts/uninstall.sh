@@ -41,7 +41,7 @@ if command -v glowzone >/dev/null 2>&1; then
         glowzone reset || echo "Reset did not fully succeed – continuing."
     fi
     if ask "Delete your Glowzone settings, profiles and saved state?"; then
-        glowzone --purge-user-data
+        glowzone --purge-user-data || echo "Some user data could not be removed – continuing."
     fi
 else
     echo "glowzone is not in PATH – skipping reset and user-data cleanup."

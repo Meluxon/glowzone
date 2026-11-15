@@ -73,6 +73,9 @@ private Q_SLOTS:
         QCOMPARE(parseRgb(QStringLiteral("#158DDD")), std::optional<Rgb>(Rgb{0x15, 0x8d, 0xdd}));
         QVERIFY(!parseRgb(QStringLiteral("fff")));
         QVERIFY(!parseRgb(QStringLiteral("gg0000")));
+        QVERIFY(!parseRgb(QStringLiteral("0x1234")));
+        QVERIFY(!parseRgb(QStringLiteral("+12345")));
+        QVERIFY(!parseRgb(QStringLiteral("12 345")));
         QCOMPARE(rgbToString(Rgb{0x15, 0x8d, 0xdd}), QStringLiteral("#158ddd"));
     }
 };

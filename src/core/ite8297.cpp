@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "ite8297.h"
 
+#include <algorithm>
+
 namespace Glowzone::Ite8297
 {
 
@@ -60,14 +62,14 @@ std::optional<Rgb> parseRgb(const QString &text)
     if (t.startsWith(QLatin1Char('#'))) {
         t.remove(0, 1);
     }
-    if (t.size() != 6) {
+    // Exactly six hex digits – no "0x", sign or spaces that toUInt() would accept.
+    const bool hex = std::all_of(t.cbegin(), t.cend(), [](QChar c) {
+        return c.isDigit() || (c.toLower() >= QLatin1Char('a') && c.toLower() <= QLatin1Char('f'));
+    });
+    if (t.size() != 6 || !hex) {
         return std::nullopt;
     }
-    bool ok = false;
-    const uint v = t.toUInt(&ok, 16);
-    if (!ok) {
-        return std::nullopt;
-    }
+    const uint v = t.toUInt(nullptr, 16);
     return Rgb{quint8(v >> 16), quint8(v >> 8), quint8(v)};
 }
 
