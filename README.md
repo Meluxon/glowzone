@@ -31,17 +31,27 @@ light settings that model allows. What it does, and how that is tested:
 
 ## Install
 
-On Arch Linux:
+**Arch Linux:**
 
 ```sh
 cd packaging/arch
 makepkg -si
 ```
 
-For the case lights also install `acpi_call-dkms` (or `acpi_call` /
-`acpi_call-lts` for your kernel); Glowzone loads it when needed. On other
-distributions, `./scripts/install.sh` builds, tests and installs it – see
-[docs/development.md](docs/development.md) for what it needs.
+**Other distributions** need Qt ≥ 6.7 with Qt SVG, KDE Frameworks 6 (KAuth with the
+polkit backend, KCoreAddons, KI18n, KWidgetsAddons), extra-cmake-modules,
+hidapi (hidraw), polkit, CMake and a C++20 compiler. Then:
+
+```sh
+./scripts/install.sh
+```
+
+It builds, runs the tests and installs into `/usr` with sudo, keeping a list
+of the installed files so `./scripts/uninstall.sh` can remove them all.
+
+**For the case lights** also install the `acpi_call` kernel module (on Arch
+`acpi_call-dkms`, or `acpi_call` / `acpi_call-lts` for your kernel). Glowzone
+loads it when needed – nothing is set up at boot.
 
 ## Use
 

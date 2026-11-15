@@ -2,9 +2,7 @@
 
 ## Building and tests
 
-Needs Qt ≥ 6.7, KDE Frameworks 6 (KAuth with the polkit backend, KCoreAddons,
-KI18n, KWidgetsAddons), extra-cmake-modules, hidapi (hidraw), polkit and a
-C++20 compiler.
+The requirements are listed in the [README](../README.md#install).
 
 ```sh
 cmake -B build -DBUILD_TESTING=ON
@@ -17,9 +15,9 @@ from Lenovo Vantage, the root helper's checks against a fake `acpi_call`, the
 case-light queue against a fake helper, the model profiles, profiles and the
 saved fan state.
 
-`./scripts/install.sh` does the same and installs into `/usr` with sudo,
-keeping the install manifest in `/usr/share/glowzone/` for
-`./scripts/uninstall.sh`. On Arch, use `packaging/arch/PKGBUILD` instead.
+`./scripts/install.sh` does the same and installs into `/usr` with sudo; it
+keeps the install manifest in `/usr/share/glowzone/` for
+`./scripts/uninstall.sh`.
 
 ## Fuzzing the root helper
 
