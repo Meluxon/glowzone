@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 13:22+0100\n"
+"POT-Creation-Date: 2026-11-15 13:24+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,488 +17,487 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/cli/commands.cpp:45
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Fan colour as RRGGBB, for modes that use a colour."
 msgstr ""
 
-#: src/cli/commands.cpp:53
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Fan effect speed (levels: see below)."
 msgstr ""
 
-#: src/cli/commands.cpp:61
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Brightness of fans or case lights (levels: see below)."
 msgstr ""
 
-#: src/cli/commands.cpp:69
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Set only one LED of a double fan (positions: see below)."
 msgstr ""
 
-#: src/cli/commands.cpp:77
+#: src/cli/commands.cpp
 #, kde-format
 msgid ""
 "Delete Glowzone's settings, profiles and saved state for this user, then "
 "exit."
 msgstr ""
 
-#: src/cli/commands.cpp:94
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Run “glowzone --help” for usage."
 msgstr ""
 
-#: src/cli/commands.cpp:106
+#: src/cli/commands.cpp
 #, kde-format
 msgid "“%1” must be a number from %2 to %3."
 msgstr ""
 
-#: src/cli/commands.cpp:123
+#: src/cli/commands.cpp
 #, kde-format
 msgctxt "@info fan effect speed"
 msgid "speed %1"
 msgstr ""
 
-#: src/cli/commands.cpp:125
+#: src/cli/commands.cpp
 #, kde-format
 msgctxt "@info"
 msgid "brightness %1"
 msgstr ""
 
-#: src/cli/commands.cpp:132
+#: src/cli/commands.cpp
 #, kde-format
 msgctxt "@info unknown mode value"
 msgid "mode %1"
 msgstr ""
 
-#: src/cli/commands.cpp:133
+#: src/cli/commands.cpp
 #, kde-format
 msgctxt "@info light mode, brightness"
 msgid "%1, brightness %2"
 msgstr ""
 
-#: src/cli/commands.cpp:162
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Computer: %1"
 msgstr ""
 
-#: src/cli/commands.cpp:164
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Fans (as last set by Glowzone – the controller can’t be read back):"
 msgstr ""
 
-#: src/cli/commands.cpp:178
+#: src/cli/commands.cpp
 #, kde-format
 msgid "unknown (not set by Glowzone yet)"
 msgstr ""
 
-#: src/cli/commands.cpp:182
+#: src/cli/commands.cpp
 #, kde-format
 msgctxt "@info fan position: description"
 msgid "%1: %2"
 msgstr ""
 
-#: src/cli/commands.cpp:191 src/cli/commands.cpp:651
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Lights:"
 msgstr ""
 
-#: src/cli/commands.cpp:195
+#: src/cli/commands.cpp
 #, kde-format
 msgid "not available: %1"
 msgstr ""
 
-#: src/cli/commands.cpp:204
+#: src/cli/commands.cpp
 #, kde-format
 msgctxt "@info"
 msgid "all fans detected (layout %1)"
 msgstr ""
 
-#: src/cli/commands.cpp:203
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Fan detection (BIOS): %1"
 msgstr ""
 
-#: src/cli/commands.cpp:213
+#: src/cli/commands.cpp
 #, kde-format
 msgid ""
 "Usage: glowzone fan <fan> <mode> [-c RRGGBB] [-s speed] [-b brightness] [-l "
 "position]"
 msgstr ""
 
-#: src/cli/commands.cpp:224
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Unknown fan “%1”. Choose one of: %2"
 msgstr ""
 
-#: src/cli/commands.cpp:229
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Unknown fan mode “%1”. Choose one of: %2"
 msgstr ""
 
-#: src/cli/commands.cpp:242
+#: src/cli/commands.cpp
 #, kde-format
 msgid "“%1” is not a colour. Use six hex digits, e.g. ff3d9c."
 msgstr ""
 
-#: src/cli/commands.cpp:250
+#: src/cli/commands.cpp
 #, kde-format
 msgid "--led only works with a single fan that has more than one LED."
 msgstr ""
 
-#: src/cli/commands.cpp:254
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Unknown position “%1”. Choose one of: %2"
 msgstr ""
 
-#: src/cli/commands.cpp:281
+#: src/cli/commands.cpp
 #, kde-format
 msgctxt "@item fan (position)"
 msgid "%1 (%2)"
 msgstr ""
 
-#: src/cli/commands.cpp:295
+#: src/cli/commands.cpp
 #, kde-format
 msgid "The fans were changed, but the state could not be saved: %1"
 msgstr ""
 
-#: src/cli/commands.cpp:314
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Usage: glowzone light <light> [mode] [-b brightness]"
 msgstr ""
 
-#: src/cli/commands.cpp:325
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Unknown light “%1”. Choose one of: %2"
 msgstr ""
 
-#: src/cli/commands.cpp:332
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Unknown light mode “%1”. Choose one of: %2"
 msgstr ""
 
-#: src/cli/commands.cpp:343
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Give a mode, a brightness (-b), or both."
 msgstr ""
 
-#: src/cli/commands.cpp:374
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Fans: all off."
 msgstr ""
 
-#: src/cli/commands.cpp:380 src/cli/commands.cpp:433
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Fans: %1"
 msgstr ""
 
-#: src/cli/commands.cpp:389
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Case lights: off."
 msgstr ""
 
-#: src/cli/commands.cpp:391 src/cli/commands.cpp:446
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Case lights: %1"
 msgstr ""
 
-#: src/cli/commands.cpp:401
+#: src/cli/commands.cpp
 #, kde-format
 msgid ""
 "Usage: glowzone profile list | apply <name> | save <name> | rename <old> "
 "<new> | delete <name>"
 msgstr ""
 
-#: src/cli/commands.cpp:408
+#: src/cli/commands.cpp
 #, kde-format
 msgid "No profiles saved yet. Save one with “glowzone profile save <name>”."
 msgstr ""
 
-#: src/cli/commands.cpp:423 src/core/profiles.cpp:229 src/core/profiles.cpp:243
+#: src/cli/commands.cpp src/core/profiles.cpp
 #, kde-format
 msgid "There is no profile called “%1”."
 msgstr ""
 
-#: src/cli/commands.cpp:452
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Applied profile “%1”."
 msgstr ""
 
-#: src/cli/commands.cpp:462 src/core/profiles.cpp:207 src/core/profiles.cpp:248
-#: src/gui/mainwindow.cpp:324
+#: src/cli/commands.cpp src/core/profiles.cpp src/gui/mainwindow.cpp
 #, kde-format
 msgid "A profile name must be 1 to %1 characters long."
 msgstr ""
 
-#: src/cli/commands.cpp:478
+#: src/cli/commands.cpp
 #, kde-format
 msgid ""
 "Note: Glowzone hasn’t set any fan yet, so the profile contains no fan "
 "settings."
 msgstr ""
 
-#: src/cli/commands.cpp:487
+#: src/cli/commands.cpp
 #, kde-format
 msgid ""
 "Note: the case lights could not be read and are not part of the profile: %1"
 msgstr ""
 
-#: src/cli/commands.cpp:497
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Saved profile “%1”."
 msgstr ""
 
-#: src/cli/commands.cpp:512
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Deleted profile “%1”."
 msgstr ""
 
-#: src/cli/commands.cpp:527
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Renamed profile “%1” to “%2”."
 msgstr ""
 
-#: src/cli/commands.cpp:580
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Skipping %1: not a Glowzone directory."
 msgstr ""
 
-#: src/cli/commands.cpp:587
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Removed %1"
 msgstr ""
 
-#: src/cli/commands.cpp:590
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Could not remove %1"
 msgstr ""
 
-#: src/cli/commands.cpp:595
+#: src/cli/commands.cpp
 #, kde-format
 msgid "No Glowzone user data found."
 msgstr ""
 
-#: src/cli/commands.cpp:619 src/cli/main.cpp:30
+#: src/cli/commands.cpp src/cli/main.cpp
 #, kde-format
 msgid ""
 "Lighting control for supported Lenovo desktops: fan LEDs and case lights."
 msgstr ""
 
-#: src/cli/commands.cpp:620
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Commands:"
 msgstr ""
 
-#: src/cli/commands.cpp:622
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Show the current lighting"
 msgstr ""
 
-#: src/cli/commands.cpp:623
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Set fan LEDs"
 msgstr ""
 
-#: src/cli/commands.cpp:624
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Set a case light"
 msgstr ""
 
-#: src/cli/commands.cpp:625
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Turn all lighting off"
 msgstr ""
 
-#: src/cli/commands.cpp:626
+#: src/cli/commands.cpp
 #, kde-format
 msgid "List saved profiles (* = applied last)"
 msgstr ""
 
-#: src/cli/commands.cpp:627
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Apply a profile"
 msgstr ""
 
-#: src/cli/commands.cpp:628
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Save the current lighting as a profile"
 msgstr ""
 
-#: src/cli/commands.cpp:629
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Rename a profile"
 msgstr ""
 
-#: src/cli/commands.cpp:630
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Delete a profile"
 msgstr ""
 
-#: src/cli/commands.cpp:632
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Run glowzone without arguments to open the window."
 msgstr ""
 
-#: src/cli/commands.cpp:636
+#: src/cli/commands.cpp
 #, kde-format
 msgid "This computer (%1):"
 msgstr ""
 
-#: src/cli/commands.cpp:637
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Fans:"
 msgstr ""
 
-#: src/cli/commands.cpp:645
+#: src/cli/commands.cpp
 #, kde-format
 msgid "LEDs (--led):"
 msgstr ""
 
-#: src/cli/commands.cpp:648
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Fan modes:"
 msgstr ""
 
-#: src/cli/commands.cpp:649
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Fan speed, brightness:"
 msgstr ""
 
-#: src/cli/commands.cpp:652
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Light modes:"
 msgstr ""
 
-#: src/cli/commands.cpp:653
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Light brightness:"
 msgstr ""
 
-#: src/cli/commands.cpp:660
+#: src/cli/commands.cpp
 #, kde-format
 msgid "This computer is not supported. Supported models: %1"
 msgstr ""
 
-#: src/cli/commands.cpp:669
+#: src/cli/commands.cpp
 #, kde-format
 msgid "status, fan, light, reset or profile"
 msgstr ""
 
-#: src/cli/commands.cpp:670
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Arguments of the command"
 msgstr ""
 
-#: src/cli/commands.cpp:690
+#: src/cli/commands.cpp
 #, kde-format
 msgid "Unknown command “%1”."
 msgstr ""
 
-#: src/cli/commands.cpp:702
+#: src/cli/commands.cpp
 #, kde-format
 msgid "“status” takes no arguments."
 msgstr ""
 
-#: src/cli/commands.cpp:713
+#: src/cli/commands.cpp
 #, kde-format
 msgid "“reset” takes no arguments."
 msgstr ""
 
-#: src/cli/main.cpp:28
+#: src/cli/main.cpp
 #, kde-format
 msgid "Glowzone"
 msgstr ""
 
-#: src/cli/main.cpp:32 src/gui/aboutdialog.cpp:96
+#: src/cli/main.cpp src/gui/aboutdialog.cpp
 #, kde-format
 msgid "© 2026 Meluxon"
 msgstr ""
 
-#: src/core/eclights.cpp:21
+#: src/core/eclights.cpp
 msgctxt "@item light mode"
 msgid "Off"
 msgstr ""
 
-#: src/core/eclights.cpp:22
+#: src/core/eclights.cpp
 msgctxt "@item light mode"
 msgid "On"
 msgstr ""
 
-#: src/core/eclights.cpp:23
+#: src/core/eclights.cpp
 msgctxt "@item light mode"
 msgid "Blink fast"
 msgstr ""
 
-#: src/core/eclights.cpp:24
+#: src/core/eclights.cpp
 msgctxt "@item light mode"
 msgid "Blink slow"
 msgstr ""
 
-#: src/core/eclights.cpp:25
+#: src/core/eclights.cpp
 msgctxt "@item light mode"
 msgid "Breathing"
 msgstr ""
 
-#: src/core/eclights.cpp:66
+#: src/core/eclights.cpp
 #, kde-format
 msgid "The helper refused to run: this computer is not a supported model."
 msgstr ""
 
-#: src/core/eclights.cpp:69
+#: src/core/eclights.cpp
 #, kde-format
 msgid ""
 "The acpi_call kernel module is not available. Install acpi_call-dkms (or "
 "acpi_call / acpi_call-lts for your kernel)."
 msgstr ""
 
-#: src/core/eclights.cpp:73
+#: src/core/eclights.cpp
 #, kde-format
 msgid "The BIOS does not report the case lights on this computer."
 msgstr ""
 
-#: src/core/eclights.cpp:76
+#: src/core/eclights.cpp
 #, kde-format
 msgid "The helper rejected the request as invalid."
 msgstr ""
 
-#: src/core/eclights.cpp:80
+#: src/core/eclights.cpp
 #, kde-format
 msgid "The firmware call for the case lights failed."
 msgstr ""
 
-#: src/core/eclights.cpp:83
+#: src/core/eclights.cpp
 #, kde-format
 msgid "Not authorised to change the case lights."
 msgstr ""
 
-#: src/core/eclights.cpp:86
+#: src/core/eclights.cpp
 #, kde-format
 msgid "Authorisation was cancelled."
 msgstr ""
 
-#: src/core/eclights.cpp:89
+#: src/core/eclights.cpp
 #, kde-format
 msgid "The authorisation system (polkit) reported an error."
 msgstr ""
 
-#: src/core/eclights.cpp:94
+#: src/core/eclights.cpp
 #, kde-format
 msgid "Could not reach the Glowzone helper. Is Glowzone installed correctly?"
 msgstr ""
 
-#: src/core/eclights.cpp:97
+#: src/core/eclights.cpp
 #, kde-format
 msgid "The Glowzone helper reported an error (code %1)."
 msgstr ""
 
-#: src/core/eclights.cpp:101
+#: src/core/eclights.cpp
 #, kde-format
 msgctxt "@info technical details follow"
 msgid "Details: %1"
 msgstr ""
 
-#: src/core/eclights.cpp:194
+#: src/core/eclights.cpp
 #, kde-format
 msgid ""
 "This is a BIOS detection glitch that can happen after a cold start, when a "
@@ -506,7 +505,7 @@ msgid ""
 "are unchanged. A reboot normally clears it."
 msgstr ""
 
-#: src/core/eclights.cpp:198
+#: src/core/eclights.cpp
 #, kde-format
 msgctxt "%1 fan names, %2 and %3 layout codes, %4 explanation"
 msgid ""
@@ -515,7 +514,7 @@ msgid ""
 "%4"
 msgstr ""
 
-#: src/core/eclights.cpp:205
+#: src/core/eclights.cpp
 #, kde-format
 msgctxt "%1 and %2 layout codes, %3 explanation"
 msgid ""
@@ -524,420 +523,420 @@ msgid ""
 "%3"
 msgstr ""
 
-#: src/core/fancontroller.cpp:36
+#: src/core/fancontroller.cpp
 #, kde-format
 msgid "Could not initialise HID access: %1"
 msgstr ""
 
-#: src/core/fancontroller.cpp:61
+#: src/core/fancontroller.cpp
 #, kde-format
 msgid "Fan LED controller %1 not found or not accessible (%2)."
 msgstr ""
 
-#: src/core/fancontroller.cpp:75
+#: src/core/fancontroller.cpp
 #, kde-format
 msgid "Sending to the fan LED controller failed: %1"
 msgstr ""
 
-#: src/core/fanstate.cpp:127
+#: src/core/fanstate.cpp
 #, kde-format
 msgid "Could not create the directory for %1."
 msgstr ""
 
-#: src/core/fanstate.cpp:132
+#: src/core/fanstate.cpp
 #, kde-format
 msgid "Could not save the fan state to %1: %2"
 msgstr ""
 
-#: src/core/ite8297.cpp:14
+#: src/core/ite8297.cpp
 msgctxt "@item fan LED mode"
 msgid "Off"
 msgstr ""
 
-#: src/core/ite8297.cpp:15
+#: src/core/ite8297.cpp
 msgctxt "@item fan LED mode"
 msgid "Static"
 msgstr ""
 
-#: src/core/ite8297.cpp:16
+#: src/core/ite8297.cpp
 msgctxt "@item fan LED mode"
 msgid "Sparkle"
 msgstr ""
 
-#: src/core/ite8297.cpp:17
+#: src/core/ite8297.cpp
 msgctxt "@item fan LED mode"
 msgid "Breathing"
 msgstr ""
 
-#: src/core/ite8297.cpp:18
+#: src/core/ite8297.cpp
 msgctxt "@item fan LED mode"
 msgid "Wave"
 msgstr ""
 
-#: src/core/ite8297.cpp:19
+#: src/core/ite8297.cpp
 msgctxt "@item fan LED mode"
 msgid "Specter"
 msgstr ""
 
-#: src/core/ite8297.cpp:20
+#: src/core/ite8297.cpp
 msgctxt "@item fan LED mode"
 msgid "Rainbow wave"
 msgstr ""
 
-#: src/core/ite8297.cpp:21
+#: src/core/ite8297.cpp
 msgctxt "@item fan LED mode"
 msgid "Random"
 msgstr ""
 
-#: src/core/messages.cpp:14
+#: src/core/messages.cpp
 #, kde-format
 msgctxt "@info unknown DMI value"
 msgid "unknown"
 msgstr ""
 
-#: src/core/messages.cpp:18
+#: src/core/messages.cpp
 #, kde-format
 msgctxt "@item model, board"
 msgid "%1 (board %2)"
 msgstr ""
 
-#: src/core/messages.cpp:20
+#: src/core/messages.cpp
 #, kde-format
 msgid ""
 "This computer is not supported (vendor: %1, model: %2, board: %3).\n"
 "Glowzone only runs on: %4"
 msgstr ""
 
-#: src/core/profiles.cpp:211
+#: src/core/profiles.cpp
 #, kde-format
 msgid "Could not create the directory %1."
 msgstr ""
 
-#: src/core/profiles.cpp:219
+#: src/core/profiles.cpp
 #, kde-format
 msgid "Could not save the profile to %1: %2"
 msgstr ""
 
-#: src/core/profiles.cpp:233 src/core/profiles.cpp:267
+#: src/core/profiles.cpp
 #, kde-format
 msgid "Could not delete %1."
 msgstr ""
 
-#: src/core/profiles.cpp:253
+#: src/core/profiles.cpp
 #, kde-format
 msgid "A profile called “%1” already exists."
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:27
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@title:window"
 msgid "About Glowzone"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:39
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@title app name and version"
 msgid "Glowzone %1"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:40
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgid "Lighting control for supported Lenovo desktops"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:48
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgid ""
 "Written with an AI assistant (Claude) and reviewed by its author. It works "
 "on the author’s machine; read the code before you trust it with yours."
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:59
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@info hardware state"
 msgid "Connected"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:60
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@info hardware state"
 msgid "Not found"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:61 src/gui/aboutdialog.cpp:68
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@info hardware state"
 msgid "Not read yet"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:63
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@info hardware state"
 msgid "Available"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:65
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@info hardware state"
 msgid "Not available"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:70
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@info BIOS fan detection, %1 layout code"
 msgid "All fans detected (layout %1)"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:73
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@info BIOS fan detection, %1 layout code"
 msgid "Unusual layout %1 – see the message in the window"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:88
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@label"
 msgid "Computer:"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:89
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@label"
 msgid "Board:"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:90
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@label"
 msgid "Fan controller:"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:90
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@info USB id, state"
 msgid "USB %1 – %2"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:92
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@label"
 msgid "Case lights:"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:94
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@label BIOS fan detection"
 msgid "Fan detection:"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:95
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@label"
 msgid "Licence:"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:96
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@label"
 msgid "Copyright:"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:110
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@action:button"
 msgid "Copy to Clipboard"
 msgstr ""
 
-#: src/gui/aboutdialog.cpp:112
+#: src/gui/aboutdialog.cpp
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Copy version and hardware details, e.g. for a bug report"
 msgstr ""
 
-#: src/gui/colourbutton.cpp:26
+#: src/gui/colourbutton.cpp
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Choose the colour"
 msgstr ""
 
-#: src/gui/colourbutton.cpp:49
+#: src/gui/colourbutton.cpp
 #, kde-format
 msgctxt "@info accessible name, colour value"
 msgid "Colour %1"
 msgstr ""
 
-#: src/gui/colourbutton.cpp:56
+#: src/gui/colourbutton.cpp
 #, kde-format
 msgctxt "@title:window"
 msgid "Fan Colour"
 msgstr ""
 
-#: src/gui/forms.cpp:53
+#: src/gui/forms.cpp
 #, kde-format
 msgctxt "@item:inrange"
 msgid "Slow"
 msgstr ""
 
-#: src/gui/forms.cpp:53
+#: src/gui/forms.cpp
 #, kde-format
 msgctxt "@item:inrange"
 msgid "Fast"
 msgstr ""
 
-#: src/gui/forms.cpp:54 src/gui/pages.cpp:107
+#: src/gui/forms.cpp src/gui/pages.cpp
 #, kde-format
 msgctxt "@item:inrange"
 msgid "Dim"
 msgstr ""
 
-#: src/gui/forms.cpp:54 src/gui/pages.cpp:107
+#: src/gui/forms.cpp src/gui/pages.cpp
 #, kde-format
 msgctxt "@item:inrange"
 msgid "Bright"
 msgstr ""
 
-#: src/gui/forms.cpp:59
+#: src/gui/forms.cpp
 #, kde-format
 msgctxt "@item fan mode not known yet"
 msgid "Not set yet"
 msgstr ""
 
-#: src/gui/forms.cpp:62 src/gui/pages.cpp:123
+#: src/gui/forms.cpp src/gui/pages.cpp
 #, kde-format
 msgctxt "@label:listbox"
 msgid "Mode:"
 msgstr ""
 
-#: src/gui/forms.cpp:63
+#: src/gui/forms.cpp
 #, kde-format
 msgctxt "@label:chooser"
 msgid "Colour:"
 msgstr ""
 
-#: src/gui/forms.cpp:64
+#: src/gui/forms.cpp
 #, kde-format
 msgctxt "@label:slider"
 msgid "Speed:"
 msgstr ""
 
-#: src/gui/forms.cpp:65 src/gui/pages.cpp:124
+#: src/gui/forms.cpp src/gui/pages.cpp
 #, kde-format
 msgctxt "@label:slider"
 msgid "Brightness:"
 msgstr ""
 
-#: src/gui/gui.cpp:27
+#: src/gui/gui.cpp
 #, kde-format
 msgctxt "@title:window"
 msgid "Unsupported Computer"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:107
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Controlling: %1"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:112 src/gui/mainwindow.cpp:113
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Menu"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:115
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@action:inmenu"
 msgid "About Glowzone"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:119
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@action:inmenu"
 msgid "Quit"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:145
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@action:button"
 msgid "Turn All Off"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:146
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Switch every fan LED and case light off. Colours and levels are kept."
 msgstr ""
 
-#: src/gui/mainwindow.cpp:183
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@action:button"
 msgid "Save"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:184
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@action:button"
 msgid "Save as New…"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:255
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgid "You changed “%1”."
 msgstr ""
 
-#: src/gui/mainwindow.cpp:314
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@title:window"
 msgid "Save Current Lighting"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:315
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@label:textbox"
 msgid "Profile name:"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:329
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@title:window"
 msgid "Replace Profile"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:330
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgid "A profile called “%1” already exists. Replace it?"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:353
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@title:window"
 msgid "Rename Profile"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:354
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@label:textbox"
 msgid "New name:"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:376
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgctxt "@title:window"
 msgid "Delete Profile"
 msgstr ""
 
-#: src/gui/mainwindow.cpp:377
+#: src/gui/mainwindow.cpp
 #, kde-format
 msgid "Delete the profile “%1”? The lighting stays as it is."
 msgstr ""
 
-#: src/gui/pages.cpp:48
+#: src/gui/pages.cpp
 #, kde-format
 msgctxt "@option:check LEDs of a double fan"
 msgid "Set separately"
 msgstr ""
 
-#: src/gui/pages.cpp:49
+#: src/gui/pages.cpp
 #, kde-format
 msgctxt "@info:tooltip"
 msgid ""
@@ -945,172 +944,172 @@ msgid ""
 "fan’s settings to the other."
 msgstr ""
 
-#: src/gui/pages.cpp:50
+#: src/gui/pages.cpp
 #, kde-format
 msgctxt "@label LEDs of a double fan"
 msgid "LEDs:"
 msgstr ""
 
-#: src/gui/pages.cpp:59
+#: src/gui/pages.cpp
 #, kde-format
 msgctxt "@title one fan of a pair, %1 is its position"
 msgid "%1 fan"
 msgstr ""
 
-#: src/gui/pages.cpp:108 src/gui/pages.cpp:140
+#: src/gui/pages.cpp
 #, kde-format
 msgctxt "@info"
 msgid "Reading the current state…"
 msgstr ""
 
-#: src/gui/pages.cpp:117
+#: src/gui/pages.cpp
 #, kde-format
 msgctxt "@item light mode not known"
 msgid "Unknown"
 msgstr ""
 
-#: src/gui/pages.cpp:139
+#: src/gui/pages.cpp
 #, kde-format
 msgctxt "@info"
 msgid "Not available – see the message below."
 msgstr ""
 
-#: src/gui/sidebar.cpp:242
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@title sidebar section"
 msgid "Fans"
 msgstr ""
 
-#: src/gui/sidebar.cpp:260
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@title sidebar section"
 msgid "Case Lights"
 msgstr ""
 
-#: src/gui/sidebar.cpp:268
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@title sidebar section"
 msgid "Profiles"
 msgstr ""
 
-#: src/gui/sidebar.cpp:293 src/gui/sidebar.cpp:327
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@info fan state"
 msgid "Not set yet"
 msgstr ""
 
-#: src/gui/sidebar.cpp:293 src/gui/sidebar.cpp:348
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@info LEDs of a double fan set one by one"
 msgid "Separately"
 msgstr ""
 
-#: src/gui/sidebar.cpp:299 src/gui/sidebar.cpp:351
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@info %1 is the mode; the BIOS doesn't see the fan"
 msgid "%1 · not detected"
 msgstr ""
 
-#: src/gui/sidebar.cpp:310 src/gui/sidebar.cpp:406
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@action"
 msgid "Save Current Lighting…"
 msgstr ""
 
-#: src/gui/sidebar.cpp:372
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@info light state not read yet"
 msgid "Unknown"
 msgstr ""
 
-#: src/gui/sidebar.cpp:404 src/gui/sidebar.cpp:420
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Applied last. Click to apply it again."
 msgstr ""
 
-#: src/gui/sidebar.cpp:404
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Click to apply"
 msgstr ""
 
-#: src/gui/sidebar.cpp:418
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@item profile, %1 its name"
 msgid "%1 · changed"
 msgstr ""
 
-#: src/gui/sidebar.cpp:419
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Changed since it was applied. Click to go back to it, or use Save."
 msgstr ""
 
-#: src/gui/sidebar.cpp:480
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@action:inmenu"
 msgid "Apply"
 msgstr ""
 
-#: src/gui/sidebar.cpp:483
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@action:inmenu"
 msgid "Rename…"
 msgstr ""
 
-#: src/gui/sidebar.cpp:487
+#: src/gui/sidebar.cpp
 #, kde-format
 msgctxt "@action:inmenu"
 msgid "Delete…"
 msgstr ""
 
-#: src/model/modelprofile.cpp:20
+#: src/model/modelprofile.cpp
 msgctxt "@item fan"
 msgid "CPU fan"
 msgstr ""
 
-#: src/model/modelprofile.cpp:21
+#: src/model/modelprofile.cpp
 msgctxt "@item fan"
 msgid "Rear fan"
 msgstr ""
 
-#: src/model/modelprofile.cpp:24
+#: src/model/modelprofile.cpp
 msgctxt "@item fan"
 msgid "Front fans"
 msgstr ""
 
-#: src/model/modelprofile.cpp:25
+#: src/model/modelprofile.cpp
 msgctxt "@item fan position"
 msgid "upper"
 msgstr ""
 
-#: src/model/modelprofile.cpp:26
+#: src/model/modelprofile.cpp
 msgctxt "@item fan position"
 msgid "lower"
 msgstr ""
 
-#: src/model/modelprofile.cpp:28
+#: src/model/modelprofile.cpp
 msgctxt "@item fan"
 msgid "Top fans"
 msgstr ""
 
-#: src/model/modelprofile.cpp:29
+#: src/model/modelprofile.cpp
 msgctxt "@item fan position"
 msgid "front"
 msgstr ""
 
-#: src/model/modelprofile.cpp:30
+#: src/model/modelprofile.cpp
 msgctxt "@item fan position"
 msgid "rear"
 msgstr ""
 
-#: src/model/modelprofile.cpp:36
+#: src/model/modelprofile.cpp
 msgctxt "@item light"
 msgid "Front logo"
 msgstr ""
 
-#: src/model/modelprofile.cpp:37
+#: src/model/modelprofile.cpp
 msgctxt "@item light"
 msgid "Internal light"
 msgstr ""
