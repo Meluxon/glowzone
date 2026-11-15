@@ -1,0 +1,52 @@
+# Maintainer: Meluxon
+#
+# Local PKGBUILD: builds the Glowzone source tree this file lives in.
+#   cd packaging/arch && makepkg -si      # build, test, install
+#   sudo pacman -Rns glowzone             # remove (see README for user data)
+# For an AUR release, source=() will point at a release tarball instead.
+
+pkgname=glowzone
+pkgver=0.6.1
+pkgrel=1
+pkgdesc='Lighting control for supported Lenovo desktops (fan LEDs and case lights)'
+arch=('x86_64')
+# url=''   # set once the repository is public
+license=('GPL-2.0-or-later')
+depends=(
+  'gcc-libs'
+  'glibc'
+  'hidapi'
+  'kauth'
+  'kcoreaddons'
+  'ki18n'
+  'kwidgetsaddons'
+  'polkit'
+  'qt6-base'
+  'qt6-svg'
+)
+makedepends=(
+  'cmake'
+  'extra-cmake-modules'
+)
+optdepends=(
+  'acpi_call-dkms: case lights such as the front logo (or acpi_call / acpi_call-lts matching your kernel)'
+)
+install=glowzone.install
+
+build() {
+  cmake -B build -S "$startdir/../.." \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DBUILD_TESTING=ON
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build --output-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -Dm644 "$startdir/../../LICENSES/GPL-2.0-or-later.txt" \
+    "$pkgdir/usr/share/licenses/$pkgname/GPL-2.0-or-later.txt"
+}

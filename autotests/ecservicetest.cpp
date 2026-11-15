@@ -1,0 +1,243 @@
+// SPDX-FileCopyrightText: 2026 Meluxon
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+// The helper's gatekeeping: model check, BIOS presence check, whitelist.
+// Uses a fake acpi_call that records every command.
+
+#include "helper/ecservice.h"
+#include "helper/procacpicall.h"
+
+#include <QTest>
+#include <functional>
+
+using namespace Glowzone;
+namespace HP = Glowzone::HelperProtocol;
+
+class FakeAcpi : public AcpiBackend
+{
+public:
+    bool ready = true;
+    QByteArray layoutReply = "{0x0b, 0x00, 0x00, 0x00}";
+    QByteArray presence = "0x3";
+    QMap<int, QByteArray> led{{1, "{0x01, 0x01, 0x03, 0x00}"}, {2, "{0x02, 0x02, 0x01, 0x00}"}};
+    QByteArray setReply = "0x0";
+    QList<QByteArray> commands;
+
+    bool ensureReady(QString *detail) override
+    {
+        if (!ready) {
+            *detail = QStringLiteral("no module");
+        }
+        return ready;
+    }
+
+    std::optional<QByteArray> call(const QByteArray &command, QString *) override
+    {
+        commands << command;
+        if (command == "\\WMI2.WMG0 0 0x0e 0") {
+            return presence;
+        }
+        if (command.startsWith("\\WMI2.WMG0 0 0x0f ")) {
+            return led.value(command.right(1).toInt(), "Error: AE_BAD_PARAMETER");
+        }
+        if (command == "\\WMI2.WMG0 0 0x0a 0") {
+            return layoutReply;
+        }
+        if (command.startsWith("\\WMI2.WMG0 0 0x10 ")) {
+            return setReply;
+        }
+        return QByteArray("Error: unexpected command");
+    }
+
+    int setCalls() const
+    {
+        return int(std::count_if(commands.cbegin(), commands.cend(), [](const QByteArray &c) {
+            return c.startsWith("\\WMI2.WMG0 0 0x10 ");
+        }));
+    }
+};
+
+static const DmiInfo legion{QStringLiteral("LENOVO"), QStringLiteral("Legion T5 26IOB6"), QStringLiteral("3733")};
+
+static QVariantMap request(const QVariantList &lights)
+{
+    return {{QLatin1String(HP::KeyLights), lights}};
+}
+
+static QVariantMap light(uint index, uint mode, uint brightness)
+{
+    return {{QLatin1String(HP::KeyIndex), index}, {QLatin1String(HP::KeyMode), mode}, {QLatin1String(HP::KeyBrightness), brightness}};
+}
+
+class EcServiceTest : public QObject
+{
+    Q_OBJECT
+
+private Q_SLOTS:
+    void unsupportedModelMakesNoCalls()
+    {
+        FakeAcpi acpi;
+        const DmiInfo other{QStringLiteral("LENOVO"), QStringLiteral("Legion T5 26AMR5"), QStringLiteral("3733")};
+        EcService service(other, acpi);
+        QCOMPARE(service.status().error, int(HP::UnsupportedModel));
+        QCOMPARE(service.set(request({light(1, 2, 1)})).error, int(HP::UnsupportedModel));
+        QVERIFY(acpi.commands.isEmpty());
+    }
+
+    void missingModule()
+    {
+        FakeAcpi acpi;
+        acpi.ready = false;
+        EcService service(legion, acpi);
+        QCOMPARE(service.status().error, int(HP::AcpiCallUnavailable));
+        QVERIFY(acpi.commands.isEmpty());
+    }
+
+    void biosWithoutLights()
+    {
+        FakeAcpi acpi;
+        acpi.presence = "0x1";
+        EcService service(legion, acpi);
+        QCOMPARE(service.set(request({light(1, 2, 1)})).error, int(HP::BiosLedMissing));
+        QCOMPARE(acpi.setCalls(), 0);
+    }
+
+    void status()
+    {
+        FakeAcpi acpi;
+        EcService service(legion, acpi);
+        const EcService::Result r = service.status();
+        QCOMPARE(r.error, 0);
+        QCOMPARE(r.lights.size(), 2);
+        QCOMPARE(r.lights.at(0).index, quint8(1));
+        QCOMPARE(r.lights.at(0).mode, quint8(1));
+        QCOMPARE(r.lights.at(0).brightness, quint8(3));
+        QCOMPARE(r.lights.at(1).mode, quint8(2));
+        QCOMPARE(acpi.commands.first(), QByteArray("\\WMI2.WMG0 0 0x0e 0"));
+    }
+
+    void setSendsExactBuffer()
+    {
+        FakeAcpi acpi;
+        EcService service(legion, acpi);
+        const EcService::Result r = service.set(request({light(1, 2, 3), light(2, 5, 1)}));
+        QCOMPARE(r.error, 0);
+        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b01020300"));
+        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b02050100"));
+        QCOMPARE(r.lights.size(), 2); // state read back afterwards
+    }
+
+    void rejectsAnythingOutsideTheWhitelist_data()
+    {
+        QTest::addColumn<QVariantMap>("args");
+        QTest::newRow("no list") << QVariantMap{};
+        QTest::newRow("empty list") << request({});
+        QTest::newRow("unknown index") << request({light(3, 2, 1)});
+        QTest::newRow("index 0") << request({light(0, 2, 1)});
+        QTest::newRow("mode 6") << request({light(1, 6, 1)});
+        QTest::newRow("brightness 5") << request({light(1, 2, 5)});
+        QTest::newRow("nothing to change") << request({light(1, 0, 0)});
+        QTest::newRow("duplicate") << request({light(1, 2, 1), light(1, 1, 1)});
+        QTest::newRow("too many") << request({light(1, 2, 1), light(2, 2, 1), light(1, 1, 1)});
+        QTest::newRow("not a map") << request({QStringLiteral("b01020300")});
+        QTest::newRow("text mode") << request({QVariantMap{{QLatin1String(HP::KeyIndex), 1u},
+                                                           {QLatin1String(HP::KeyMode), QStringLiteral("0x10")},
+                                                           {QLatin1String(HP::KeyBrightness), 1u}}});
+    }
+
+    void rejectsAnythingOutsideTheWhitelist()
+    {
+        QFETCH(QVariantMap, args);
+        FakeAcpi acpi;
+        EcService service(legion, acpi);
+        QCOMPARE(service.set(args).error, int(HP::InvalidArguments));
+        QCOMPARE(acpi.setCalls(), 0);
+    }
+
+    void zeroMeansUnchanged()
+    {
+        FakeAcpi acpi;
+        EcService service(legion, acpi);
+        QCOMPARE(service.set(request({light(2, 0, 4)})).error, 0);
+        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b02000400"));
+    }
+
+    void firmwareError()
+    {
+        FakeAcpi acpi;
+        acpi.setReply = "Error: AE_AML_BUFFER_LIMIT";
+        EcService service(legion, acpi);
+        QCOMPARE(service.set(request({light(1, 2, 1)})).error, int(HP::AcpiCallFailed));
+    }
+
+    void garbledGetLed()
+    {
+        FakeAcpi acpi;
+        acpi.led[2] = "{0x01, 0x02, 0x03}"; // wrong index echoed back
+        EcService service(legion, acpi);
+        QCOMPARE(service.status().error, int(HP::UnexpectedReply));
+    }
+
+    void unreadablePresenceIsNotMissingLights()
+    {
+        FakeAcpi acpi;
+        acpi.presence = "0x3called";
+        EcService service(legion, acpi);
+        QCOMPARE(service.status().error, int(HP::UnexpectedReply));
+    }
+
+    void cleanReply_data()
+    {
+        QTest::addColumn<QByteArray>("raw");
+        QTest::addColumn<QByteArray>("clean");
+        // Real reply from the Legion: "0x3" written over "not called".
+        QTest::newRow("stale tail") << QByteArray("0x3\0called", 10) << QByteArray("0x3");
+        QTest::newRow("buffer") << QByteArray("{0x01, 0x01, 0x03, 0x00}\0ed\n", 28) << QByteArray("{0x01, 0x01, 0x03, 0x00}");
+        QTest::newRow("no nul") << QByteArray("0x0\n") << QByteArray("0x0");
+        QTest::newRow("not called") << QByteArray("not called") << QByteArray("not called");
+    }
+
+    void cleanReply()
+    {
+        QFETCH(QByteArray, raw);
+        QFETCH(QByteArray, clean);
+        QCOMPARE(ProcAcpiCall::cleanReply(raw), clean);
+    }
+
+    void fanLayout_data()
+    {
+        QTest::addColumn<QByteArray>("reply");
+        QTest::addColumn<int>("layout");
+        QTest::addColumn<int>("error");
+        QTest::newRow("normal (all fans present)") << QByteArray("{0x0b, 0x00, 0x00, 0x00}") << 0x0b << 0;
+        QTest::newRow("top missing") << QByteArray("{0x0c, 0x00, 0x00, 0x00}") << 0x0c << 0;
+        QTest::newRow("no match: plain zero") << QByteArray("0x0") << 0 << 0;
+        QTest::newRow("garbage") << QByteArray("whatever") << -1 << int(HP::UnexpectedReply);
+        QTest::newRow("acpi error") << QByteArray("Error: AE_NOT_FOUND") << -1 << int(HP::AcpiCallFailed);
+    }
+
+    void fanLayout()
+    {
+        QFETCH(QByteArray, reply);
+        QFETCH(int, layout);
+        QFETCH(int, error);
+        FakeAcpi acpi;
+        acpi.layoutReply = reply;
+        EcService service(legion, acpi);
+        const EcService::LayoutResult r = service.layout();
+        QCOMPARE(r.error, error);
+        QCOMPARE(r.layout, layout);
+        QCOMPARE(acpi.setCalls(), 0); // read-only
+    }
+
+    void variantRoundTrip()
+    {
+        const QList<EcLightState> in{{1, 2, 3}, {2, 5, 1}};
+        const QList<EcLightState> out = HP::statesFromVariant(HP::statesToVariant(in));
+        QCOMPARE(out.size(), 2);
+        QCOMPARE(out.at(1).mode, quint8(5));
+    }
+};
+
+QTEST_GUILESS_MAIN(EcServiceTest)
+#include "ecservicetest.moc"

@@ -1,0 +1,6 @@
+# Glowzone: give the logged-in user access to the Lenovo ITE 8297 fan LED
+# controllers of the supported models – one line per USB ID listed in
+# src/model/modelprofile.cpp. "uaccess" grants access to whoever owns the
+# active local session – no group membership, nothing world-writable.
+# Must sort before 73-seat-late.rules, which applies the uaccess tag.
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="17ef", ATTRS{idProduct}=="c955", TAG+="uaccess"

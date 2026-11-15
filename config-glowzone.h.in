@@ -1,0 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Meluxon
+// SPDX-License-Identifier: GPL-2.0-or-later
+#pragma once
+
+#define GLOWZONE_VERSION_STRING "@PROJECT_VERSION@"
+#define GLOWZONE_APP_ID "@GLOWZONE_APP_ID@"
+#define GLOWZONE_HELPER_ID "@GLOWZONE_HELPER_ID@"

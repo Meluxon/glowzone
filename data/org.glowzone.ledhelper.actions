@@ -1,0 +1,51 @@
+[Domain]
+Name=Glowzone
+Icon=org.glowzone.Glowzone
+
+# Policy=yes: the user in the active local session may use these actions
+# without a password – the same trust the udev "uaccess" rule gives for the
+# fans. The helper accepts nothing but these whitelisted light settings.
+# To require your own password instead, change Policy to auth_self and add
+# Persistence=session.
+
+[org.glowzone.ledhelper.status]
+Name=Read the state of the case lights
+Name[de]=Zustand der Gehäusebeleuchtung lesen
+Name[fr]=Lire l’état de l’éclairage du boîtier
+Name[ja]=ケースライトの状態を読み取る
+Name[pl]=Odczyt stanu oświetlenia obudowy
+Description=Read the state of the case lights
+Description[de]=Zustand der Gehäusebeleuchtung lesen
+Description[fr]=Lire l’état de l’éclairage du boîtier
+Description[ja]=ケースライトの状態を読み取る
+Description[pl]=Odczyt stanu oświetlenia obudowy
+Policy=yes
+PolicyInactive=no
+
+[org.glowzone.ledhelper.layout]
+Name=Check which fans the BIOS detects
+Name[de]=Prüfen, welche Lüfter das BIOS erkennt
+Name[fr]=Vérifier quels ventilateurs le BIOS détecte
+Name[ja]=BIOS が検出しているファンを確認する
+Name[pl]=Sprawdzenie, które wentylatory wykrywa BIOS
+Description=Check which fans the BIOS detects
+Description[de]=Prüfen, welche Lüfter das BIOS erkennt
+Description[fr]=Vérifier quels ventilateurs le BIOS détecte
+Description[ja]=BIOS が検出しているファンを確認する
+Description[pl]=Sprawdzenie, które wentylatory wykrywa BIOS
+Policy=yes
+PolicyInactive=no
+
+[org.glowzone.ledhelper.setled]
+Name=Change the case lights
+Name[de]=Gehäusebeleuchtung ändern
+Name[fr]=Modifier l’éclairage du boîtier
+Name[ja]=ケースライトを変更する
+Name[pl]=Zmiana oświetlenia obudowy
+Description=Change the case lights
+Description[de]=Gehäusebeleuchtung ändern
+Description[fr]=Modifier l’éclairage du boîtier
+Description[ja]=ケースライトを変更する
+Description[pl]=Zmiana oświetlenia obudowy
+Policy=yes
+PolicyInactive=no

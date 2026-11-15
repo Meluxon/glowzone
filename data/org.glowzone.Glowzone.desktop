@@ -1,0 +1,23 @@
+[Desktop Entry]
+Type=Application
+Name=Glowzone
+GenericName=Lighting Control
+GenericName[de]=Beleuchtungssteuerung
+GenericName[fr]=Contrôle de l’éclairage
+GenericName[ja]=ライティング制御
+GenericName[pl]=Sterowanie oświetleniem
+Comment=Fan LEDs and case lights of supported Lenovo desktops
+Comment[de]=Lüfter-LEDs und Gehäusebeleuchtung unterstützter Lenovo-Desktop-PCs
+Comment[fr]=LED des ventilateurs et éclairage du boîtier des ordinateurs de bureau Lenovo pris en charge
+Comment[ja]=対応する Lenovo デスクトップのファン LED とケースライト
+Comment[pl]=Diody wentylatorów i oświetlenie obudowy obsługiwanych komputerów Lenovo
+Exec=glowzone
+Icon=org.glowzone.Glowzone
+Terminal=false
+Categories=Qt;KDE;Settings;HardwareSettings;
+Keywords=RGB;LED;fan;lighting;Lenovo;Legion;
+Keywords[de]=RGB;LED;Lüfter;Beleuchtung;Lenovo;Legion;
+Keywords[fr]=RGB;LED;ventilateur;éclairage;Lenovo;Legion;
+Keywords[ja]=RGB;LED;ファン;ライティング;ライト;Lenovo;Legion;
+Keywords[pl]=RGB;LED;wentylator;oświetlenie;Lenovo;Legion;
+StartupNotify=true

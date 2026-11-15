@@ -1,0 +1,19 @@
+# pacman reloads udev rules and the D-Bus configuration by itself
+# (systemd's udev hook, dbus-reload.hook); polkit picks up new actions on its own.
+
+post_install() {
+  if [ ! -e /proc/acpi/call ] && ! modinfo acpi_call >/dev/null 2>&1; then
+    echo ">>> Glowzone: the case lights (e.g. the front logo) need the acpi_call module."
+    echo "    Install acpi_call-dkms (or acpi_call / acpi_call-lts for your kernel)."
+  fi
+}
+
+post_remove() {
+  echo ">>> Glowzone removed. Not touched by pacman:"
+  echo "    - The lights keep their last setting (use scripts/uninstall.sh, which runs"
+  echo "      'glowzone reset' before removing, to turn everything off)."
+  echo "    - Your own data – packages never touch home directories:"
+  echo "      ~/.config/glowzone  ~/.local/state/glowzone  ~/.cache/glowzone"
+  echo "      ~/.config/autostart/org.glowzone.Glowzone.desktop (if autostart was enabled)"
+  echo "    - The acpi_call module stays loaded until reboot (or 'rmmod acpi_call')."
+}
