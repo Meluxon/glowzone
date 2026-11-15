@@ -39,6 +39,11 @@ add_subdirectory(data)
 
 ki18n_install(po)
 
+option(GLOWZONE_FUZZ "Build the fuzzer for the root helper (needs clang)" OFF)
+if(GLOWZONE_FUZZ)
+    add_subdirectory(fuzz)
+endif()
+
 if(BUILD_TESTING)
     find_package(Qt6 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Test)
     add_subdirectory(autotests)

@@ -188,7 +188,8 @@ until reboot (`sudo rmmod acpi_call`).
 
   It builds every ACPI call itself and only ever calls four GameZone methods:
   `0x0A` (fan layout), `0x0E` (lights fitted?), `0x0F` (GetLED) and `0x10`
-  (SetLED). The tests check this against a fake `acpi_call`.
+  (SetLED). The tests check this against a fake `acpi_call`, and a fuzzer
+  (see *Development*) checks that no request can produce any other call.
 * All three actions are allowed without a password for the active local
   session (the same trust as for the fans) and denied otherwise. To require
   your password instead, set `Policy=auth_self` and `Persistence=session` in
@@ -241,6 +242,17 @@ ctest --test-dir build
 
 The tests check report bytes against Vantage captures and the helper's checks
 against a fake `acpi_call`; they need no hardware.
+
+The root helper's request checks can also be fuzzed (clang/libFuzzer):
+
+```sh
+cmake -B build-fuzz -DCMAKE_CXX_COMPILER=clang++ -DGLOWZONE_FUZZ=ON
+cmake --build build-fuzz --target fuzz_setled
+build-fuzz/bin/fuzz_setled -max_total_time=300
+```
+
+It feeds random requests to the helper for every supported model and stops at
+the first ACPI call outside what that model allows.
 
 The reverse-DNS IDs (`org.glowzone.*`) are placeholders until the project has a
 public home; they are set in `CMakeLists.txt`.
