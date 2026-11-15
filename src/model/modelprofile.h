@@ -30,11 +30,14 @@ struct FanDef {
     const LedDef *led(const QString &idOrNumber) const;
 };
 
-// A light driven by the EC through GameZone WMI SetLED.
+// A light driven by the EC through GameZone WMI SetLED. Its colour is fixed
+// in hardware; the sidebar draws it with these two (0xRRGGBB).
 struct EcLightDef {
-    const char *id;            // "logo", "ambient"
+    const char *id;            // stable key for the CLI and profiles
     KLazyLocalizedString name;
     quint8 index;              // SetLED/GetLED light index
+    quint32 colour;            // the light itself
+    quint32 glow;              // the glow around it
 };
 
 // A fan-layout code from GameZone IsSupportLightingFeature (0x0A). The BIOS

@@ -31,9 +31,10 @@ const QList<ModelProfile> &supportedModels()
             },
             .acpiGameZone = "\\WMI2.WMG0",
             .biosLedPresence = 0x3,
+            // Both lights are cyan with a deep blue glow (the Legion logo colours).
             .ecLights = {
-                {"logo", kli18nc("@item light", "Front logo"), 1},
-                {"ambient", kli18nc("@item light", "Internal light"), 2},
+                {"logo", kli18nc("@item light", "Front logo"), 1, 0x3ac7fe, 0x1b50b2},
+                {"ambient", kli18nc("@item light", "Internal light"), 2, 0x3ac7fe, 0x1b50b2},
             },
             // Decoded from the DSDT (WMG0, method 0x0A) for this cooler type
             // (COL2/COL3); 0x0B observed with all fans present.

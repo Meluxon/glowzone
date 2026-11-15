@@ -19,65 +19,68 @@ namespace Glowzone::Gui
 using namespace Ite8297;
 
 // --- dots ---------------------------------------------------------------------
-// A dot is drawn from a list of parts (one, or two halves for a split fan).
-// Each part: {"k": kind, "c": colour}.
+// An entry's dot: one part, or two halves for a split double fan.
 
-enum DotKind { DotNone, DotUnknown, DotOff, DotSolid, DotRainbow, DotLegion };
+enum class DotKind { Unknown, Off, Solid, Rainbow, Glow };
 
-// The Legion logo: a bright cyan core inside a deep blue glow.
-static const QColor LegionCore(0x3a, 0xc7, 0xfe);
-static const QColor LegionRing(0x1b, 0x50, 0xb2);
+struct DotPart {
+    DotPart(DotKind kind = DotKind::Unknown, const QColor &fill = {}, const QColor &outline = {})
+        : kind(kind)
+        , fill(fill)
+        , outline(outline)
+    {
+    }
+    DotKind kind;
+    QColor fill;    // Solid, Glow
+    QColor outline; // Glow
+};
+using Dot = QList<DotPart>;
 
-static QVariantMap dotPart(DotKind kind, const QColor &colour = {})
-{
-    return {{QStringLiteral("k"), int(kind)}, {QStringLiteral("c"), colour}};
-}
-
-static QVariantMap ledDot(const HeaderSetting &s, bool known)
+static DotPart ledDot(const HeaderSetting &s, bool known)
 {
     if (!known) {
-        return dotPart(DotUnknown);
+        return {DotKind::Unknown};
+    }
+    if (s.mode == Mode::Off) {
+        return {DotKind::Off};
     }
     const ModeInfo *info = modeInfo(s.mode);
-    if (s.mode == Mode::Off) {
-        return dotPart(DotOff);
-    }
     if (info && info->usesColour) {
-        return dotPart(DotSolid, QColor(s.colour.r, s.colour.g, s.colour.b));
+        return {DotKind::Solid, QColor(s.colour.r, s.colour.g, s.colour.b)};
     }
-    return dotPart(DotRainbow);
+    return {DotKind::Rainbow};
 }
 
-static void paintDot(QPainter *p, const QRectF &r, const QVariantList &parts, const QPalette &pal)
+static void paintDot(QPainter *p, const QRectF &r, const Dot &parts, const QPalette &pal)
 {
     p->save();
     p->setRenderHint(QPainter::Antialiasing);
-    const qreal n = parts.size();
+    const qreal n = qreal(parts.size());
     for (int i = 0; i < parts.size(); ++i) {
-        const QVariantMap part = parts.at(i).toMap();
+        const DotPart &part = parts.at(i);
         p->save();
         QPainterPath clip;
         clip.addRect(QRectF(r.x() + r.width() * i / n, r.y() - 1, r.width() / n, r.height() + 2));
         p->setClipPath(clip);
         const QColor outline = pal.color(QPalette::Mid);
-        switch (part.value(QStringLiteral("k")).toInt()) {
-        case DotUnknown:
+        switch (part.kind) {
+        case DotKind::Unknown:
             p->setPen(QPen(outline, 1, Qt::DotLine));
             p->setBrush(Qt::NoBrush);
             break;
-        case DotOff:
+        case DotKind::Off:
             p->setPen(QPen(outline, 1));
             p->setBrush(Qt::NoBrush);
             break;
-        case DotSolid:
+        case DotKind::Solid:
             p->setPen(QPen(outline, 0.5));
-            p->setBrush(part.value(QStringLiteral("c")).value<QColor>());
+            p->setBrush(part.fill);
             break;
-        case DotLegion:
-            p->setPen(QPen(LegionRing, 1.5));
-            p->setBrush(LegionCore);
+        case DotKind::Glow:
+            p->setPen(QPen(part.outline, 1.5));
+            p->setBrush(part.fill);
             break;
-        case DotRainbow: {
+        case DotKind::Rainbow: {
             QConicalGradient g(r.center(), 90);
             const QList<QColor> colours{Qt::red, QColor(255, 160, 0), Qt::yellow, Qt::green, QColor(0, 140, 255), QColor(150, 60, 255), Qt::red};
             for (int c = 0; c < colours.size(); ++c) {
@@ -87,9 +90,6 @@ static void paintDot(QPainter *p, const QRectF &r, const QVariantList &parts, co
             p->setBrush(g);
             break;
         }
-        default:
-            p->restore();
-            continue;
         }
         p->drawEllipse(r.adjusted(0.5, 0.5, -0.5, -0.5));
         p->restore();
@@ -183,7 +183,7 @@ public:
         if (kind == Sidebar::Fan || kind == Sidebar::Light || kind == Sidebar::Led) {
             const int d = kind == Sidebar::Led ? fm.height() * 2 / 3 : fm.height();
             const QRectF dot(r.x(), r.center().y() - d / 2.0, d, d);
-            paintDot(p, dot, index.data(Sidebar::DotRole).toList(), opt.palette);
+            paintDot(p, dot, index.data(Sidebar::DotRole).value<Dot>(), opt.palette);
             const QRect textRect = r.adjusted(d + pad * 2, 0, 0, 0);
             if (kind == Sidebar::Led) {
                 p->setPen(text);
@@ -336,7 +336,7 @@ void Sidebar::refresh()
         const bool linked = !fan.isDouble() || m_lighting->isLinked(fan);
         const quint8 first = fan.leds.constFirst().header;
 
-        QVariantList dot;
+        Dot dot;
         QString subtitle;
         if (linked) {
             dot << ledDot(m_lighting->led(first), m_lighting->isKnown(first));
@@ -350,14 +350,14 @@ void Sidebar::refresh()
         if (m_lighting->isUndetected(fan)) {
             subtitle = i18nc("@info %1 is the mode; the BIOS doesn't see the fan", "%1 · not detected", subtitle);
         }
-        item->setData(0, DotRole, dot);
+        item->setData(0, DotRole, QVariant::fromValue(dot));
         item->setData(0, SubtitleRole, subtitle);
 
         for (int c = 0; c < item->childCount(); ++c) {
             QTreeWidgetItem *child = item->child(c);
             const quint8 header = quint8(child->data(0, HeaderRole).toInt());
             child->setHidden(linked);
-            child->setData(0, DotRole, QVariantList{ledDot(m_lighting->led(header), m_lighting->isKnown(header))});
+            child->setData(0, DotRole, QVariant::fromValue(Dot{ledDot(m_lighting->led(header), m_lighting->isKnown(header))}));
             child->setData(0, SubtitleRole, m_lighting->isKnown(header) ? modeName(m_lighting->led(header)) : notSet);
         }
         if (linked && currentItem() && currentItem()->parent() == item) {
@@ -366,15 +366,16 @@ void Sidebar::refresh()
     }
 
     for (int i = 0; i < m_lightItems.size(); ++i) {
-        const auto state = m_lighting->light(model.ecLights.at(i).index);
-        QVariantMap part = dotPart(DotUnknown);
+        const EcLightDef &light = model.ecLights.at(i);
+        const auto state = m_lighting->light(light.index);
+        DotPart part{DotKind::Unknown};
         QString subtitle = i18nc("@info light state not read yet", "Unknown");
         if (state) {
             const EcLights::ModeInfo *m = EcLights::modeInfo(state->mode);
             subtitle = m ? m->name.toString() : subtitle;
-            part = state->mode == EcLights::ModeOff ? dotPart(DotOff) : dotPart(DotLegion);
+            part = state->mode == EcLights::ModeOff ? DotPart{DotKind::Off} : DotPart{DotKind::Glow, QColor::fromRgb(light.colour), QColor::fromRgb(light.glow)};
         }
-        m_lightItems.at(i)->setData(0, DotRole, QVariantList{part});
+        m_lightItems.at(i)->setData(0, DotRole, QVariant::fromValue(Dot{part}));
         m_lightItems.at(i)->setData(0, SubtitleRole, subtitle);
     }
     // Showing or hiding the LED entries can drop the selection while the item
