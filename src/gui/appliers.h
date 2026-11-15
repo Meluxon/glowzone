@@ -58,19 +58,19 @@ public:
     void setWindow(QWindow *window) { m_window = window; } // for KAuth/polkit
 
     void refresh();
-    void queue(const EcRequest &request);
+    void queue(EcRequest request);
     bool isBusy() const;
     void finish(); // send anything queued right away; idle() follows
 
 Q_SIGNALS:
-    void stateChanged(const QList<EcLightState> &lights);
+    void stateChanged(const QList<Glowzone::EcLightState> &lights);
     void failed(const QString &error);
     void idle();
 
 private:
     void startNext();
 
-    bool isNoOp(const EcRequest &request) const;
+    bool isNoOp(EcRequest request) const;
 
     QMap<quint8, EcRequest> m_pending;
     QMap<quint8, EcLightState> m_known; // last state reported by the helper

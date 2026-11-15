@@ -19,7 +19,7 @@ public:
     explicit ColourButton(QWidget *parent = nullptr);
 
     Ite8297::Rgb colour() const { return m_colour; }
-    void setColour(const Ite8297::Rgb &colour); // no signal
+    void setColour(Ite8297::Rgb colour); // no signal
 
 Q_SIGNALS:
     void colourEdited(const Ite8297::Rgb &colour);

@@ -36,7 +36,7 @@ struct DotPart {
 };
 using Dot = QList<DotPart>;
 
-static DotPart ledDot(const HeaderSetting &s, bool known)
+static DotPart ledDot(HeaderSetting s, bool known)
 {
     if (!known) {
         return {DotKind::Unknown};
@@ -84,7 +84,7 @@ static void paintDot(QPainter *p, const QRectF &r, const Dot &parts, const QPale
             QConicalGradient g(r.center(), 90);
             const QList<QColor> colours{Qt::red, QColor(255, 160, 0), Qt::yellow, Qt::green, QColor(0, 140, 255), QColor(150, 60, 255), Qt::red};
             for (int c = 0; c < colours.size(); ++c) {
-                g.setColorAt(qreal(c) / (colours.size() - 1), colours.at(c));
+                g.setColorAt(qreal(c) / qreal(colours.size() - 1), colours.at(c));
             }
             p->setPen(QPen(outline, 0.5));
             p->setBrush(g);
@@ -325,7 +325,7 @@ void Sidebar::refresh()
 {
     const ModelProfile &model = m_lighting->model();
     const QString notSet = i18nc("@info fan state", "Not set yet");
-    auto modeName = [](const HeaderSetting &s) {
+    auto modeName = [](HeaderSetting s) {
         const ModeInfo *m = modeInfo(s.mode);
         return m ? m->name.toString() : QString();
     };
@@ -469,7 +469,7 @@ void Sidebar::itemTriggered(QTreeWidgetItem *item)
     }
 }
 
-void Sidebar::contextMenu(const QPoint &pos)
+void Sidebar::contextMenu(QPoint pos)
 {
     QTreeWidgetItem *item = itemAt(pos);
     if (!item || item->data(0, KindRole).toInt() != ProfileItem) {

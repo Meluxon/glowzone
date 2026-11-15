@@ -48,7 +48,7 @@ Q_SIGNALS:
 private:
     void itemSelected(QTreeWidgetItem *item);
     void itemTriggered(QTreeWidgetItem *item);
-    void contextMenu(const QPoint &pos);
+    void contextMenu(QPoint pos);
     QTreeWidgetItem *addSection(const QString &title);
     void fitWidth();
 

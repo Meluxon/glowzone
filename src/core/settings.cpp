@@ -13,20 +13,25 @@ QString filePath()
     return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + QLatin1String("/glowzone.conf");
 }
 
+// The file is opened per call: the window and the CLI may both change it.
+
 std::optional<bool> linked(const QString &fanId)
 {
-    const QVariant v = QSettings(filePath(), QSettings::IniFormat).value(QLatin1String("links/") + fanId);
+    QSettings s(filePath(), QSettings::IniFormat);
+    const QVariant v = s.value(QLatin1String("links/") + fanId);
     return v.isValid() ? std::optional<bool>(v.toBool()) : std::nullopt;
 }
 
-void setLinked(const QString &fanId, bool linked)
+void setLinked(const QString &fanId, bool isLinked)
 {
-    QSettings(filePath(), QSettings::IniFormat).setValue(QLatin1String("links/") + fanId, linked);
+    QSettings s(filePath(), QSettings::IniFormat);
+    s.setValue(QLatin1String("links/") + fanId, isLinked);
 }
 
 QString currentProfile()
 {
-    return QSettings(filePath(), QSettings::IniFormat).value(QLatin1String("profiles/current")).toString();
+    QSettings s(filePath(), QSettings::IniFormat);
+    return s.value(QLatin1String("profiles/current")).toString();
 }
 
 void setCurrentProfile(const QString &name)
@@ -41,12 +46,14 @@ void setCurrentProfile(const QString &name)
 
 QSize windowSize()
 {
-    return QSettings(filePath(), QSettings::IniFormat).value(QLatin1String("window/size")).toSize();
+    QSettings s(filePath(), QSettings::IniFormat);
+    return s.value(QLatin1String("window/size")).toSize();
 }
 
-void setWindowSize(const QSize &size)
+void setWindowSize(QSize size)
 {
-    QSettings(filePath(), QSettings::IniFormat).setValue(QLatin1String("window/size"), size);
+    QSettings s(filePath(), QSettings::IniFormat);
+    s.setValue(QLatin1String("window/size"), size);
 }
 
 } // namespace Glowzone::Settings

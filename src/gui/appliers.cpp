@@ -66,7 +66,7 @@ void LightApplier::refresh()
     startNext();
 }
 
-void LightApplier::queue(const EcRequest &request)
+void LightApplier::queue(EcRequest request)
 {
     if (isNoOp(request)) {
         m_pending.remove(request.index); // back to where it was: nothing to send
@@ -79,7 +79,7 @@ void LightApplier::queue(const EcRequest &request)
     m_timer.start();
 }
 
-bool LightApplier::isNoOp(const EcRequest &request) const
+bool LightApplier::isNoOp(EcRequest request) const
 {
     const auto it = m_known.constFind(request.index);
     if (it == m_known.cend()) {

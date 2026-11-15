@@ -14,7 +14,7 @@ QString filePath();
 
 // Linked / split state of a double fan; nullopt if never chosen.
 std::optional<bool> linked(const QString &fanId);
-void setLinked(const QString &fanId, bool linked);
+void setLinked(const QString &fanId, bool isLinked);
 
 // The profile applied last (empty if none, or if it was deleted).
 QString currentProfile();
@@ -22,6 +22,6 @@ void setCurrentProfile(const QString &name);
 
 // Window size, restored on the next start (empty if never stored).
 QSize windowSize();
-void setWindowSize(const QSize &size);
+void setWindowSize(QSize size);
 
 } // namespace Glowzone::Settings

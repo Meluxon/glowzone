@@ -95,21 +95,12 @@ void Lighting::checkFanLayout()
 
 bool Lighting::isUndetected(const FanDef &fan) const
 {
-    for (const FanLayoutDef &def : m_model.fanLayouts) {
-        if (def.code == m_fanLayout) {
-            for (const char *id : def.undetectedFans) {
-                if (qstrcmp(id, fan.id) == 0) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
+    return m_model.undetectedFans(m_fanLayout).contains(&fan);
 }
 
 HeaderSetting Lighting::led(quint8 header) const
 {
-    return m_fans.value(header, HeaderSetting{header, Mode::Off, 1, 2, Rgb{0xff, 0xff, 0xff}});
+    return m_fans.value(header, initialSetting(header));
 }
 
 bool Lighting::isLinked(const FanDef &fan) const
@@ -117,7 +108,7 @@ bool Lighting::isLinked(const FanDef &fan) const
     return m_links.value(QLatin1String(fan.id), true);
 }
 
-void Lighting::setLed(const FanDef &fan, quint8 header, const HeaderSetting &values)
+void Lighting::setLed(const FanDef &fan, quint8 header, HeaderSetting values)
 {
     QList<HeaderSetting> changedLeds;
     for (const LedDef &led : fan.leds) {

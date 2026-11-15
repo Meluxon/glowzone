@@ -71,12 +71,17 @@ std::optional<Rgb> parseRgb(const QString &text)
     return Rgb{quint8(v >> 16), quint8(v >> 8), quint8(v)};
 }
 
-QString rgbToString(const Rgb &c)
+QString rgbToString(Rgb c)
 {
     return QStringLiteral("#%1%2%3")
         .arg(c.r, 2, 16, QLatin1Char('0'))
         .arg(c.g, 2, 16, QLatin1Char('0'))
         .arg(c.b, 2, 16, QLatin1Char('0'));
+}
+
+HeaderSetting initialSetting(quint8 header)
+{
+    return {header, Mode::Off, MinLevel, 2, Rgb{0xff, 0xff, 0xff}};
 }
 
 // Group A: headers 0x10–0x13, commit 0x28 with mask 0x0F (bit n = header 0x10+n).
@@ -105,7 +110,7 @@ static QByteArray emptyReport()
     return r;
 }
 
-QByteArray settingsReport(const HeaderSetting &s)
+QByteArray settingsReport(HeaderSetting s)
 {
     QByteArray r = emptyReport();
     r[1] = char(s.header);

@@ -4,6 +4,7 @@
 #include "lighting.h"
 
 #include "config-glowzone.h"
+#include "core/eclights.h"
 
 #include <KCoreAddons>
 #include <KLocalizedString>
@@ -50,10 +51,28 @@ AboutDialog::AboutDialog(const Lighting *lighting, QWidget *parent)
     note->setWordWrap(true);
     layout->addWidget(note);
 
-    const QString fans = lighting->fansAvailable() ? i18nc("@info hardware state", "Connected") : i18nc("@info hardware state", "Not found");
-    const QString lights = lighting->lightsAvailable() ? i18nc("@info hardware state", "Available")
-        : lighting->lightsFailed()                     ? i18nc("@info hardware state", "Not available")
-                                                       : i18nc("@info hardware state", "Not read yet");
+    // Each value twice: translated for the dialog, English for the bug report.
+    struct State {
+        QString shown;
+        QString report;
+    };
+    const State fans = lighting->fansAvailable() ? State{i18nc("@info hardware state", "Connected"), QStringLiteral("connected")}
+                                                 : State{i18nc("@info hardware state", "Not found"), QStringLiteral("not found")};
+    State lights{i18nc("@info hardware state", "Not read yet"), QStringLiteral("not read yet")};
+    if (lighting->lightsAvailable()) {
+        lights = {i18nc("@info hardware state", "Available"), QStringLiteral("available")};
+    } else if (lighting->lightsFailed()) {
+        lights = {i18nc("@info hardware state", "Not available"), QStringLiteral("not available")};
+    }
+    const int layoutCode = lighting->fanLayout();
+    State detection{i18nc("@info hardware state", "Not read yet"), QStringLiteral("unknown")};
+    if (layoutCode == model.normalFanLayout) {
+        detection = {i18nc("@info BIOS fan detection, %1 layout code", "All fans detected (layout %1)", EcLights::layoutCode(layoutCode)),
+                     EcLights::layoutCode(layoutCode)};
+    } else if (layoutCode >= 0) {
+        detection = {i18nc("@info BIOS fan detection, %1 layout code", "Unusual layout %1 – see the message in the window", EcLights::layoutCode(layoutCode)),
+                     EcLights::layoutCode(layoutCode) + QLatin1String(", normally ") + EcLights::layoutCode(model.normalFanLayout)};
+    }
     const QString usbId = QStringLiteral("%1:%2")
                               .arg(model.usbVendorId, 4, 16, QLatin1Char('0'))
                               .arg(model.usbProductId, 4, 16, QLatin1Char('0'))
@@ -68,42 +87,24 @@ AboutDialog::AboutDialog(const Lighting *lighting, QWidget *parent)
     };
     addRow(i18nc("@label", "Computer:"), model.displayName());
     addRow(i18nc("@label", "Board:"), QLatin1String(model.boardName));
-    addRow(i18nc("@label", "Fan controller:"), i18nc("@info USB id, state", "USB %1 – %2", usbId, fans));
+    addRow(i18nc("@label", "Fan controller:"), i18nc("@info USB id, state", "USB %1 – %2", usbId, fans.shown));
     if (!model.ecLights.isEmpty()) {
-        addRow(i18nc("@label", "Case lights:"), lights);
+        addRow(i18nc("@label", "Case lights:"), lights.shown);
     }
-    QString detection;
-    if (lighting->fanLayout() < 0) {
-        detection = i18nc("@info hardware state", "Not read yet");
-    } else if (lighting->fanLayout() == model.normalFanLayout) {
-        detection = i18nc("@info BIOS fan detection, %1 layout code", "All fans detected (layout 0x%1)", QString::number(lighting->fanLayout(), 16));
-    } else {
-        detection = i18nc("@info BIOS fan detection, %1 layout code", "Unusual layout 0x%1 – see the message in the window", QString::number(lighting->fanLayout(), 16));
-    }
-    addRow(i18nc("@label BIOS fan detection", "Fan detection:"), detection);
+    addRow(i18nc("@label BIOS fan detection", "Fan detection:"), detection.shown);
     addRow(i18nc("@label", "Licence:"), QStringLiteral("GPL-2.0-or-later"));
     addRow(i18nc("@label", "Copyright:"), i18n("© 2026 Meluxon"));
     layout->addLayout(form);
 
-    m_report = QStringLiteral("Glowzone %1\n"
-                              "Computer: %2 (board %3)\n"
-                              "Fan controller: USB %4 – %5\n"
-                              "Case lights: %6\n"
-                              "BIOS fan layout: %10 (normal %11)\n"
-                              "Qt: %7, KDE Frameworks: %8\n"
-                              "System: %9")
-                   .arg(QStringLiteral(GLOWZONE_VERSION_STRING),
-                        model.displayName(),
-                        QLatin1String(model.boardName),
-                        usbId,
-                        lighting->fansAvailable() ? QStringLiteral("connected") : QStringLiteral("not found"),
-                        lighting->lightsAvailable() ? QStringLiteral("available")
-                                                    : (lighting->lightsFailed() ? QStringLiteral("not available") : QStringLiteral("not read yet")),
-                        QString::fromLatin1(qVersion()),
-                        KCoreAddons::versionString(),
-                        QSysInfo::prettyProductName() + QLatin1String(" (") + QSysInfo::kernelVersion() + QLatin1Char(')'))
-                   .arg(lighting->fanLayout() < 0 ? QStringLiteral("unknown") : QStringLiteral("0x") + QString::number(lighting->fanLayout(), 16),
-                        QStringLiteral("0x") + QString::number(model.normalFanLayout, 16));
+    m_report = QStringList{
+        QStringLiteral("Glowzone ") + QStringLiteral(GLOWZONE_VERSION_STRING),
+        QStringLiteral("Computer: %1 (board %2)").arg(model.displayName(), QLatin1String(model.boardName)),
+        QStringLiteral("Fan controller: USB %1 – %2").arg(usbId, fans.report),
+        QStringLiteral("Case lights: ") + lights.report,
+        QStringLiteral("BIOS fan layout: ") + detection.report,
+        QStringLiteral("Qt: %1, KDE Frameworks: %2").arg(QString::fromLatin1(qVersion()), KCoreAddons::versionString()),
+        QStringLiteral("System: %1 (%2)").arg(QSysInfo::prettyProductName(), QSysInfo::kernelVersion()),
+    }.join(QLatin1Char('\n'));
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
     auto *copy = buttons->addButton(i18nc("@action:button", "Copy to Clipboard"), QDialogButtonBox::ActionRole);

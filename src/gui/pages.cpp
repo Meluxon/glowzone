@@ -61,7 +61,7 @@ FanPage::FanPage(const FanDef &fan, Lighting *lighting, QWidget *parent)
         }
         auto *ledForm = new LedForm(m_lighting->model(), form, this);
         const quint8 header = led.header;
-        connect(ledForm, &LedForm::edited, this, [this, header](const Ite8297::HeaderSetting &values) {
+        connect(ledForm, &LedForm::edited, this, [this, header](Ite8297::HeaderSetting values) {
             m_lighting->setLed(m_fan, header, values);
         });
         m_headings << heading;

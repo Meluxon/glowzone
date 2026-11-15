@@ -39,7 +39,7 @@ public:
     // Adds its rows to the given form layout; offers what the model offers.
     LedForm(const ModelProfile &model, QFormLayout *form, QWidget *parent);
 
-    void setValues(const Ite8297::HeaderSetting &values, bool known);
+    void setValues(Ite8297::HeaderSetting values, bool known);
     Ite8297::HeaderSetting values() const;
     void setEnabled(bool enabled);
     void setVisible(bool visible);

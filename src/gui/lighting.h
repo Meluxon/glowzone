@@ -36,7 +36,7 @@ public:
     Ite8297::HeaderSetting led(quint8 header) const; // a default if unknown
     bool isLinked(const FanDef &fan) const;
     // Linked double fan: the values go to all its LEDs.
-    void setLed(const FanDef &fan, quint8 header, const Ite8297::HeaderSetting &values);
+    void setLed(const FanDef &fan, quint8 header, Ite8297::HeaderSetting values);
     // Linking copies the first LED's settings to the others.
     void setLinked(const FanDef &fan, bool linked);
 

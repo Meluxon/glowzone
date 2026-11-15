@@ -103,6 +103,21 @@ const FanDef *ModelProfile::fan(const QString &id) const
     return nullptr;
 }
 
+QList<const FanDef *> ModelProfile::undetectedFans(int layout) const
+{
+    QList<const FanDef *> list;
+    for (const FanLayoutDef &def : fanLayouts) {
+        if (def.code == layout) {
+            for (const char *id : def.undetectedFans) {
+                if (const FanDef *f = fan(QLatin1String(id))) {
+                    list << f;
+                }
+            }
+        }
+    }
+    return list;
+}
+
 const EcLightDef *ModelProfile::ecLight(const QString &id) const
 {
     for (const EcLightDef &l : ecLights) {

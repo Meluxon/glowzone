@@ -53,7 +53,9 @@ KAuth::ExecuteJob *layoutJob(QWindow *parent = nullptr);
 std::optional<int> layoutResult(KAuth::ExecuteJob *job, QString *error);
 std::optional<int> layout(QString *error); // blocking, for the CLI
 
-// Empty if the layout is the normal one, else a translated explanation.
-QString layoutWarning(const ModelProfile &model, int layout);
+// "0x0b"
+QString layoutCode(int code);
+// Empty if the code is the model's normal one, else a translated explanation.
+QString layoutWarning(const ModelProfile &model, int code);
 
 } // namespace Glowzone::EcLights

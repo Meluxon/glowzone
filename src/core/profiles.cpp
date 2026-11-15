@@ -183,9 +183,11 @@ std::optional<Profile> find(const ModelProfile &model, const QString &name)
 // "Night (blue)" -> "night-blue.json"; unique within the directory.
 static QString newFilePath(const QString &name)
 {
+    static const QRegularExpression separators(QStringLiteral("[^a-z0-9]+"));
+    static const QRegularExpression edges(QStringLiteral("^-+|-+$"));
     QString slug = name.toLower();
-    slug.replace(QRegularExpression(QStringLiteral("[^a-z0-9]+")), QStringLiteral("-"));
-    slug.remove(QRegularExpression(QStringLiteral("^-+|-+$")));
+    slug.replace(separators, QStringLiteral("-"));
+    slug.remove(edges);
     if (slug.isEmpty()) {
         slug = QStringLiteral("profile");
     }

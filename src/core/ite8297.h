@@ -63,7 +63,7 @@ struct Rgb {
 
 // "#rrggbb" or "rrggbb"
 std::optional<Rgb> parseRgb(const QString &text);
-QString rgbToString(const Rgb &c); // "#rrggbb"
+QString rgbToString(Rgb c); // "#rrggbb"
 
 struct HeaderSetting {
     quint8 header = 0;
@@ -74,12 +74,16 @@ struct HeaderSetting {
     bool operator==(const HeaderSetting &) const = default;
 };
 
+// The values used for a header Glowzone hasn't set yet: off, but white and
+// at the lowest speed, so choosing a lit mode shows something sensible.
+HeaderSetting initialSetting(quint8 header);
+
 enum class Group { A, B };
 
 std::optional<Group> groupOf(quint8 header);
 bool isKnownHeader(quint8 header);
 
-QByteArray settingsReport(const HeaderSetting &s);
+QByteArray settingsReport(HeaderSetting s);
 QByteArray commitReport(Group g);
 
 // The full sequence for a batch: settings reports, then one commit per group touched.

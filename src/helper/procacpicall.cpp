@@ -10,11 +10,14 @@
 namespace Glowzone
 {
 
-static const QString procPath = QStringLiteral("/proc/acpi/call");
+static QString procPath()
+{
+    return QStringLiteral("/proc/acpi/call");
+}
 
 bool ProcAcpiCall::ensureReady(QString *detail)
 {
-    if (QFileInfo::exists(procPath)) {
+    if (QFileInfo::exists(procPath())) {
         return true;
     }
 
@@ -39,11 +42,11 @@ bool ProcAcpiCall::ensureReady(QString *detail)
         return false;
     }
 
-    for (int i = 0; i < 20 && !QFileInfo::exists(procPath); ++i) {
+    for (int i = 0; i < 20 && !QFileInfo::exists(procPath()); ++i) {
         QThread::msleep(50);
     }
-    if (!QFileInfo::exists(procPath)) {
-        *detail = QStringLiteral("acpi_call loaded but %1 did not appear").arg(procPath);
+    if (!QFileInfo::exists(procPath())) {
+        *detail = QStringLiteral("acpi_call loaded but %1 did not appear").arg(procPath());
         return false;
     }
     return true;
@@ -52,7 +55,7 @@ bool ProcAcpiCall::ensureReady(QString *detail)
 std::optional<QByteArray> ProcAcpiCall::call(const QByteArray &command, QString *detail)
 {
     // acpi_call: write the call, then read the result back from the same file.
-    QFile out(procPath);
+    QFile out(procPath());
     if (!out.open(QIODevice::WriteOnly | QIODevice::Unbuffered)) {
         *detail = out.errorString();
         return std::nullopt;
@@ -63,7 +66,7 @@ std::optional<QByteArray> ProcAcpiCall::call(const QByteArray &command, QString 
     }
     out.close();
 
-    QFile in(procPath);
+    QFile in(procPath());
     if (!in.open(QIODevice::ReadOnly)) {
         *detail = in.errorString();
         return std::nullopt;

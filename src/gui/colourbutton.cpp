@@ -9,7 +9,7 @@
 namespace Glowzone::Gui
 {
 
-static QColor toQColor(const Ite8297::Rgb &c)
+static QColor toQColor(Ite8297::Rgb c)
 {
     return QColor(c.r, c.g, c.b);
 }
@@ -28,7 +28,7 @@ ColourButton::ColourButton(QWidget *parent)
     updateIcon();
 }
 
-void ColourButton::setColour(const Ite8297::Rgb &colour)
+void ColourButton::setColour(Ite8297::Rgb colour)
 {
     m_colour = colour;
     updateIcon();

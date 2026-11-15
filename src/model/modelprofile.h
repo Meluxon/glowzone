@@ -80,6 +80,8 @@ struct ModelProfile {
     const FanDef *fan(const QString &id) const;
     const EcLightDef *ecLight(const QString &id) const;
     const EcLightDef *ecLightByIndex(quint8 index) const;
+    // Fans the BIOS misses with this fan-layout code (empty if none or unknown).
+    QList<const FanDef *> undetectedFans(int layout) const;
     bool hasFanMode(quint8 value) const { return fanModes.contains(value); }
     bool hasEcLightMode(quint8 value) const { return ecLightModes.contains(value); }
 };

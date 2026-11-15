@@ -8,6 +8,8 @@
 #include <KAuth/ExecuteJob>
 #include <KLocalizedString>
 
+#include <memory>
+
 namespace Glowzone::EcLights
 {
 
@@ -132,23 +134,22 @@ std::optional<QList<EcLightState>> result(KAuth::ExecuteJob *job, QString *error
     return HP::statesFromVariant(job->data());
 }
 
-static std::optional<QList<EcLightState>> runBlocking(KAuth::ExecuteJob *job, QString *error)
+// For the CLI: runs the job to the end and keeps it for reading the result.
+static std::unique_ptr<KAuth::ExecuteJob> runToEnd(KAuth::ExecuteJob *job)
 {
     job->setAutoDelete(false);
     job->exec();
-    const auto r = result(job, error);
-    delete job;
-    return r;
+    return std::unique_ptr<KAuth::ExecuteJob>(job);
 }
 
 std::optional<QList<EcLightState>> status(QString *error)
 {
-    return runBlocking(statusJob(), error);
+    return result(runToEnd(statusJob()).get(), error);
 }
 
 std::optional<QList<EcLightState>> set(const QList<EcRequest> &requests, QString *error)
 {
-    return runBlocking(setJob(requests), error);
+    return result(runToEnd(setJob(requests)).get(), error);
 }
 
 KAuth::ExecuteJob *layoutJob(QWindow *parent)
@@ -173,40 +174,38 @@ std::optional<int> layoutResult(KAuth::ExecuteJob *job, QString *error)
 
 std::optional<int> layout(QString *error)
 {
-    KAuth::ExecuteJob *job = layoutJob();
-    job->setAutoDelete(false);
-    job->exec();
-    const auto r = layoutResult(job, error);
-    delete job;
-    return r;
+    return layoutResult(runToEnd(layoutJob()).get(), error);
 }
 
-QString layoutWarning(const ModelProfile &model, int layout)
+QString layoutCode(int code)
 {
-    if (layout == model.normalFanLayout) {
+    return QStringLiteral("0x%1").arg(code, 2, 16, QLatin1Char('0'));
+}
+
+QString layoutWarning(const ModelProfile &model, int code)
+{
+    if (code == model.normalFanLayout) {
         return {};
     }
-    const QString codes = QStringLiteral("0x%1 / 0x%2").arg(layout, 2, 16, QLatin1Char('0')).arg(model.normalFanLayout, 2, 16, QLatin1Char('0'));
     QStringList missing;
-    for (const FanLayoutDef &def : model.fanLayouts) {
-        if (def.code == layout) {
-            for (const char *id : def.undetectedFans) {
-                if (const FanDef *fan = model.fan(QLatin1String(id))) {
-                    missing << fan->name.toString();
-                }
-            }
-        }
+    for (const FanDef *fan : model.undetectedFans(code)) {
+        missing << fan->name.toString();
     }
     const QString why = i18n("This is a BIOS detection glitch that can happen after a cold start, when a fan isn’t spinning yet. "
                              "The fan LEDs usually still work, and your settings are unchanged. A reboot normally clears it.");
     if (!missing.isEmpty()) {
-        return i18nc("%1 fan names, %2 layout codes, %3 explanation",
-                     "The BIOS doesn’t detect these fans right now: %1 (fan layout %2).\n%3",
+        return i18nc("%1 fan names, %2 and %3 layout codes, %4 explanation",
+                     "The BIOS doesn’t detect these fans right now: %1 (fan layout %2, normally %3).\n%4",
                      missing.join(QLatin1String(", ")),
-                     codes,
+                     layoutCode(code),
+                     layoutCode(model.normalFanLayout),
                      why);
     }
-    return i18nc("%1 layout codes, %2 explanation", "The BIOS reports an unusual fan layout right now (%1); a fan may not be detected.\n%2", codes, why);
+    return i18nc("%1 and %2 layout codes, %3 explanation",
+                 "The BIOS reports an unusual fan layout right now (%1, normally %2); a fan may not be detected.\n%3",
+                 layoutCode(code),
+                 layoutCode(model.normalFanLayout),
+                 why);
 }
 
 } // namespace Glowzone::EcLights

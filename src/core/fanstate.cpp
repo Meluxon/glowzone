@@ -63,14 +63,14 @@ static Headers parseHeaders(const QJsonObject &headers)
     return result;
 }
 
-bool fitsModel(const ModelProfile &model, const Ite8297::HeaderSetting &s)
+bool fitsModel(const ModelProfile &model, Ite8297::HeaderSetting setting)
 {
     bool ownHeader = false;
     for (const FanDef &fan : model.fans) {
-        ownHeader = ownHeader || fan.headers().contains(s.header);
+        ownHeader = ownHeader || fan.headers().contains(setting.header);
     }
-    return ownHeader && model.hasFanMode(quint8(s.mode)) && s.speed >= Ite8297::MinLevel && s.speed <= model.fanLevels
-        && s.brightness >= Ite8297::MinLevel && s.brightness <= model.fanLevels;
+    return ownHeader && model.hasFanMode(quint8(setting.mode)) && setting.speed >= Ite8297::MinLevel && setting.speed <= model.fanLevels
+        && setting.brightness >= Ite8297::MinLevel && setting.brightness <= model.fanLevels;
 }
 
 Headers headersFromJson(const QJsonObject &headers, const ModelProfile &model)

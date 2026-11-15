@@ -74,7 +74,7 @@ LedForm::LedForm(const ModelProfile &model, QFormLayout *form, QWidget *parent)
     updateRows();
 }
 
-void LedForm::setValues(const HeaderSetting &values, bool known)
+void LedForm::setValues(HeaderSetting values, bool known)
 {
     const QSignalBlocker b1(m_mode), b2(m_colour), b3(m_speed->slider()), b4(m_brightness->slider());
     m_mode->setCurrentIndex(known ? m_mode->findData(int(values.mode)) : -1);

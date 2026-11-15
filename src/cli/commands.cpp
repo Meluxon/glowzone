@@ -78,6 +78,17 @@ const QCommandLineOption &purgeOption()
     return o;
 }
 
+// "cpu, rear, front" – the ids of fans, LEDs, lights or modes, for help and errors.
+template<typename List>
+QString idList(const List &list)
+{
+    QStringList ids;
+    for (const auto &item : list) {
+        ids << QLatin1String(item.id);
+    }
+    return ids.join(QLatin1String(", "));
+}
+
 int usageError(const QString &message)
 {
     err() << message << Qt::endl << i18n("Run “glowzone --help” for usage.") << Qt::endl;
@@ -98,7 +109,7 @@ std::optional<int> levelOption(const QCommandLineParser &p, const QCommandLineOp
     return v;
 }
 
-QString describe(const HeaderSetting &s)
+QString describe(HeaderSetting s)
 {
     const ModeInfo *m = modeInfo(s.mode);
     QStringList parts{m->name.toString()};
@@ -115,7 +126,7 @@ QString describe(const HeaderSetting &s)
     return parts.join(QLatin1String(", "));
 }
 
-QString describe(const EcLightState &s)
+QString describe(EcLightState s)
 {
     const EcLights::ModeInfo *m = EcLights::modeInfo(s.mode);
     const QString mode = m ? m->name.toString() : i18nc("@info unknown mode value", "mode %1", s.mode);
@@ -190,7 +201,7 @@ int cmdStatus(const ModelProfile &model)
         const QString warning = EcLights::layoutWarning(model, *layout);
         out() << Qt::endl
               << i18n("Fan detection (BIOS): %1",
-                      warning.isEmpty() ? i18nc("@info", "all fans detected (layout 0x%1)", QString::number(*layout, 16)) : warning)
+                      warning.isEmpty() ? i18nc("@info", "all fans detected (layout %1)", EcLights::layoutCode(*layout)) : warning)
               << Qt::endl;
     }
     return ExitOk;
@@ -210,20 +221,12 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
     } else if (const FanDef *f = model.fan(args.at(0))) {
         fans << f;
     } else {
-        QStringList ids{QStringLiteral("all")};
-        for (const FanDef &f : model.fans) {
-            ids << QLatin1String(f.id);
-        }
-        return usageError(i18n("Unknown fan “%1”. Choose one of: %2", args.at(0), ids.join(QLatin1String(", "))));
+        return usageError(i18n("Unknown fan “%1”. Choose one of: %2", args.at(0), QLatin1String("all, ") + idList(model.fans)));
     }
 
     const ModeInfo *mode = modeInfo(args.at(1));
     if (!mode || !model.hasFanMode(quint8(mode->mode))) {
-        QStringList ids;
-        for (const ModeInfo &m : modesFor(model)) {
-            ids << QLatin1String(m.id);
-        }
-        return usageError(i18n("Unknown fan mode “%1”. Choose one of: %2", args.at(1), ids.join(QLatin1String(", "))));
+        return usageError(i18n("Unknown fan mode “%1”. Choose one of: %2", args.at(1), idList(modesFor(model))));
     }
 
     int exitCode = ExitOk;
@@ -248,11 +251,7 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
         }
         onlyLed = fans.constFirst()->led(p.value(ledOption()));
         if (!onlyLed) {
-            QStringList ids;
-            for (const LedDef &l : fans.constFirst()->leds) {
-                ids << QLatin1String(l.id);
-            }
-            return usageError(i18n("Unknown position “%1”. Choose one of: %2", p.value(ledOption()), ids.join(QLatin1String(", "))));
+            return usageError(i18n("Unknown position “%1”. Choose one of: %2", p.value(ledOption()), idList(fans.constFirst()->leds)));
         }
     }
 
@@ -266,7 +265,7 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
                 continue;
             }
             const quint8 h = led.header;
-            HeaderSetting s = saved.value(h, HeaderSetting{h, Mode::Off, 1, 2, Rgb{0xff, 0xff, 0xff}});
+            HeaderSetting s = saved.value(h, initialSetting(h));
             s.header = h;
             s.mode = mode->mode;
             if (speed) {
@@ -323,22 +322,14 @@ int cmdLight(const ModelProfile &model, const QStringList &args, const QCommandL
     } else if (const EcLightDef *l = model.ecLight(args.at(0))) {
         lights << l;
     } else {
-        QStringList ids{QStringLiteral("all")};
-        for (const EcLightDef &l : model.ecLights) {
-            ids << QLatin1String(l.id);
-        }
-        return usageError(i18n("Unknown light “%1”. Choose one of: %2", args.at(0), ids.join(QLatin1String(", "))));
+        return usageError(i18n("Unknown light “%1”. Choose one of: %2", args.at(0), QLatin1String("all, ") + idList(model.ecLights)));
     }
 
     quint8 modeValue = 0; // 0 = leave unchanged
     if (args.size() == 2) {
         const EcLights::ModeInfo *mode = EcLights::modeInfo(args.at(1));
         if (!mode || !model.hasEcLightMode(mode->value)) {
-            QStringList ids;
-            for (const EcLights::ModeInfo &m : EcLights::modesFor(model)) {
-                ids << QLatin1String(m.id);
-            }
-            return usageError(i18n("Unknown light mode “%1”. Choose one of: %2", args.at(1), ids.join(QLatin1String(", "))));
+            return usageError(i18n("Unknown light mode “%1”. Choose one of: %2", args.at(1), idList(EcLights::modesFor(model))));
         }
         modeValue = mode->value;
     }
@@ -375,7 +366,7 @@ int cmdReset(const ModelProfile &model)
     QList<HeaderSetting> settings;
     for (const FanDef &fan : model.fans) {
         for (quint8 h : fan.headers()) {
-            settings << HeaderSetting{h, Mode::Off, 1, 2, Rgb{}};
+            settings << initialSetting(h);
         }
     }
     FanController controller(model);
@@ -542,7 +533,7 @@ int cmdProfile(const ModelProfile &model, const QStringList &args)
     if (args.isEmpty()) {
         return profileUsage();
     }
-    const QString sub = args.constFirst();
+    const QString &sub = args.constFirst();
     if (sub == QLatin1String("list") && args.size() == 1) {
         return cmdProfileList(model);
     }
@@ -624,13 +615,6 @@ static QString helpText()
         }
         return lines.join(QLatin1Char('\n'));
     };
-    auto ids = [](const auto &list) {
-        QStringList out;
-        for (const auto &item : list) {
-            out << QLatin1String(item.id);
-        }
-        return out.join(QLatin1String(", "));
-    };
 
     QString text = i18n("Lighting control for supported Lenovo desktops: fan LEDs and case lights.") + QLatin1String("\n\n")
         + i18n("Commands:") + QLatin1Char('\n')
@@ -650,22 +634,22 @@ static QString helpText()
     QList<Row> values;
     if (const ModelProfile *model = matchModel(DmiInfo::readSystem())) {
         text += i18n("This computer (%1):", model->displayName()) + QLatin1Char('\n');
-        values << Row{i18n("Fans:"), QLatin1String("all, ") + ids(model->fans)};
+        values << Row{i18n("Fans:"), QLatin1String("all, ") + idList(model->fans)};
         QStringList positions;
         for (const FanDef &f : model->fans) {
             if (f.isDouble()) {
-                positions << QLatin1String(f.id) + QLatin1String(": ") + ids(f.leds);
+                positions << QLatin1String(f.id) + QLatin1String(": ") + idList(f.leds);
             }
         }
         if (!positions.isEmpty()) {
             values << Row{i18n("LEDs (--led):"), positions.join(QLatin1String("; "))};
         }
         const QString range = QStringLiteral("%1–%2");
-        values << Row{i18n("Fan modes:"), ids(modesFor(*model))};
+        values << Row{i18n("Fan modes:"), idList(modesFor(*model))};
         values << Row{i18n("Fan speed, brightness:"), range.arg(MinLevel).arg(model->fanLevels)};
         if (!model->ecLights.isEmpty()) {
-            values << Row{i18n("Lights:"), QLatin1String("all, ") + ids(model->ecLights)};
-            values << Row{i18n("Light modes:"), ids(EcLights::modesFor(*model))};
+            values << Row{i18n("Lights:"), QLatin1String("all, ") + idList(model->ecLights)};
+            values << Row{i18n("Light modes:"), idList(EcLights::modesFor(*model))};
             values << Row{i18n("Light brightness:"), range.arg(EcLights::MinBrightness).arg(model->ecBrightnessLevels)};
         }
     } else {

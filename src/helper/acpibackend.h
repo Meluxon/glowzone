@@ -14,7 +14,9 @@ namespace Glowzone
 class AcpiBackend
 {
 public:
+    AcpiBackend() = default;
     virtual ~AcpiBackend() = default;
+    Q_DISABLE_COPY_MOVE(AcpiBackend)
 
     // Makes sure calls are possible (e.g. loads the acpi_call module).
     virtual bool ensureReady(QString *detail) = 0;
