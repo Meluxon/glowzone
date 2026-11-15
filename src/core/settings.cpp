@@ -17,7 +17,7 @@ QString filePath()
 
 std::optional<bool> linked(const QString &fanId)
 {
-    QSettings s(filePath(), QSettings::IniFormat);
+    const QSettings s(filePath(), QSettings::IniFormat);
     const QVariant v = s.value(QLatin1String("links/") + fanId);
     return v.isValid() ? std::optional<bool>(v.toBool()) : std::nullopt;
 }
@@ -30,7 +30,7 @@ void setLinked(const QString &fanId, bool isLinked)
 
 QString currentProfile()
 {
-    QSettings s(filePath(), QSettings::IniFormat);
+    const QSettings s(filePath(), QSettings::IniFormat);
     return s.value(QLatin1String("profiles/current")).toString();
 }
 
@@ -46,7 +46,7 @@ void setCurrentProfile(const QString &name)
 
 QSize windowSize()
 {
-    QSettings s(filePath(), QSettings::IniFormat);
+    const QSettings s(filePath(), QSettings::IniFormat);
     return s.value(QLatin1String("window/size")).toSize();
 }
 

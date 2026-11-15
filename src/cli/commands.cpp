@@ -365,7 +365,7 @@ int cmdReset(const ModelProfile &model)
 
     QList<HeaderSetting> settings;
     for (const FanDef &fan : model.fans) {
-        for (quint8 h : fan.headers()) {
+        for (const quint8 h : fan.headers()) {
             settings << initialSetting(h);
         }
     }
