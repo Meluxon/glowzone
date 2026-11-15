@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 13:24+0100\n"
+"POT-Creation-Date: 2026-11-15 14:34+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: Japanese\n"
@@ -40,12 +40,8 @@ msgstr "ダブルファンの LED を 1 つだけ設定します（位置は下�
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid ""
-"Delete Glowzone's settings, profiles and saved state for this user, then "
-"exit."
-msgstr ""
-"このユーザーの Glowzone の設定、プロファイル、保存された状態を削除して終了し"
-"ます。"
+msgid "Delete Glowzone's settings, profiles and saved state for this user, then exit."
+msgstr "このユーザーの Glowzone の設定、プロファイル、保存された状態を削除して終了します。"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -89,8 +85,7 @@ msgstr "コンピューター：%1"
 #: src/cli/commands.cpp
 #, kde-format
 msgid "Fans (as last set by Glowzone – the controller can’t be read back):"
-msgstr ""
-"ファン（Glowzone が最後に設定した状態。コントローラーからは読み取れません）："
+msgstr "ファン（Glowzone が最後に設定した状態。コントローラーからは読み取れません）："
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -126,12 +121,8 @@ msgstr "ファン検出（BIOS）：%1"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid ""
-"Usage: glowzone fan <fan> <mode> [-c RRGGBB] [-s speed] [-b brightness] [-l "
-"position]"
-msgstr ""
-"使い方：glowzone fan <ファン> <モード> [-c RRGGBB] [-s 速度] [-b 明るさ] [-l "
-"位置]"
+msgid "Usage: glowzone fan <fan> <mode> [-c RRGGBB] [-s speed] [-b brightness] [-l position]"
+msgstr "使い方：glowzone fan <ファン> <モード> [-c RRGGBB] [-s 速度] [-b 明るさ] [-l 位置]"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -146,8 +137,7 @@ msgstr "不明なファンモード「%1」です。次から選んでくださ�
 #: src/cli/commands.cpp
 #, kde-format
 msgid "“%1” is not a colour. Use six hex digits, e.g. ff3d9c."
-msgstr ""
-"「%1」は色ではありません。ff3d9c のように 16 進数 6 桁で指定してください。"
+msgstr "「%1」は色ではありません。ff3d9c のように 16 進数 6 桁で指定してください。"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -212,19 +202,13 @@ msgstr "ケースライト：%1"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid ""
-"Usage: glowzone profile list | apply <name> | save <name> | rename <old> "
-"<new> | delete <name>"
-msgstr ""
-"使い方：glowzone profile list | apply <名前> | save <名前> | rename <旧名> <"
-"新名> | delete <名前>"
+msgid "Usage: glowzone profile list | apply <name> | save <name> | rename <old> <new> | delete <name>"
+msgstr "使い方：glowzone profile list | apply <名前> | save <名前> | rename <旧名> <新名> | delete <名前>"
 
 #: src/cli/commands.cpp
 #, kde-format
 msgid "No profiles saved yet. Save one with “glowzone profile save <name>”."
-msgstr ""
-"保存されたプロファイルはまだありません。「glowzone profile save <名前>」で保"
-"存できます。"
+msgstr "保存されたプロファイルはまだありません。「glowzone profile save <名前>」で保存できます。"
 
 #: src/cli/commands.cpp src/core/profiles.cpp
 #, kde-format
@@ -243,19 +227,13 @@ msgstr "プロファイル名は 1～%1 文字にしてください。"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid ""
-"Note: Glowzone hasn’t set any fan yet, so the profile contains no fan "
-"settings."
-msgstr ""
-"注意：Glowzone はまだどのファンも設定していないため、このプロファイルにファン"
-"の設定は含まれません。"
+msgid "Note: Glowzone hasn’t set any fan yet, so the profile contains no fan settings."
+msgstr "注意：Glowzone はまだどのファンも設定していないため、このプロファイルにファンの設定は含まれません。"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid ""
-"Note: the case lights could not be read and are not part of the profile: %1"
-msgstr ""
-"注意：ケースライトを読み取れなかったため、プロファイルに含まれていません：%1"
+msgid "Note: the case lights could not be read and are not part of the profile: %1"
+msgstr "注意：ケースライトを読み取れなかったため、プロファイルに含まれていません：%1"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -294,10 +272,8 @@ msgstr "Glowzone のユーザーデータは見つかりませんでした。"
 
 #: src/cli/commands.cpp src/cli/main.cpp
 #, kde-format
-msgid ""
-"Lighting control for supported Lenovo desktops: fan LEDs and case lights."
-msgstr ""
-"対応する Lenovo デスクトップのライティング制御：ファン LED とケースライト。"
+msgid "Lighting control for supported Lenovo desktops: fan LEDs and case lights."
+msgstr "対応する Lenovo デスクトップのライティング制御：ファン LED とケースライト。"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -456,100 +432,27 @@ msgstr "呼吸"
 
 #: src/core/eclights.cpp
 #, kde-format
-msgid "The helper refused to run: this computer is not a supported model."
-msgstr ""
-"ヘルパーの実行が拒否されました：このコンピューターは対応機種ではありません。"
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid ""
-"The acpi_call kernel module is not available. Install acpi_call-dkms (or "
-"acpi_call / acpi_call-lts for your kernel)."
-msgstr ""
-"カーネルモジュール acpi_call が利用できません。acpi_call-dkms（またはお使いの"
-"カーネルに合わせて acpi_call / acpi_call-lts）をインストールしてください。"
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The BIOS does not report the case lights on this computer."
-msgstr "このコンピューターの BIOS はケースライトを報告していません。"
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The helper rejected the request as invalid."
-msgstr "ヘルパーは要求を無効として拒否しました。"
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The firmware call for the case lights failed."
-msgstr "ケースライトのファームウェア呼び出しに失敗しました。"
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "Not authorised to change the case lights."
-msgstr "ケースライトを変更する権限がありません。"
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "Authorisation was cancelled."
-msgstr "認証がキャンセルされました。"
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The authorisation system (polkit) reported an error."
-msgstr "認証システム（polkit）がエラーを報告しました。"
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "Could not reach the Glowzone helper. Is Glowzone installed correctly?"
-msgstr ""
-"Glowzone のヘルパーに接続できません。Glowzone は正しくインストールされていま"
-"すか？"
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The Glowzone helper reported an error (code %1)."
-msgstr "Glowzone のヘルパーがエラーを報告しました（コード %1）。"
-
-#: src/core/eclights.cpp
-#, kde-format
-msgctxt "@info technical details follow"
-msgid "Details: %1"
-msgstr "詳細：%1"
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid ""
-"This is a BIOS detection glitch that can happen after a cold start, when a "
-"fan isn’t spinning yet. The fan LEDs usually still work, and your settings "
-"are unchanged. A reboot normally clears it."
-msgstr ""
-"これはコールドスタート後、ファンがまだ回転していないときに起こることがある "
-"BIOS の検出不具合です。通常、ファン LED はそのまま動作し、設定も変更されませ"
-"ん。再起動すれば通常は解消します。"
+msgid "This is a BIOS detection glitch that can happen after a cold start, when a fan isn’t spinning yet. The fan LEDs usually still work, and your settings are unchanged. A reboot normally clears it."
+msgstr "これはコールドスタート後、ファンがまだ回転していないときに起こることがある BIOS の検出不具合です。通常、ファン LED はそのまま動作し、設定も変更されません。再起動すれば通常は解消します。"
 
 #: src/core/eclights.cpp
 #, kde-format
 msgctxt "%1 fan names, %2 and %3 layout codes, %4 explanation"
 msgid ""
-"The BIOS doesn’t detect these fans right now: %1 (fan layout %2, normally "
-"%3).\n"
+"The BIOS doesn’t detect these fans right now: %1 (fan layout %2, normally %3).\n"
 "%4"
 msgstr ""
-"現在、BIOS が次のファンを検出していません：%1（ファンレイアウト %2、通常は "
-"%3）。\n"
+"現在、BIOS が次のファンを検出していません：%1（ファンレイアウト %2、通常は %3）。\n"
 "%4"
 
 #: src/core/eclights.cpp
 #, kde-format
 msgctxt "%1 and %2 layout codes, %3 explanation"
 msgid ""
-"The BIOS reports an unusual fan layout right now (%1, normally %2); a fan "
-"may not be detected.\n"
+"The BIOS reports an unusual fan layout right now (%1, normally %2); a fan may not be detected.\n"
 "%3"
 msgstr ""
-"現在、BIOS が通常と異なるファンレイアウト（%1、通常は %2）を報告しています。"
-"検出されていないファンがある可能性があります。\n"
+"現在、BIOS が通常と異なるファンレイアウト（%1、通常は %2）を報告しています。検出されていないファンがある可能性があります。\n"
 "%3"
 
 #: src/core/fancontroller.cpp
@@ -560,8 +463,7 @@ msgstr "HID アクセスを初期化できませんでした：%1"
 #: src/core/fancontroller.cpp
 #, kde-format
 msgid "Fan LED controller %1 not found or not accessible (%2)."
-msgstr ""
-"ファン LED コントローラー %1 が見つからないか、アクセスできません（%2）。"
+msgstr "ファン LED コントローラー %1 が見つからないか、アクセスできません（%2）。"
 
 #: src/core/fancontroller.cpp
 #, kde-format
@@ -577,6 +479,72 @@ msgstr "%1 用のディレクトリを作成できませんでした。"
 #, kde-format
 msgid "Could not save the fan state to %1: %2"
 msgstr "ファンの状態を %1 に保存できませんでした：%2"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The helper refused to run: this computer is not a supported model."
+msgstr "ヘルパーの実行が拒否されました：このコンピューターは対応機種ではありません。"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The acpi_call kernel module is not available. Install acpi_call-dkms (or acpi_call / acpi_call-lts for your kernel)."
+msgstr "カーネルモジュール acpi_call が利用できません。acpi_call-dkms（またはお使いのカーネルに合わせて acpi_call / acpi_call-lts）をインストールしてください。"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The BIOS does not report the case lights on this computer."
+msgstr "このコンピューターの BIOS はケースライトを報告していません。"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The helper rejected the request as invalid."
+msgstr "ヘルパーは要求を無効として拒否しました。"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The firmware call for the case lights failed."
+msgstr "ケースライトのファームウェア呼び出しに失敗しました。"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "Not authorised to change the case lights."
+msgstr "ケースライトを変更する権限がありません。"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "Authorisation was cancelled."
+msgstr "認証がキャンセルされました。"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The authorisation system (polkit) reported an error."
+msgstr "認証システム（polkit）がエラーを報告しました。"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "Could not reach the Glowzone helper. Is Glowzone installed correctly?"
+msgstr "Glowzone のヘルパーに接続できません。Glowzone は正しくインストールされていますか？"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The Glowzone helper reported an error (code %1)."
+msgstr "Glowzone のヘルパーがエラーを報告しました（コード %1）。"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgctxt "@info technical details follow"
+msgid "Details: %1"
+msgstr "詳細：%1"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The Glowzone helper didn’t answer. Try again in a moment."
+msgstr "Glowzone のヘルパーが応答しませんでした。しばらくしてからもう一度お試しください。"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "Another Glowzone window or command is using the case lights. Try again in a moment."
+msgstr "別の Glowzone ウィンドウまたはコマンドがケースライトを使用中です。しばらくしてからもう一度お試しください。"
 
 #: src/core/ite8297.cpp
 msgctxt "@item fan LED mode"
@@ -636,8 +604,7 @@ msgid ""
 "This computer is not supported (vendor: %1, model: %2, board: %3).\n"
 "Glowzone only runs on: %4"
 msgstr ""
-"このコンピューターには対応していません（メーカー：%1、モデル：%2、マザーボー"
-"ド：%3）。\n"
+"このコンピューターには対応していません（メーカー：%1、モデル：%2、マザーボード：%3）。\n"
 "Glowzone の対応機種：%4"
 
 #: src/core/profiles.cpp
@@ -679,12 +646,8 @@ msgstr "対応する Lenovo デスクトップのライティング制御"
 
 #: src/gui/aboutdialog.cpp
 #, kde-format
-msgid ""
-"Written with an AI assistant (Claude) and reviewed by its author. It works "
-"on the author’s machine; read the code before you trust it with yours."
-msgstr ""
-"AI アシスタント（Claude）の支援で作成し、作者が確認しています。作者のマシンで"
-"は動作しますが、ご自身のマシンで使う前にコードを確認してください。"
+msgid "Written with an AI assistant (Claude) and reviewed by its author. It works on the author’s machine; read the code before you trust it with yours."
+msgstr "AI アシスタント（Claude）の支援で作成し、作者が確認しています。作者のマシンでは動作しますが、ご自身のマシンで使う前にコードを確認してください。"
 
 #: src/gui/aboutdialog.cpp
 #, kde-format
@@ -900,8 +863,7 @@ msgstr "すべてオフ"
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Switch every fan LED and case light off. Colours and levels are kept."
-msgstr ""
-"すべてのファン LED とケースライトをオフにします。色とレベルは保持されます。"
+msgstr "すべてのファン LED とケースライトをオフにします。色とレベルは保持されます。"
 
 #: src/gui/mainwindow.cpp
 #, kde-format
@@ -975,12 +937,8 @@ msgstr "個別に設定"
 #: src/gui/pages.cpp
 #, kde-format
 msgctxt "@info:tooltip"
-msgid ""
-"Give each fan of the pair its own settings. Unchecking copies the first "
-"fan’s settings to the other."
-msgstr ""
-"ペアの各ファンに個別の設定を使います。チェックを外すと、1 台目の設定が 2 台目"
-"にコピーされます。"
+msgid "Give each fan of the pair its own settings. Unchecking copies the first fan’s settings to the other."
+msgstr "ペアの各ファンに個別の設定を使います。チェックを外すと、1 台目の設定が 2 台目にコピーされます。"
 
 #: src/gui/pages.cpp
 #, kde-format
@@ -1082,8 +1040,7 @@ msgstr "%1 · 変更あり"
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Changed since it was applied. Click to go back to it, or use Save."
-msgstr ""
-"適用後に変更されています。クリックで元に戻すか、「保存」を使用してください。"
+msgstr "適用後に変更されています。クリックで元に戻すか、「保存」を使用してください。"
 
 #: src/gui/sidebar.cpp
 #, kde-format

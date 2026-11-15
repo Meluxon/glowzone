@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 13:24+0100\n"
+"POT-Creation-Date: 2026-11-15 14:34+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -441,64 +441,6 @@ msgstr ""
 
 #: src/core/eclights.cpp
 #, kde-format
-msgid "The helper refused to run: this computer is not a supported model."
-msgstr ""
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid ""
-"The acpi_call kernel module is not available. Install acpi_call-dkms (or "
-"acpi_call / acpi_call-lts for your kernel)."
-msgstr ""
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The BIOS does not report the case lights on this computer."
-msgstr ""
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The helper rejected the request as invalid."
-msgstr ""
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The firmware call for the case lights failed."
-msgstr ""
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "Not authorised to change the case lights."
-msgstr ""
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "Authorisation was cancelled."
-msgstr ""
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The authorisation system (polkit) reported an error."
-msgstr ""
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "Could not reach the Glowzone helper. Is Glowzone installed correctly?"
-msgstr ""
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The Glowzone helper reported an error (code %1)."
-msgstr ""
-
-#: src/core/eclights.cpp
-#, kde-format
-msgctxt "@info technical details follow"
-msgid "Details: %1"
-msgstr ""
-
-#: src/core/eclights.cpp
-#, kde-format
 msgid ""
 "This is a BIOS detection glitch that can happen after a cold start, when a "
 "fan isn’t spinning yet. The fan LEDs usually still work, and your settings "
@@ -546,6 +488,76 @@ msgstr ""
 #: src/core/fanstate.cpp
 #, kde-format
 msgid "Could not save the fan state to %1: %2"
+msgstr ""
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The helper refused to run: this computer is not a supported model."
+msgstr ""
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid ""
+"The acpi_call kernel module is not available. Install acpi_call-dkms (or "
+"acpi_call / acpi_call-lts for your kernel)."
+msgstr ""
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The BIOS does not report the case lights on this computer."
+msgstr ""
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The helper rejected the request as invalid."
+msgstr ""
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The firmware call for the case lights failed."
+msgstr ""
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "Not authorised to change the case lights."
+msgstr ""
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "Authorisation was cancelled."
+msgstr ""
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The authorisation system (polkit) reported an error."
+msgstr ""
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "Could not reach the Glowzone helper. Is Glowzone installed correctly?"
+msgstr ""
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The Glowzone helper reported an error (code %1)."
+msgstr ""
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgctxt "@info technical details follow"
+msgid "Details: %1"
+msgstr ""
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The Glowzone helper didn’t answer. Try again in a moment."
+msgstr ""
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid ""
+"Another Glowzone window or command is using the case lights. Try again in a "
+"moment."
 msgstr ""
 
 #: src/core/ite8297.cpp

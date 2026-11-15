@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 13:24+0100\n"
+"POT-Creation-Date: 2026-11-15 14:34+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: French\n"
@@ -21,8 +21,7 @@ msgstr ""
 #: src/cli/commands.cpp
 #, kde-format
 msgid "Fan colour as RRGGBB, for modes that use a colour."
-msgstr ""
-"Couleur des ventilateurs en RRGGBB, pour les modes qui utilisent une couleur."
+msgstr "Couleur des ventilateurs en RRGGBB, pour les modes qui utilisent une couleur."
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -32,24 +31,17 @@ msgstr "Vitesse de l’effet des ventilateurs (niveaux : voir ci-dessous)."
 #: src/cli/commands.cpp
 #, kde-format
 msgid "Brightness of fans or case lights (levels: see below)."
-msgstr ""
-"Luminosité des ventilateurs ou de l’éclairage du boîtier (niveaux : voir ci-"
-"dessous)."
+msgstr "Luminosité des ventilateurs ou de l’éclairage du boîtier (niveaux : voir ci-dessous)."
 
 #: src/cli/commands.cpp
 #, kde-format
 msgid "Set only one LED of a double fan (positions: see below)."
-msgstr ""
-"Ne régler qu’une LED d’un ventilateur double (positions : voir ci-dessous)."
+msgstr "Ne régler qu’une LED d’un ventilateur double (positions : voir ci-dessous)."
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid ""
-"Delete Glowzone's settings, profiles and saved state for this user, then "
-"exit."
-msgstr ""
-"Supprimer les paramètres, les profils et l’état enregistré de Glowzone pour "
-"cet utilisateur, puis quitter."
+msgid "Delete Glowzone's settings, profiles and saved state for this user, then exit."
+msgstr "Supprimer les paramètres, les profils et l’état enregistré de Glowzone pour cet utilisateur, puis quitter."
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -93,9 +85,7 @@ msgstr "Ordinateur : %1"
 #: src/cli/commands.cpp
 #, kde-format
 msgid "Fans (as last set by Glowzone – the controller can’t be read back):"
-msgstr ""
-"Ventilateurs (tels que Glowzone les a réglés en dernier – le contrôleur ne "
-"peut pas être relu) :"
+msgstr "Ventilateurs (tels que Glowzone les a réglés en dernier – le contrôleur ne peut pas être relu) :"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -131,12 +121,8 @@ msgstr "Détection des ventilateurs (BIOS) : %1"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid ""
-"Usage: glowzone fan <fan> <mode> [-c RRGGBB] [-s speed] [-b brightness] [-l "
-"position]"
-msgstr ""
-"Utilisation : glowzone fan <ventilateur> <mode> [-c RRGGBB] [-s vitesse] [-b "
-"luminosité] [-l position]"
+msgid "Usage: glowzone fan <fan> <mode> [-c RRGGBB] [-s speed] [-b brightness] [-l position]"
+msgstr "Utilisation : glowzone fan <ventilateur> <mode> [-c RRGGBB] [-s vitesse] [-b luminosité] [-l position]"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -151,9 +137,7 @@ msgstr "Mode de ventilateur « %1 » inconnu. Choisissez parmi : %2"
 #: src/cli/commands.cpp
 #, kde-format
 msgid "“%1” is not a colour. Use six hex digits, e.g. ff3d9c."
-msgstr ""
-"« %1 » n’est pas une couleur. Indiquez six chiffres hexadécimaux, par ex. "
-"ff3d9c."
+msgstr "« %1 » n’est pas une couleur. Indiquez six chiffres hexadécimaux, par ex. ff3d9c."
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -174,9 +158,7 @@ msgstr "%1 (%2)"
 #: src/cli/commands.cpp
 #, kde-format
 msgid "The fans were changed, but the state could not be saved: %1"
-msgstr ""
-"Les ventilateurs ont été modifiés, mais l’état n’a pas pu être enregistré : "
-"%1"
+msgstr "Les ventilateurs ont été modifiés, mais l’état n’a pas pu être enregistré : %1"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -220,19 +202,13 @@ msgstr "Éclairage du boîtier : %1"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid ""
-"Usage: glowzone profile list | apply <name> | save <name> | rename <old> "
-"<new> | delete <name>"
-msgstr ""
-"Utilisation : glowzone profile list | apply <nom> | save <nom> | rename "
-"<ancien> <nouveau> | delete <nom>"
+msgid "Usage: glowzone profile list | apply <name> | save <name> | rename <old> <new> | delete <name>"
+msgstr "Utilisation : glowzone profile list | apply <nom> | save <nom> | rename <ancien> <nouveau> | delete <nom>"
 
 #: src/cli/commands.cpp
 #, kde-format
 msgid "No profiles saved yet. Save one with “glowzone profile save <name>”."
-msgstr ""
-"Aucun profil enregistré pour l’instant. Enregistrez-en un avec « glowzone "
-"profile save <nom> »."
+msgstr "Aucun profil enregistré pour l’instant. Enregistrez-en un avec « glowzone profile save <nom> »."
 
 #: src/cli/commands.cpp src/core/profiles.cpp
 #, kde-format
@@ -251,20 +227,13 @@ msgstr "Un nom de profil doit comporter de 1 à %1 caractères."
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid ""
-"Note: Glowzone hasn’t set any fan yet, so the profile contains no fan "
-"settings."
-msgstr ""
-"Remarque : Glowzone n’a encore réglé aucun ventilateur, le profil ne "
-"contient donc aucun réglage de ventilateur."
+msgid "Note: Glowzone hasn’t set any fan yet, so the profile contains no fan settings."
+msgstr "Remarque : Glowzone n’a encore réglé aucun ventilateur, le profil ne contient donc aucun réglage de ventilateur."
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid ""
-"Note: the case lights could not be read and are not part of the profile: %1"
-msgstr ""
-"Remarque : l’éclairage du boîtier n’a pas pu être lu et ne fait pas partie "
-"du profil : %1"
+msgid "Note: the case lights could not be read and are not part of the profile: %1"
+msgstr "Remarque : l’éclairage du boîtier n’a pas pu être lu et ne fait pas partie du profil : %1"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -303,11 +272,8 @@ msgstr "Aucune donnée utilisateur de Glowzone trouvée."
 
 #: src/cli/commands.cpp src/cli/main.cpp
 #, kde-format
-msgid ""
-"Lighting control for supported Lenovo desktops: fan LEDs and case lights."
-msgstr ""
-"Contrôle de l’éclairage des ordinateurs de bureau Lenovo pris en charge : "
-"LED des ventilateurs et éclairage du boîtier."
+msgid "Lighting control for supported Lenovo desktops: fan LEDs and case lights."
+msgstr "Contrôle de l’éclairage des ordinateurs de bureau Lenovo pris en charge : LED des ventilateurs et éclairage du boîtier."
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -466,102 +432,27 @@ msgstr "Respiration"
 
 #: src/core/eclights.cpp
 #, kde-format
-msgid "The helper refused to run: this computer is not a supported model."
-msgstr ""
-"Le programme d’assistance refuse de s’exécuter : cet ordinateur n’est pas un "
-"modèle pris en charge."
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid ""
-"The acpi_call kernel module is not available. Install acpi_call-dkms (or "
-"acpi_call / acpi_call-lts for your kernel)."
-msgstr ""
-"Le module noyau acpi_call n’est pas disponible. Installez acpi_call-dkms (ou "
-"acpi_call / acpi_call-lts selon votre noyau)."
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The BIOS does not report the case lights on this computer."
-msgstr "Le BIOS ne signale pas d’éclairage du boîtier sur cet ordinateur."
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The helper rejected the request as invalid."
-msgstr "Le programme d’assistance a rejeté la requête comme invalide."
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The firmware call for the case lights failed."
-msgstr "L’appel au micrologiciel pour l’éclairage du boîtier a échoué."
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "Not authorised to change the case lights."
-msgstr "Vous n’êtes pas autorisé à modifier l’éclairage du boîtier."
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "Authorisation was cancelled."
-msgstr "L’autorisation a été annulée."
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The authorisation system (polkit) reported an error."
-msgstr "Le système d’autorisation (polkit) a signalé une erreur."
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "Could not reach the Glowzone helper. Is Glowzone installed correctly?"
-msgstr ""
-"Impossible de joindre le programme d’assistance de Glowzone. Glowzone est-il "
-"correctement installé ?"
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid "The Glowzone helper reported an error (code %1)."
-msgstr "Le programme d’assistance de Glowzone a signalé une erreur (code %1)."
-
-#: src/core/eclights.cpp
-#, kde-format
-msgctxt "@info technical details follow"
-msgid "Details: %1"
-msgstr "Détails : %1"
-
-#: src/core/eclights.cpp
-#, kde-format
-msgid ""
-"This is a BIOS detection glitch that can happen after a cold start, when a "
-"fan isn’t spinning yet. The fan LEDs usually still work, and your settings "
-"are unchanged. A reboot normally clears it."
-msgstr ""
-"Il s’agit d’un défaut de détection du BIOS qui peut survenir après un "
-"démarrage à froid, lorsqu’un ventilateur ne tourne pas encore. Les LED des "
-"ventilateurs fonctionnent généralement quand même, et vos réglages restent "
-"inchangés. Un redémarrage règle normalement le problème."
+msgid "This is a BIOS detection glitch that can happen after a cold start, when a fan isn’t spinning yet. The fan LEDs usually still work, and your settings are unchanged. A reboot normally clears it."
+msgstr "Il s’agit d’un défaut de détection du BIOS qui peut survenir après un démarrage à froid, lorsqu’un ventilateur ne tourne pas encore. Les LED des ventilateurs fonctionnent généralement quand même, et vos réglages restent inchangés. Un redémarrage règle normalement le problème."
 
 #: src/core/eclights.cpp
 #, kde-format
 msgctxt "%1 fan names, %2 and %3 layout codes, %4 explanation"
 msgid ""
-"The BIOS doesn’t detect these fans right now: %1 (fan layout %2, normally "
-"%3).\n"
+"The BIOS doesn’t detect these fans right now: %1 (fan layout %2, normally %3).\n"
 "%4"
 msgstr ""
-"Le BIOS ne détecte pas ces ventilateurs pour le moment : %1 (disposition %2, "
-"normalement %3).\n"
+"Le BIOS ne détecte pas ces ventilateurs pour le moment : %1 (disposition %2, normalement %3).\n"
 "%4"
 
 #: src/core/eclights.cpp
 #, kde-format
 msgctxt "%1 and %2 layout codes, %3 explanation"
 msgid ""
-"The BIOS reports an unusual fan layout right now (%1, normally %2); a fan "
-"may not be detected.\n"
+"The BIOS reports an unusual fan layout right now (%1, normally %2); a fan may not be detected.\n"
 "%3"
 msgstr ""
-"Le BIOS signale actuellement une disposition de ventilateurs inhabituelle "
-"(%1, normalement %2) ; un ventilateur n’est peut-être pas détecté.\n"
+"Le BIOS signale actuellement une disposition de ventilateurs inhabituelle (%1, normalement %2) ; un ventilateur n’est peut-être pas détecté.\n"
 "%3"
 
 #: src/core/fancontroller.cpp
@@ -572,8 +463,7 @@ msgstr "Impossible d’initialiser l’accès HID : %1"
 #: src/core/fancontroller.cpp
 #, kde-format
 msgid "Fan LED controller %1 not found or not accessible (%2)."
-msgstr ""
-"Contrôleur de LED des ventilateurs %1 introuvable ou inaccessible (%2)."
+msgstr "Contrôleur de LED des ventilateurs %1 introuvable ou inaccessible (%2)."
 
 #: src/core/fancontroller.cpp
 #, kde-format
@@ -589,6 +479,72 @@ msgstr "Impossible de créer le répertoire pour %1."
 #, kde-format
 msgid "Could not save the fan state to %1: %2"
 msgstr "Impossible d’enregistrer l’état des ventilateurs dans %1 : %2"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The helper refused to run: this computer is not a supported model."
+msgstr "Le programme d’assistance refuse de s’exécuter : cet ordinateur n’est pas un modèle pris en charge."
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The acpi_call kernel module is not available. Install acpi_call-dkms (or acpi_call / acpi_call-lts for your kernel)."
+msgstr "Le module noyau acpi_call n’est pas disponible. Installez acpi_call-dkms (ou acpi_call / acpi_call-lts selon votre noyau)."
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The BIOS does not report the case lights on this computer."
+msgstr "Le BIOS ne signale pas d’éclairage du boîtier sur cet ordinateur."
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The helper rejected the request as invalid."
+msgstr "Le programme d’assistance a rejeté la requête comme invalide."
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The firmware call for the case lights failed."
+msgstr "L’appel au micrologiciel pour l’éclairage du boîtier a échoué."
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "Not authorised to change the case lights."
+msgstr "Vous n’êtes pas autorisé à modifier l’éclairage du boîtier."
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "Authorisation was cancelled."
+msgstr "L’autorisation a été annulée."
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The authorisation system (polkit) reported an error."
+msgstr "Le système d’autorisation (polkit) a signalé une erreur."
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "Could not reach the Glowzone helper. Is Glowzone installed correctly?"
+msgstr "Impossible de joindre le programme d’assistance de Glowzone. Glowzone est-il correctement installé ?"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The Glowzone helper reported an error (code %1)."
+msgstr "Le programme d’assistance de Glowzone a signalé une erreur (code %1)."
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgctxt "@info technical details follow"
+msgid "Details: %1"
+msgstr "Détails : %1"
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "The Glowzone helper didn’t answer. Try again in a moment."
+msgstr "Le programme d’assistance de Glowzone n’a pas répondu. Réessayez dans un instant."
+
+#: src/core/helpercall.cpp
+#, kde-format
+msgid "Another Glowzone window or command is using the case lights. Try again in a moment."
+msgstr "Une autre fenêtre ou commande Glowzone utilise l’éclairage du boîtier. Réessayez dans un instant."
 
 #: src/core/ite8297.cpp
 msgctxt "@item fan LED mode"
@@ -648,8 +604,7 @@ msgid ""
 "This computer is not supported (vendor: %1, model: %2, board: %3).\n"
 "Glowzone only runs on: %4"
 msgstr ""
-"Cet ordinateur n’est pas pris en charge (fabricant : %1, modèle : %2, carte "
-"mère : %3).\n"
+"Cet ordinateur n’est pas pris en charge (fabricant : %1, modèle : %2, carte mère : %3).\n"
 "Glowzone ne fonctionne que sur : %4"
 
 #: src/core/profiles.cpp
@@ -687,17 +642,12 @@ msgstr "Glowzone %1"
 #: src/gui/aboutdialog.cpp
 #, kde-format
 msgid "Lighting control for supported Lenovo desktops"
-msgstr ""
-"Contrôle de l’éclairage des ordinateurs de bureau Lenovo pris en charge"
+msgstr "Contrôle de l’éclairage des ordinateurs de bureau Lenovo pris en charge"
 
 #: src/gui/aboutdialog.cpp
 #, kde-format
-msgid ""
-"Written with an AI assistant (Claude) and reviewed by its author. It works "
-"on the author’s machine; read the code before you trust it with yours."
-msgstr ""
-"Écrit avec un assistant IA (Claude) et relu par son auteur. Il fonctionne "
-"sur la machine de l’auteur ; lisez le code avant de lui confier la vôtre."
+msgid "Written with an AI assistant (Claude) and reviewed by its author. It works on the author’s machine; read the code before you trust it with yours."
+msgstr "Écrit avec un assistant IA (Claude) et relu par son auteur. Il fonctionne sur la machine de l’auteur ; lisez le code avant de lui confier la vôtre."
 
 #: src/gui/aboutdialog.cpp
 #, kde-format
@@ -799,9 +749,7 @@ msgstr "Copier dans le presse-papiers"
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Copy version and hardware details, e.g. for a bug report"
-msgstr ""
-"Copier la version et les détails du matériel, par ex. pour un rapport de "
-"bogue"
+msgstr "Copier la version et les détails du matériel, par ex. pour un rapport de bogue"
 
 #: src/gui/colourbutton.cpp
 #, kde-format
@@ -915,9 +863,7 @@ msgstr "Tout éteindre"
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Switch every fan LED and case light off. Colours and levels are kept."
-msgstr ""
-"Éteindre toutes les LED des ventilateurs et l’éclairage du boîtier. Les "
-"couleurs et niveaux sont conservés."
+msgstr "Éteindre toutes les LED des ventilateurs et l’éclairage du boîtier. Les couleurs et niveaux sont conservés."
 
 #: src/gui/mainwindow.cpp
 #, kde-format
@@ -991,12 +937,8 @@ msgstr "Régler séparément"
 #: src/gui/pages.cpp
 #, kde-format
 msgctxt "@info:tooltip"
-msgid ""
-"Give each fan of the pair its own settings. Unchecking copies the first "
-"fan’s settings to the other."
-msgstr ""
-"Chaque ventilateur de la paire a ses propres réglages. En décochant, le "
-"second reprend les réglages du premier."
+msgid "Give each fan of the pair its own settings. Unchecking copies the first fan’s settings to the other."
+msgstr "Chaque ventilateur de la paire a ses propres réglages. En décochant, le second reprend les réglages du premier."
 
 #: src/gui/pages.cpp
 #, kde-format
@@ -1098,9 +1040,7 @@ msgstr "%1 · modifié"
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Changed since it was applied. Click to go back to it, or use Save."
-msgstr ""
-"Modifié depuis son application. Cliquez pour y revenir, ou utilisez "
-"Enregistrer."
+msgstr "Modifié depuis son application. Cliquez pour y revenir, ou utilisez Enregistrer."
 
 #: src/gui/sidebar.cpp
 #, kde-format

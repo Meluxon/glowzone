@@ -66,6 +66,12 @@ void LightApplier::refresh()
     startNext();
 }
 
+void LightApplier::readLayout()
+{
+    m_layoutWanted = true;
+    startNext();
+}
+
 void LightApplier::queue(EcRequest request)
 {
     if (isNoOp(request)) {
@@ -136,6 +142,9 @@ void LightApplier::startNext()
         m_refreshWanted = false; // a set reply carries the new state anyway
     } else if (m_refreshWanted) {
         m_refreshWanted = false;
+    } else if (m_layoutWanted) {
+        kind = HelperCall::Layout;
+        m_layoutWanted = false;
     } else {
         Q_EMIT idle();
         return;
@@ -145,7 +154,11 @@ void LightApplier::startNext()
     connect(m_call, &HelperCall::finished, this, [this, kind](const HelperResult &r) {
         m_call = nullptr;
         m_inFlight.clear();
-        if (!r.ok()) {
+        if (kind == HelperCall::Layout) {
+            if (r.ok()) {
+                Q_EMIT layoutRead(r.layout);
+            }
+        } else if (!r.ok()) {
             m_known.clear(); // unsure now – don't skip anything
             // A failed change may have set some lights and not others (each is
             // its own BIOS call): read back what they really show.

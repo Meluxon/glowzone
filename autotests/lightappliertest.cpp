@@ -154,6 +154,33 @@ private Q_SLOTS:
         QVERIFY(!f.helper.running());
     }
 
+    // One call at a time: the fan-layout read waits for a running change.
+    void layoutReadWaitsItsTurn()
+    {
+        Fixture f;
+        QSignalSpy layout(&f.applier, &LightApplier::layoutRead);
+        f.applier.queue({1, 2, 3});
+        QTRY_VERIFY(f.helper.running());
+        f.applier.readLayout();
+        QCOMPARE(f.helper.running()->kind, HelperCall::Set); // still the change
+        f.helper.answer();
+        QVERIFY(f.helper.running());
+        QCOMPARE(f.helper.running()->kind, HelperCall::Layout);
+        f.helper.answer();
+        QCOMPARE(layout.count(), 1);
+        QCOMPARE(layout.constFirst().constFirst().toInt(), 0x0b);
+    }
+
+    // A failed layout read is not shown as an error.
+    void failedLayoutReadIsSilent()
+    {
+        Fixture f;
+        QSignalSpy failed(&f.applier, &LightApplier::failed);
+        f.applier.readLayout();
+        f.helper.answer(false);
+        QCOMPARE(failed.count(), 0);
+    }
+
     void failedChangeRereadsTheLights()
     {
         Fixture f;

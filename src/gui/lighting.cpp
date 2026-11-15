@@ -39,7 +39,7 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
         }
         m_lightsLoaded = true;
         Q_EMIT changed();
-        checkFanLayout(); // the helper does one thing at a time
+        checkFanLayout();
     });
     connect(m_lightApplier, &LightApplier::failed, this, [this](const QString &text) {
         if (m_lightsLoaded) {
@@ -51,6 +51,14 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
         }
     });
     connect(m_lightApplier, &LightApplier::idle, this, &Lighting::idle);
+    connect(m_lightApplier, &LightApplier::layoutRead, this, [this](int code) {
+        m_fanLayout = code;
+        const QString warning = EcLights::layoutWarning(m_model, code);
+        if (!warning.isEmpty()) {
+            Q_EMIT problem(warning);
+            Q_EMIT changed(); // mark the fans in the sidebar
+        }
+    });
 }
 
 void Lighting::start(QWindow *window)
@@ -75,19 +83,7 @@ void Lighting::checkFanLayout()
         return;
     }
     m_layoutChecked = true;
-    HelperCall *call = m_helper->create(HelperCall::Layout, {}, this);
-    connect(call, &HelperCall::finished, this, [this](const HelperResult &r) {
-        // An error here is not worth a message: the lights already work.
-        if (r.ok()) {
-            m_fanLayout = r.layout;
-            const QString warning = EcLights::layoutWarning(m_model, r.layout);
-            if (!warning.isEmpty()) {
-                Q_EMIT problem(warning);
-                Q_EMIT changed(); // mark the fans in the sidebar
-            }
-        }
-    });
-    call->start();
+    m_lightApplier->readLayout(); // an error is not worth a message: the lights already work
 }
 
 bool Lighting::isUndetected(const FanDef &fan) const

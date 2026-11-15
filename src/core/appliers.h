@@ -39,8 +39,9 @@ private:
     QTimer m_timer;
 };
 
-// The case lights go through the root helper, asynchronously and one job at a
-// time. State from the helper is reported only when nothing newer is queued,
+// The case lights go through the root helper, asynchronously and one call at a
+// time – including the fan-layout read, so the window never has two calls
+// running (KAuth's helper serves one call at a time and doesn't queue them). State from the helper is reported only when nothing newer is queued,
 // so it never overwrites what the user is doing.
 // Each SetLED triggers a BIOS SMI that can freeze the PC for seconds, so
 // requests that wouldn't change anything are dropped.
@@ -53,6 +54,7 @@ public:
     void setDelay(int ms) { m_timer.setInterval(ms); } // for tests
 
     void refresh();
+    void readLayout(); // answered by layoutRead(); failures are silent
     void queue(EcRequest request);
     bool isBusy() const;
     void finish(); // send anything queued right away; idle() follows
@@ -60,6 +62,7 @@ public:
 Q_SIGNALS:
     void stateChanged(const QList<Glowzone::EcLightState> &lights);
     void failed(const QString &error);
+    void layoutRead(int code);
     void idle();
 
 private:
@@ -75,6 +78,7 @@ private:
     HelperCalls &m_calls;
     HelperCall *m_call = nullptr;
     bool m_refreshWanted = false;
+    bool m_layoutWanted = false;
 };
 
 } // namespace Glowzone
