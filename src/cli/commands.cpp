@@ -584,11 +584,14 @@ int purgeUserData()
     int exitCode = ExitOk;
     for (const Entry &e : entries) {
         const QFileInfo info(e.path);
-        if (!info.exists()) {
+        if (!info.exists() && !info.isSymLink()) { // a dangling link still counts
             continue;
         }
         bool ok = false;
-        if (e.isDir) {
+        if (info.isSymLink()) {
+            // Remove the link itself – never what it points to.
+            ok = QFile::remove(e.path);
+        } else if (e.isDir) {
             // Never delete a directory that isn't Glowzone's own.
             if (info.fileName() != QLatin1String("glowzone")) {
                 err() << i18n("Skipping %1: not a Glowzone directory.", e.path) << Qt::endl;
