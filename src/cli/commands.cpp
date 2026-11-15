@@ -678,7 +678,7 @@ int run(QCommandLineParser &parser)
 
     QStringList args = parser.positionalArguments();
     if (args.isEmpty()) {
-        parser.showHelp(ExitOk); // exits; the GUI will start here later
+        parser.showHelp(ExitOk); // doesn't return (main() starts the window when there are no arguments)
     }
     const QString command = args.takeFirst();
     static const QStringList commands{QStringLiteral("status"),

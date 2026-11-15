@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 // Root helper: started by D-Bus on demand, authorised by polkit through KAuth.
-// It does exactly two things – read and set the two EC lights – and re-checks
-// the PC model itself on every call instead of trusting the app.
+// Three actions – read the case lights, set them, read the BIOS fan layout –
+// all checked by EcService, which also re-checks the PC model on every call
+// instead of trusting the app.
 
 #include "config-glowzone.h"
 #include "ecservice.h"

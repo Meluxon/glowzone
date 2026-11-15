@@ -36,7 +36,7 @@ inline constexpr quint8 ModeOff = 1;
 // Brightness starts at 1; the top level is per model (ModelProfile::ecBrightnessLevels).
 inline constexpr quint8 MinBrightness = 1;
 
-// Both calls go through the root helper (KAuth). Errors are translated.
+// Everything here goes through the root helper (KAuth). Errors are translated.
 // Blocking versions, for the CLI:
 std::optional<QList<EcLightState>> status(QString *error);
 std::optional<QList<EcLightState>> set(const QList<EcRequest> &requests, QString *error);

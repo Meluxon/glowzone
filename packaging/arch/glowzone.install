@@ -3,7 +3,7 @@
 
 post_install() {
   if [ ! -e /proc/acpi/call ] && ! modinfo acpi_call >/dev/null 2>&1; then
-    echo ">>> Glowzone: the case lights (e.g. the front logo) need the acpi_call module."
+    echo ">>> Glowzone: the case lights need the acpi_call module."
     echo "    Install acpi_call-dkms (or acpi_call / acpi_call-lts for your kernel)."
   fi
 }

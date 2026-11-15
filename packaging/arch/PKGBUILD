@@ -29,7 +29,7 @@ makedepends=(
   'extra-cmake-modules'
 )
 optdepends=(
-  'acpi_call-dkms: case lights such as the front logo (or acpi_call / acpi_call-lts matching your kernel)'
+  'acpi_call-dkms: case lights (or acpi_call / acpi_call-lts matching your kernel)'
 )
 install=glowzone.install
 

@@ -45,7 +45,7 @@ private Q_SLOTS:
         QCOMPARE(m->fan(QStringLiteral("front"))->headers(), (QList<quint8>{0x3a, 0x38}));
         QVERIFY(!m->fan(QStringLiteral("cpu"))->isDouble());
         QVERIFY(m->fan(QStringLiteral("top"))->isDouble());
-        // Physical positions (red/blue test on the machine)
+        // Physical positions, confirmed on the hardware
         QCOMPARE(m->fan(QStringLiteral("front"))->led(QStringLiteral("upper"))->header, quint8(0x3a));
         QCOMPARE(m->fan(QStringLiteral("front"))->led(QStringLiteral("lower"))->header, quint8(0x38));
         QCOMPARE(m->fan(QStringLiteral("top"))->led(QStringLiteral("front"))->header, quint8(0x39));

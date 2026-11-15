@@ -53,7 +53,7 @@ add_executable(glowzone
 target_link_libraries(glowzone PRIVATE glowzone_core Qt6::Widgets KF6::WidgetsAddons)
 install(TARGETS glowzone ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 
-# --- Root helper for the front logo and internal light (KAuth, D-Bus activated)
+# --- Root helper for the case lights (KAuth, D-Bus activated)
 add_executable(glowzone_helper helper/ledhelper.cpp)
 target_link_libraries(glowzone_helper PRIVATE glowzone_ecservice KF6::AuthCore)
 install(TARGETS glowzone_helper DESTINATION ${KAUTH_HELPER_INSTALL_DIR})

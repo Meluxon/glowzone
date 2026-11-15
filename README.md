@@ -15,7 +15,8 @@ Other models need their own profile – see *Adding a model*.
 > reviewed by me, for my own machine. It works for me; read the code before you
 > trust it with yours. Bug reports and captures from other models are welcome.
 
-**Status:** 0.5 – window, command-line tool, profiles and a BIOS fan-detection check.
+**Status:** complete for the supported model – window, command-line tool,
+profiles and a BIOS fan-detection check.
 
 ## What it controls
 
@@ -82,8 +83,8 @@ The layout follows System Settings and Discover:
 * Selection and hover colours come from your colour scheme.
 * **☰ → About Glowzone** shows the detected computer, whether the fan controller
   and case lights are available, and *Copy to Clipboard* for bug reports.
-* Changes apply immediately. The window size, the Linked/Split choices and the
-  last profile are kept in `~/.config/glowzone/glowzone.conf`.
+* Changes apply immediately. The window size, the *Set separately* choices and
+  the last profile are kept in `~/.config/glowzone/glowzone.conf`.
 
 ## BIOS fan detection
 
@@ -97,7 +98,7 @@ profiles stay as they are, and the full profile is still sent to every LED.
 
 ## Profiles
 
-A profile stores every fan LED, the Linked / Split state of the double fans
+A profile stores every fan LED, whether each double fan is set separately,
 and the case lights. Each profile is one JSON file in
 `~/.config/glowzone/profiles/`, easy to back up or copy to another machine of
 the same model. Names are case-insensitive.
@@ -162,6 +163,7 @@ until reboot (`sudo rmmod acpi_call`).
 |---|---|
 | `/usr/bin/glowzone` | the program (window and CLI) |
 | `/usr/share/applications/org.glowzone.Glowzone.desktop` | menu entry |
+| `/usr/share/icons/hicolor/{scalable,16x16,22x22}/apps/org.glowzone.Glowzone.svg` | icon |
 | `<KAuth helper dir>/glowzone_helper` (Arch: `/usr/lib/kf6/kauth/`) | root helper |
 | `/usr/share/dbus-1/system.d/org.glowzone.ledhelper.conf` | D-Bus policy |
 | `/usr/share/dbus-1/system-services/org.glowzone.ledhelper.service` | starts the helper on demand |
@@ -171,15 +173,25 @@ until reboot (`sudo rmmod acpi_call`).
 
 ## Security model
 
-* The fan controller is opened as your user. The udev rule tags only that one
-  USB device `uaccess`, so whoever owns the active local session can use it.
-* The helper runs as root only when called (D-Bus activation) and offers two
-  actions: read the two lights, and set them. It accepts nothing but a light
-  index (1–2), a mode (1–5) and a brightness (1–4); it builds the ACPI call
-  itself and only ever calls GameZone methods `0x0E`, `0x0F` and `0x10`.
-* Both actions are allowed without a password for the active local session
-  (the same trust as for the fans) and denied otherwise. To require your
-  password instead, set `Policy=auth_self` and `Persistence=session` in
+* **Fans:** the controller is opened as your user. The udev rule tags only that
+  one USB device `uaccess`, so whoever owns the active local session can use it
+  – and so can any program running as that user. That is the same trust
+  OpenRGB's rules give; it only reaches the fan LEDs.
+* **Case lights:** a small root helper, started by D-Bus only when called.
+  It offers three actions – read the case lights, set them, and read the BIOS
+  fan layout – and on every call:
+  1. checks the PC model itself (DMI) instead of trusting the app;
+  2. checks the request: integers only, a light index, mode and brightness that
+     the model profile allows, each light at most once;
+  3. only then loads `acpi_call` if needed and asks the BIOS whether the lights
+     are fitted.
+
+  It builds every ACPI call itself and only ever calls four GameZone methods:
+  `0x0A` (fan layout), `0x0E` (lights fitted?), `0x0F` (GetLED) and `0x10`
+  (SetLED). The tests check this against a fake `acpi_call`.
+* All three actions are allowed without a password for the active local
+  session (the same trust as for the fans) and denied otherwise. To require
+  your password instead, set `Policy=auth_self` and `Persistence=session` in
   `data/org.glowzone.ledhelper.actions` and rebuild.
 
 ## Translations
@@ -214,8 +226,10 @@ LANGUAGE=de glowzone        # or fr, ja, pl – the locale itself must exist (lo
 ## Adding a model
 
 Capture Lenovo Vantage on Windows (USBPcap + Wireshark), map every fan to its
-ITE 8297 header, check the GameZone WMI methods in the DSDT, and add a profile
-to `src/model/modelprofile.cpp`. Please include the captures in the merge request.
+ITE 8297 header and every mode Vantage offers, check the GameZone WMI methods
+in the DSDT, and add a profile to `src/model/modelprofile.cpp` – fans, modes,
+levels and the case lights with their colours. The tests check that a profile
+is consistent. Please include the captures in the pull request.
 
 ## Development
 

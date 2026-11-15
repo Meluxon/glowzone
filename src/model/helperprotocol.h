@@ -12,10 +12,11 @@
 namespace Glowzone
 {
 
+// Values as GameZone GetLED/SetLED use them (see EcLights::modes()).
 struct EcLightState {
-    quint8 index = 0;
-    quint8 mode = 0;       // 1 off, 2 on, 3 blink fast, 4 blink slow, 5 breathing
-    quint8 brightness = 0; // 1..4
+    quint8 index = 0;      // EcLightDef::index
+    quint8 mode = 0;
+    quint8 brightness = 0;
     bool operator==(const EcLightState &) const = default;
 };
 
@@ -35,7 +36,7 @@ inline constexpr const char *ActionLayout = "layout"; // fan layout as the BIOS 
 
 // Argument / reply keys
 inline constexpr const char *KeyLights = "lights";         // QVariantList of QVariantMap
-inline constexpr const char *KeyIndex = "index";           // light index (1 = logo, 2 = ambient)
+inline constexpr const char *KeyIndex = "index";           // EcLightDef::index
 inline constexpr const char *KeyMode = "mode";
 inline constexpr const char *KeyBrightness = "brightness";
 inline constexpr const char *KeyDetail = "detail";         // English detail on errors

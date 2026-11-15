@@ -19,7 +19,7 @@ const QList<ModelProfile> &supportedModels()
             .fans = {
                 {"cpu", kli18nc("@item fan", "CPU fan"), {{0x13, nullptr, {}}}},
                 {"rear", kli18nc("@item fan", "Rear fan"), {{0x11, nullptr, {}}}},
-                // Positions identified on the machine (red/blue test, 2026-11-15).
+                // Positions found by lighting each header in a different colour.
                 {"front",
                  kli18nc("@item fan", "Front fans"),
                  {{0x3a, "upper", kli18nc("@item fan position", "upper")},
@@ -43,13 +43,13 @@ const QList<ModelProfile> &supportedModels()
                 {0x0C, {"top"}},
                 {0x0D, {"front", "top"}},
             },
-            // Vantage on this model: every mode below confirmed on the machine
-            // (off, static, sparkle, breathing, wave, specter, rainbow, random),
+            // As Vantage offers them on this model, each confirmed on the hardware
+            // (off, static, sparkle, breathing, wave, specter, rainbow, random);
             // three speed and brightness levels.
             .fanModes = {0x00, 0x01, 0x02, 0x03, 0x04, 0x06, 0x09, 0x0A},
             .fanLevels = 3,
-            // Off, on, blink fast, blink slow, breathing; brightness 1–4,
-            // found at 3 (both lights off) on the machine.
+            // Off, on, blink fast, blink slow, breathing; brightness 1–4.
+            // Factory state: both lights off, brightness 3.
             .ecLightModes = {1, 2, 3, 4, 5},
             .ecBrightnessLevels = 4,
             .ecDefaultBrightness = 3,

@@ -13,8 +13,9 @@ namespace Glowzone
 {
 
 // The EC light logic of the root helper. Every request goes through the same
-// gate: DMI must match a profile, acpi_call must be ready, and the BIOS must
-// report the expected lights. Only GetLED/SetLED with validated values are sent.
+// gate: DMI must match a profile, a request must be valid for that model,
+// acpi_call must be ready, and the BIOS must report the expected lights. Only
+// the four GameZone methods named in ecservice.cpp are ever called.
 class EcService
 {
 public:

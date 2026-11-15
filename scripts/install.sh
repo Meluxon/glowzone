@@ -52,5 +52,5 @@ fi
 echo
 echo "Glowzone is installed. Try: glowzone status"
 if [ ! -e /proc/acpi/call ] && ! modinfo acpi_call >/dev/null 2>&1; then
-    echo "Note: the front logo and internal light need the acpi_call kernel module."
+    echo "Note: the case lights need the acpi_call kernel module."
 fi
