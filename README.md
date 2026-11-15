@@ -91,8 +91,8 @@ Good to know:
 ./scripts/uninstall.sh    # asks before each step; -y answers yes to all
 ```
 
-It turns the lights off, offers to delete your settings and profiles, removes
-the program and checks that nothing is left. With `pacman -Rns glowzone`
+It offers to turn the lights off and to delete your settings and profiles,
+then removes the program and checks that nothing is left. With `pacman -Rns glowzone`
 alone, the lights keep their last setting and your files in
 `~/.config/glowzone` and `~/.local/state/glowzone` stay.
 

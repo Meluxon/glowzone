@@ -76,6 +76,7 @@ private Q_SLOTS:
         QVERIFY(!parseRgb(QStringLiteral("0x1234")));
         QVERIFY(!parseRgb(QStringLiteral("+12345")));
         QVERIFY(!parseRgb(QStringLiteral("12 345")));
+        QVERIFY(!parseRgb(QString::fromUtf16(u"\u0661\u0662\u0663\u0664\u0665\u0666"))); // Arabic-Indic digits
         QCOMPARE(rgbToString(Rgb{0x15, 0x8d, 0xdd}), QStringLiteral("#158ddd"));
     }
 };

@@ -62,9 +62,11 @@ std::optional<Rgb> parseRgb(const QString &text)
     if (t.startsWith(QLatin1Char('#'))) {
         t.remove(0, 1);
     }
-    // Exactly six hex digits – no "0x", sign or spaces that toUInt() would accept.
+    // Exactly six ASCII hex digits – no "0x", sign, spaces or other scripts'
+    // digits, which toUInt() or QChar::isDigit() would accept.
     const bool hex = std::all_of(t.cbegin(), t.cend(), [](QChar c) {
-        return c.isDigit() || (c.toLower() >= QLatin1Char('a') && c.toLower() <= QLatin1Char('f'));
+        const char16_t u = c.unicode();
+        return (u >= u'0' && u <= u'9') || (u >= u'a' && u <= u'f') || (u >= u'A' && u <= u'F');
     });
     if (t.size() != 6 || !hex) {
         return std::nullopt;

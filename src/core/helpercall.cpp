@@ -103,9 +103,11 @@ public:
         m_lock->setStaleLockTime(2 * CallLimit);
         m_watchdog.setSingleShot(true);
         connect(&m_watchdog, &QTimer::timeout, this, [this] {
-            if (m_job) {
-                m_job->kill(KJob::Quietly);
-                m_job = nullptr;
+            // KAuth's ExecuteJob can't be killed (no doKill()): detach from it
+            // instead, so a late answer can't reach this call.
+            if (KAuth::ExecuteJob *job = std::exchange(m_job, nullptr)) {
+                job->disconnect(this);
+                job->deleteLater();
             }
             finish({i18n("The Glowzone helper didn’t answer. Try again in a moment."), {}, -1});
         });
