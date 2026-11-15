@@ -4,6 +4,8 @@
 
 #include "fanstate.h"
 
+#include <utility>
+
 namespace Glowzone
 {
 
@@ -77,13 +79,32 @@ void LightApplier::queue(EcRequest request)
     m_timer.start();
 }
 
+// What a light will show once the change already sent has arrived – not just
+// what the helper last reported, or a quick On → Off would lose the Off.
+std::optional<EcLightState> LightApplier::expected(quint8 index) const
+{
+    std::optional<EcLightState> state;
+    if (const auto known = m_known.constFind(index); known != m_known.cend()) {
+        state = *known;
+    }
+    if (const auto sent = m_inFlight.constFind(index); sent != m_inFlight.cend()) {
+        if (!state) {
+            if (sent->mode == 0 || sent->brightness == 0) {
+                return std::nullopt; // part of it is unknown
+            }
+            state = EcLightState{index, sent->mode, sent->brightness};
+        } else {
+            state->mode = sent->mode ? sent->mode : state->mode;
+            state->brightness = sent->brightness ? sent->brightness : state->brightness;
+        }
+    }
+    return state;
+}
+
 bool LightApplier::isNoOp(EcRequest request) const
 {
-    const auto it = m_known.constFind(request.index);
-    if (it == m_known.cend()) {
-        return false;
-    }
-    return (request.mode == 0 || request.mode == it->mode) && (request.brightness == 0 || request.brightness == it->brightness);
+    const auto state = expected(request.index);
+    return state && (request.mode == 0 || request.mode == state->mode) && (request.brightness == 0 || request.brightness == state->brightness);
 }
 
 void LightApplier::finish()
@@ -111,7 +132,7 @@ void LightApplier::startNext()
     if (!m_pending.isEmpty()) {
         kind = HelperCall::Set;
         requests = m_pending.values();
-        m_pending.clear();
+        m_inFlight = std::exchange(m_pending, {});
         m_refreshWanted = false; // a set reply carries the new state anyway
     } else if (m_refreshWanted) {
         m_refreshWanted = false;
@@ -123,6 +144,7 @@ void LightApplier::startNext()
     m_call = m_calls.create(kind, requests, this);
     connect(m_call, &HelperCall::finished, this, [this, kind](const HelperResult &r) {
         m_call = nullptr;
+        m_inFlight.clear();
         if (!r.ok()) {
             m_known.clear(); // unsure now – don't skip anything
             // A failed change may have set some lights and not others (each is

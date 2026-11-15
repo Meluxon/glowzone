@@ -128,6 +128,32 @@ private Q_SLOTS:
         QVERIFY(!f.applier.isBusy());
     }
 
+    // Off → On → Off quickly: the second Off must not be taken for "nothing to
+    // do" just because the lights were off before the On was sent.
+    void changeBackWhileInFlightIsSent()
+    {
+        Fixture f;
+        f.applier.queue({1, 2, 3}); // on
+        QTRY_VERIFY(f.helper.running());
+        f.applier.queue({1, 1, 3}); // and off again, while "on" is on its way
+        f.helper.answer();
+        QTRY_VERIFY(f.helper.running());
+        f.helper.answer();
+        QCOMPARE(f.helper.lights.value(1).mode, quint8(1));
+    }
+
+    // While a change is on its way, a request for that same target is a no-op.
+    void repeatOfInFlightChangeIsNotSent()
+    {
+        Fixture f;
+        f.applier.queue({1, 2, 3});
+        QTRY_VERIFY(f.helper.running());
+        f.applier.queue({1, 2, 3});
+        f.helper.answer();
+        QTest::qWait(20);
+        QVERIFY(!f.helper.running());
+    }
+
     void failedChangeRereadsTheLights()
     {
         Fixture f;

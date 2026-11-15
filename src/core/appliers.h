@@ -9,6 +9,8 @@
 #include <QObject>
 #include <QTimer>
 
+#include <optional>
+
 namespace Glowzone
 {
 
@@ -63,10 +65,12 @@ Q_SIGNALS:
 private:
     void startNext();
 
+    std::optional<EcLightState> expected(quint8 index) const;
     bool isNoOp(EcRequest request) const;
 
     QMap<quint8, EcRequest> m_pending;
-    QMap<quint8, EcLightState> m_known; // last state reported by the helper
+    QMap<quint8, EcLightState> m_known;  // last state reported by the helper
+    QMap<quint8, EcRequest> m_inFlight;  // sent, answer not back yet
     QTimer m_timer;
     HelperCalls &m_calls;
     HelperCall *m_call = nullptr;
