@@ -5,6 +5,7 @@
 #include <KLocalizedString>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLockFile>
@@ -161,6 +162,15 @@ bool merge(const QList<Ite8297::HeaderSetting> &changed, QString *error)
         return false;
     }
     return true;
+}
+
+SendLock::SendLock()
+    : m_lock(filePath() + QLatin1String(".send.lock"))
+{
+    if (QDir().mkpath(QFileInfo(filePath()).absolutePath())) {
+        m_lock.setStaleLockTime(30s);
+        (void)m_lock.tryLock(2s);
+    }
 }
 
 } // namespace Glowzone::FanState

@@ -20,9 +20,10 @@
 using namespace Glowzone;
 using namespace Ite8297;
 
-// --- fake hidapi: one ITE 8297; every feature report is recorded ---------------
+// --- fake hidapi: one ITE 8297; every feature report sent is recorded ----------
 
 static QList<QByteArray> s_reports;
+static int s_failures; // the next ones fail
 static int s_device;
 
 extern "C" {
@@ -66,6 +67,10 @@ const wchar_t *hid_error(hid_device *)
 }
 int hid_send_feature_report(hid_device *, const unsigned char *data, size_t length)
 {
+    if (s_failures > 0) {
+        --s_failures;
+        return -1;
+    }
     s_reports << QByteArray(reinterpret_cast<const char *>(data), int(length));
     return int(length);
 }
@@ -142,6 +147,7 @@ private Q_SLOTS:
     {
         QFile::remove(FanState::filePath());
         s_reports.clear();
+        s_failures = 0;
         setTemperature(59); // + 1 °C offset: 60, colour 00ff50
     }
 
@@ -252,6 +258,42 @@ private Q_SLOTS:
         QCOMPARE(coloursFor(reports, QStringLiteral("13")), QStringList{QStringLiteral("0000ff")});
         QCOMPARE(coloursFor(reports, QStringLiteral("11")).constLast(), QStringLiteral("a0ff00"));
         QVERIFY(fans.followsTemperature()); // 0x11 still
+    }
+
+    // A failed send is tried once more (apply() opens the controller again). A
+    // step that still can't go out is reported; the next one that does tells
+    // that the controller works again, so the error can go.
+    void followerSendIsRetried()
+    {
+        FanApplier fans(model(), nullptr, m_hwmon.path());
+        fans.setTemperatureInterval(10);
+        QSignalSpy failed(&fans, &FanApplier::failed);
+        QSignalSpy applied(&fans, &FanApplier::applied);
+        QSignalSpy saved(&fans, &FanApplier::saved);
+        QString error;
+        QVERIFY(fans.open(&error));
+        fans.queue({follows(0x13)});
+        fans.flushNow();
+        sent();
+        QCOMPARE(saved.size(), 1);
+        applied.clear();
+
+        s_failures = 1;
+        setTemperature(65); // 66: 00ff00
+        QVERIFY(QTest::qWaitFor([] { return !s_reports.isEmpty(); }));
+        QCOMPARE(sent(), (QStringList{QStringLiteral("13:00ff00"), QStringLiteral("commit")}));
+        QCOMPARE(failed.size(), 0);
+        QCOMPARE(applied.size(), 1);
+
+        s_failures = 2;
+        setTemperature(70); // 71: 50ff00
+        QVERIFY(QTest::qWaitFor([&] { return !failed.isEmpty(); }));
+        QVERIFY(s_reports.isEmpty());
+
+        setTemperature(75); // 76: a0ff00
+        QVERIFY(QTest::qWaitFor([&] { return applied.size() == 2; }));
+        QCOMPARE(coloursFor(sent(), QStringLiteral("13")).constLast(), QStringLiteral("a0ff00"));
+        QCOMPARE(saved.size(), 1); // following saves nothing
     }
 };
 

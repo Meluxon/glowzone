@@ -131,7 +131,7 @@ void LedForm::updateRows()
     const ModeInfo *info = m_mode->currentIndex() >= 0 ? modeInfo(Mode(m_mode->currentData().toInt())) : nullptr;
     const bool lit = info && info->mode != Mode::Off;
     m_form->setRowVisible(m_mode, m_visible);
-    m_form->setRowVisible(m_temperature, m_visible && info && info->followsTemperature);
+    m_form->setRowVisible(m_temperature, m_visible && info && followsTemperature(info->mode));
     m_form->setRowVisible(m_colour, m_visible && lit && info->usesColour);
     m_form->setRowVisible(m_speed, m_visible && lit && info->usesSpeed);
     m_form->setRowVisible(m_brightness, m_visible && lit);

@@ -66,7 +66,7 @@ private:
     void refreshTemperature();
     void reloadCurrentProfile();
 
-    void showProblem(const QString &text);
+    void updateProblems();
     void showError(const QString &text);
     static void showMessage(KMessageWidget *message);
     static void hideMessage(KMessageWidget *message);
@@ -86,7 +86,7 @@ private:
     KMessageWidget *m_changedMessage = nullptr; // "You changed “X”. [Save] [Save as New…]"
     KMessageWidget *m_backgroundMessage = nullptr; // LEDs follow the temperature, but closing quits
     bool m_backgroundMessageDismissed = false;
-    QStringList m_problems;
+    QStringList m_problems; // as shown
     Ite8297::Rgb m_temperatureColour; // as the sidebar shows it
     QList<Profile> m_profiles;
     QString m_currentProfile;

@@ -4,11 +4,14 @@
 
 #include "core/appliers.h"
 #include "core/eclights.h"
+#include "core/profiles.h"
 #include "core/settings.h"
 
 #include <QDir>
 #include <QFileInfo>
 #include <QFileSystemWatcher>
+
+#include <utility>
 
 namespace Glowzone::Gui
 {
@@ -26,17 +29,24 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
 {
     loadFans();
 
-    // The command line may change the fans while Glowzone runs – maybe only in
-    // the tray, with LEDs following the CPU temperature. Its saved state is
-    // read again when it changes (QSaveFile replaces the file: watch the directory).
-    m_stateReload.setSingleShot(true);
-    m_stateReload.setInterval(300);
-    connect(&m_stateReload, &QTimer::timeout, this, &Lighting::stateDirChanged);
+    // The command line may change things while Glowzone runs – maybe only in
+    // the tray, with LEDs following the CPU temperature: the fan state, the
+    // split choices and current profile (glowzone.conf), the profiles. They are
+    // read again when they change. Files are replaced, not written in place, so
+    // the directories are watched.
+    m_savedReload.setSingleShot(true);
+    m_savedReload.setInterval(300); // a command writes several files
+    connect(&m_savedReload, &QTimer::timeout, this, &Lighting::reloadSaved);
     const QString stateDir = QFileInfo(FanState::filePath()).absolutePath();
-    if (QDir().mkpath(stateDir)) {
-        auto *watcher = new QFileSystemWatcher({stateDir}, this);
-        connect(watcher, &QFileSystemWatcher::directoryChanged, &m_stateReload, qOverload<>(&QTimer::start));
-    }
+    QStringList dirs{stateDir, QFileInfo(Settings::filePath()).absolutePath(), Profiles::directory()};
+    dirs.removeIf([](const QString &dir) {
+        return !QDir().mkpath(dir);
+    });
+    auto *watcher = new QFileSystemWatcher(dirs, this);
+    connect(watcher, &QFileSystemWatcher::directoryChanged, this, [this, stateDir](const QString &dir) {
+        m_settingsChanged = m_settingsChanged || dir != stateDir;
+        m_savedReload.start();
+    });
 
     // Not a lasting problem: the sensor may come back. The fan page and the
     // tray show it while it lasts.
@@ -59,6 +69,9 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
     connect(m_fanApplier, &FanApplier::applied, this, [this] {
         clearError(FanErrors);
     });
+    connect(m_fanApplier, &FanApplier::saved, this, [this] {
+        m_stateStamp = QFileInfo(FanState::filePath()).lastModified(); // no need to read it back
+    });
     connect(m_lightApplier, &LightApplier::succeeded, this, [this] {
         clearError(LightErrors);
     });
@@ -67,6 +80,8 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
             m_lights.insert(l.index, l);
         }
         m_lightsLoaded = true;
+        m_lightsFailed = false;
+        setProblem(m_lightProblem, {});
         Q_EMIT changed();
         checkFanLayout();
     });
@@ -75,31 +90,25 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
             setError(text, LightErrors);
         } else {
             m_lightsFailed = true;
-            addProblem(text);
+            setProblem(m_lightProblem, text);
             Q_EMIT changed();
         }
     });
     connect(m_lightApplier, &LightApplier::idle, this, &Lighting::idle);
     connect(m_lightApplier, &LightApplier::layoutRead, this, [this](int code) {
         m_fanLayout = code;
-        const QString warning = EcLights::layoutWarning(m_model, code);
-        if (!warning.isEmpty()) {
-            addProblem(warning);
-            Q_EMIT changed(); // mark the fans in the sidebar
-        }
+        setProblem(m_layoutProblem, EcLights::layoutWarning(m_model, code));
+        Q_EMIT changed(); // mark undetected fans in the sidebar
     });
 }
 
 void Lighting::start(QWindow *window)
 {
-    if (!m_started) {
-        m_started = true;
+    if (!m_fanApplier->isOpen()) { // the first time, or the controller was missing
         QString error;
-        if (!m_fanApplier->open(&error)) {
-            m_fansAvailable = false;
-            addProblem(error);
-            Q_EMIT changed();
-        }
+        m_fansAvailable = m_fanApplier->open(&error);
+        setProblem(m_fanProblem, error);
+        Q_EMIT changed();
     }
     m_helper->setWindow(window);
     if (window && !m_model.ecLights.isEmpty() && !m_lightsLoaded && !m_lightApplier->isBusy()) {
@@ -108,12 +117,19 @@ void Lighting::start(QWindow *window)
     }
 }
 
-void Lighting::addProblem(const QString &text)
+QStringList Lighting::problems() const
 {
-    if (!m_problems.contains(text)) {
-        m_problems << text;
+    QStringList list{m_fanProblem, m_lightProblem, m_layoutProblem};
+    list.removeAll(QString());
+    return list;
+}
+
+void Lighting::setProblem(QString &problem, const QString &text)
+{
+    if (problem != text) {
+        problem = text;
+        Q_EMIT problemsChanged();
     }
-    Q_EMIT problem(text);
 }
 
 bool Lighting::followsCpuTemperature() const
@@ -135,21 +151,21 @@ Ite8297::Rgb Lighting::cpuTemperatureColour() const
 
 // Something in the state directory changed – the command line, most likely.
 // Our own saves land here as well; they read back what we already show.
-void Lighting::stateDirChanged()
+void Lighting::reloadSaved()
 {
-    const QDateTime stamp = QFileInfo(FanState::filePath()).lastModified();
-    if (stamp == m_stateStamp) {
-        return; // the lock file, a backup, ...
-    }
     if (m_fanApplier->isBusy()) {
-        m_stateReload.start(); // after our own change is out
+        m_savedReload.start(); // after our own change is out
         return;
+    }
+    const bool settingsChanged = std::exchange(m_settingsChanged, false);
+    if (!settingsChanged && QFileInfo(FanState::filePath()).lastModified() == m_stateStamp) {
+        return; // our own save, the lock file, ...
     }
     const FanState::Headers before = m_fans;
     const QMap<QString, bool> linksBefore = m_links;
-    loadFans();
+    loadFans(); // also the split choices, from the settings
+    Q_EMIT savedChanged();
     if (m_fans != before || m_links != linksBefore) {
-        Q_EMIT stateFileChanged();
         Q_EMIT changed();
     }
 }

@@ -139,7 +139,7 @@ template<typename List>
 bool anyFollowsTemperature(const List &settings)
 {
     return std::any_of(settings.cbegin(), settings.cend(), [](HeaderSetting s) {
-        return s.mode == Mode::CpuTemperature;
+        return followsTemperature(s.mode);
     });
 }
 
@@ -335,13 +335,16 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
 
     FanController controller(model);
     QString error;
-    if (!controller.apply(resolveForNow(model, settings), &error)) {
-        err() << error << Qt::endl;
-        return ExitFailed;
-    }
-    if (!FanState::merge(settings, &error)) {
-        err() << i18n("The fans were changed, but the state could not be saved: %1", error) << Qt::endl;
-        return ExitFailed;
+    {
+        const FanState::SendLock lock;
+        if (!controller.apply(resolveForNow(model, settings), &error)) {
+            err() << error << Qt::endl;
+            return ExitFailed;
+        }
+        if (!FanState::merge(settings, &error)) {
+            err() << i18n("The fans were changed, but the state could not be saved: %1", error) << Qt::endl;
+            return ExitFailed;
+        }
     }
     if (onlyLed) {
         // One LED set on its own: the pair is now set separately (as in the window).
@@ -422,15 +425,18 @@ int cmdReset(const ModelProfile &model)
         }
     }
     FanController controller(model);
-    if (controller.apply(settings, &error)) {
-        out() << i18n("Fans: all off.") << Qt::endl;
-        if (!FanState::merge(settings, &error)) {
-            err() << error << Qt::endl;
+    {
+        const FanState::SendLock lock;
+        if (controller.apply(settings, &error)) {
+            out() << i18n("Fans: all off.") << Qt::endl;
+            if (!FanState::merge(settings, &error)) {
+                err() << error << Qt::endl;
+                exitCode = ExitFailed;
+            }
+        } else {
+            err() << i18n("Fans: %1", error) << Qt::endl;
             exitCode = ExitFailed;
         }
-    } else {
-        err() << i18n("Fans: %1", error) << Qt::endl;
-        exitCode = ExitFailed;
     }
 
     QList<EcRequest> requests;
@@ -481,6 +487,7 @@ int cmdProfileApply(const ModelProfile &model, const QString &name)
     if (!profile->fans.isEmpty()) {
         FanController controller(model);
         const QList<HeaderSetting> settings = profile->fans.values();
+        const FanState::SendLock lock;
         if (!controller.apply(resolveForNow(model, settings), &error) || !FanState::merge(settings, &error)) {
             err() << i18n("Fans: %1", error) << Qt::endl;
             exitCode = ExitFailed;
@@ -488,6 +495,12 @@ int cmdProfileApply(const ModelProfile &model, const QString &name)
     }
     for (auto it = profile->links.cbegin(); it != profile->links.cend(); ++it) {
         Settings::setLinked(it.key(), it.value());
+    }
+    // A running Glowzone reads the fans and the current profile again a moment
+    // after they change: both should be there before the slower case lights.
+    const QString previous = Settings::currentProfile();
+    if (exitCode == ExitOk) {
+        Settings::setCurrentProfile(profile->name);
     }
     if (!profile->lights.isEmpty()) {
         QList<EcRequest> requests;
@@ -499,10 +512,11 @@ int cmdProfileApply(const ModelProfile &model, const QString &name)
             exitCode = ExitFailed;
         }
     }
-    if (exitCode == ExitOk) {
-        Settings::setCurrentProfile(profile->name);
-        out() << i18n("Applied profile “%1”.", profile->name) << Qt::endl;
+    if (exitCode != ExitOk) {
+        Settings::setCurrentProfile(previous); // only partly applied
+        return exitCode;
     }
+    out() << i18n("Applied profile “%1”.", profile->name) << Qt::endl;
     return exitCode;
 }
 

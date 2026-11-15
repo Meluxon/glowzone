@@ -78,7 +78,6 @@ private Q_SLOTS:
                 QVERIFY2(t.averageSamples >= 1 && t.maxChangePerSecond > 0 && t.intervalMs >= 500, name.constData());
                 QVERIFY2(t.stepSize > 0 && t.hysteresis >= 0 && t.hysteresis < t.stepSize, name.constData());
                 QVERIFY2(t.colours.size() >= 2, name.constData());
-                QVERIFY2(!Ite8297::isControllerMode(Ite8297::Mode::CpuTemperature), name.constData());
             }
             QVERIFY2(m.fanLevels >= Ite8297::MinLevel, name.constData());
             for (const FanDef &f : m.fans) {

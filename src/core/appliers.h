@@ -32,6 +32,7 @@ public:
     FanApplier(const ModelProfile &model, QObject *parent, const QString &hwmonRoot = QLatin1String(HwmonRoot));
 
     bool open(QString *error);
+    bool isOpen() const { return m_open; }
     void queue(const QList<Ite8297::HeaderSetting> &settings);
     void flushNow();
     bool isBusy() const { return !m_pending.isEmpty(); }
@@ -49,7 +50,8 @@ public:
 
 Q_SIGNALS:
     void failed(const QString &error);
-    void applied();
+    void applied(); // something was sent: the controller works
+    void saved();   // a queued change was sent and saved
     void temperatureUpdated();
     void temperatureFailed(const QString &error);
     void temperatureRecovered();
@@ -59,6 +61,7 @@ private:
     void updateTemperatureReading();
     void sendFollowers();
     void send(const QList<Ite8297::HeaderSetting> &followers);
+    bool sendNow(const QList<Ite8297::HeaderSetting> &settings, QString *error);
     QList<Ite8297::HeaderSetting> resolved(const QList<Ite8297::HeaderSetting> &settings) const;
 
     const ModelProfile &m_model;

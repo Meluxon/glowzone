@@ -46,7 +46,7 @@ static DotPart ledDot(HeaderSetting s, bool known, Rgb temperatureColour)
         return {DotKind::Off};
     }
     const ModeInfo *info = modeInfo(s.mode);
-    if (info && info->followsTemperature) {
+    if (followsTemperature(s.mode)) {
         return {DotKind::Solid, QColor(temperatureColour.r, temperatureColour.g, temperatureColour.b)};
     }
     if (info && info->usesColour) {

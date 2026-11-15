@@ -27,6 +27,7 @@ App::App(const ModelProfile &model, QObject *parent)
     QApplication::setQuitOnLastWindowClosed(false);
     connect(m_lighting, &Lighting::temperatureChanged, this, &App::updateTrayToolTip);
     connect(m_lighting, &Lighting::changed, this, &App::updateTrayToolTip);
+    connect(m_lighting, &Lighting::problemsChanged, this, &App::updateTrayToolTip);
 }
 
 App::~App() = default;
@@ -84,9 +85,7 @@ void App::quit()
     if (m_window) {
         m_window->close();
     }
-    delete m_tray;
-    m_tray = nullptr;
-    m_trayShow = nullptr;
+    updateTray(); // removes it
     // Don't lose a change made in the last moment: idle() follows once
     // everything is sent (at once if nothing is pending).
     connect(m_lighting, &Lighting::idle, qApp, &QApplication::quit, Qt::QueuedConnection);
@@ -128,7 +127,9 @@ void App::setStartAtLogin(bool on)
 void App::updateTray()
 {
     if (!m_keepRunning || m_quitting) {
-        delete m_tray; // and its menu
+        if (m_tray) {
+            m_tray->deleteLater(); // and its menu – this may run in one of its actions (Quit)
+        }
         m_tray = nullptr;
         m_trayShow = nullptr;
         m_trayToolTip.clear();
@@ -150,9 +151,7 @@ void App::updateTray()
         menu->addSeparator();
         menu->addAction(QIcon::fromTheme(QStringLiteral("application-exit")), i18nc("@action:inmenu", "Quit"), this, &App::quit);
         m_tray->setContextMenu(menu); // takes ownership
-        connect(m_tray, &KStatusNotifierItem::activateRequested, this, [this] {
-            toggleWindow();
-        });
+        connect(m_tray, &KStatusNotifierItem::activateRequested, this, &App::toggleWindow);
     }
     updateTrayToolTip();
 }
@@ -164,8 +163,8 @@ void App::updateTrayToolTip()
         return;
     }
     QString text = i18nc("@info:tooltip", "Running in the background");
-    if (!m_lighting->fansAvailable() && !m_lighting->problems().isEmpty()) {
-        text = m_lighting->problems().constFirst(); // the fan controller is missing
+    if (!m_lighting->fansAvailable()) {
+        text = m_lighting->fanProblem();
     } else if (m_lighting->followsCpuTemperature()) {
         const auto celsius = m_lighting->cpuTemperature();
         if (!m_lighting->cpuTemperatureError().isEmpty()) {

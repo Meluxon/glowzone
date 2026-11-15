@@ -76,7 +76,8 @@ private Q_SLOTS:
         const HeaderSetting rainbow{0x11, Mode::Rainbow, 2, 3, Rgb{1, 2, 3}};
         QCOMPARE(resolve(rainbow, Rgb{0, 0, 0xff}), rainbow);
         QCOMPARE(modeInfo(QStringLiteral("cpu-temperature"))->mode, Mode::CpuTemperature);
-        QVERIFY(modeInfo(Mode::CpuTemperature)->followsTemperature);
+        QVERIFY(followsTemperature(Mode::CpuTemperature));
+        QVERIFY(!followsTemperature(Mode::Static));
         QVERIFY(!modeInfo(Mode::CpuTemperature)->usesColour);
     }
 

@@ -33,15 +33,17 @@ class Lighting : public QObject
 public:
     Lighting(const ModelProfile &model, QObject *parent);
 
-    // Opens the fan controller (once) – from then on LEDs in the
-    // CPU-temperature mode follow it, window or not. With a window, the case
-    // lights are read too, and the window is the parent for a polkit dialog,
-    // should one ever be needed. Without one (started in the background) the
-    // root helper isn't used at all.
+    // Opens the fan controller – from then on LEDs in the CPU-temperature mode
+    // follow it, window or not. If that failed, each new window tries again.
+    // With a window, the case lights are read too, and the window is the
+    // parent for a polkit dialog, should one ever be needed. Without one
+    // (started in the background) the root helper isn't used at all.
     void start(QWindow *window);
 
-    // Lasting problems so far (a window opened later shows them too).
-    QStringList problems() const { return m_problems; }
+    // What is missing right now (a window opened later shows it too); each
+    // problem goes away once its part works.
+    QStringList problems() const;
+    QString fanProblem() const { return m_fanProblem; } // empty while the controller works
 
     const ModelProfile &model() const { return m_model; }
 
@@ -95,18 +97,18 @@ public:
 
 Q_SIGNALS:
     void changed();
-    void stateFileChanged();            // the saved fan state changed elsewhere (e.g. the CLI)
-    void temperatureChanged();          // a new reading (every couple of seconds while followed)
-    void problem(const QString &text);  // something is missing (lasting)
-    void error(const QString &text);    // a change failed
+    void savedChanged();               // saved state, settings or profiles changed (e.g. by the CLI)
+    void temperatureChanged();         // a new reading (every couple of seconds while followed)
+    void problemsChanged();
+    void error(const QString &text);   // a change failed
     void errorCleared();
     void idle();
 
 private:
     void checkFanLayout();
     void loadFans();
-    void stateDirChanged();
-    void addProblem(const QString &text);
+    void reloadSaved();
+    void setProblem(QString &problem, const QString &text);
     void setError(const QString &text, int source);
     void clearError(int source);
 
@@ -114,17 +116,19 @@ private:
     FanState::Headers m_fans;
     QMap<QString, bool> m_links;
     QMap<quint8, EcLightState> m_lights;
-    bool m_started = false;
-    bool m_fansAvailable = true;
+    bool m_fansAvailable = true; // until opening the controller fails
     bool m_lightsLoaded = false;
     bool m_lightsFailed = false;
     int m_fanLayout = -1;
     bool m_layoutChecked = false;
-    QStringList m_problems;
+    QString m_fanProblem;
+    QString m_lightProblem;
+    QString m_layoutProblem;
     QString m_temperatureError;
     int m_errorSource = 0;  // which queue the shown error came from (0: none)
-    QDateTime m_stateStamp; // fans.json as last read
-    QTimer m_stateReload;
+    QDateTime m_stateStamp; // fans.json as last read or saved by us
+    bool m_settingsChanged = false; // glowzone.conf or the profiles, since the last reload
+    QTimer m_savedReload;
     std::unique_ptr<KAuthHelperCalls> m_helper;
     FanApplier *m_fanApplier;
     LightApplier *m_lightApplier;

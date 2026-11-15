@@ -64,7 +64,7 @@ void FanApplier::setCurrent(const FanState::Headers &headers)
 void FanApplier::follow(const QList<Ite8297::HeaderSetting> &settings)
 {
     for (const Ite8297::HeaderSetting &s : settings) {
-        if (s.mode == Ite8297::Mode::CpuTemperature) {
+        if (Ite8297::followsTemperature(s.mode)) {
             m_followers.insert(s.header, s);
         } else {
             m_followers.remove(s.header);
@@ -112,27 +112,34 @@ void FanApplier::flushNow()
     m_pending.clear();
 
     QString error;
-    const bool sent = m_controller.apply(resolved(batch), &error);
-    m_open = m_open || sent; // the controller may have come back
-    const bool ok = sent && FanState::merge(batch, &error);
+    bool ok = false;
+    {
+        const FanState::SendLock lock;
+        ok = sendNow(batch, &error) && FanState::merge(batch, &error);
+    }
     updateTemperatureReading();
     if (!ok) {
         Q_EMIT failed(error);
         return;
     }
     Q_EMIT applied();
+    Q_EMIT saved();
 }
 
 // The temperature step changed: only the following LEDs get the new colour.
 void FanApplier::sendFollowers()
 {
-    // The command line may have changed an LED a moment ago, before the window
-    // read the saved state again – go by the saved state, so its change isn't
-    // overwritten. (Changes of our own are saved before they leave the queue.)
-    m_followers.clear();
-    follow(FanState::load(m_model).values());
-    follow(m_pending.values()); // changes on their way win
-    send(m_followers.values());
+    // The command line may have changed an LED a moment ago, before Glowzone
+    // read the saved state again: go by the saved state, so that change isn't
+    // overwritten. The lock keeps a command from changing an LED between the
+    // two. Our own changes are saved as they are sent, or are still pending.
+    {
+        const FanState::SendLock lock;
+        m_followers.clear();
+        follow(FanState::load(m_model).values());
+        follow(m_pending.values()); // changes on their way win
+        send(m_followers.values());
+    }
     updateTemperatureReading();
 }
 
@@ -148,10 +155,25 @@ void FanApplier::send(const QList<Ite8297::HeaderSetting> &followers)
             list << s;
         }
     }
+    if (list.isEmpty()) {
+        return;
+    }
     QString error;
-    if (!list.isEmpty() && !m_controller.apply(resolved(list), &error)) {
+    if (sendNow(list, &error)) {
+        Q_EMIT applied();
+    } else {
         Q_EMIT failed(error);
     }
+}
+
+// Once more after a failure: apply() then opens the controller again, which
+// may have been reset or re-enumerated meanwhile.
+bool FanApplier::sendNow(const QList<Ite8297::HeaderSetting> &settings, QString *error)
+{
+    const QList<Ite8297::HeaderSetting> reports = resolved(settings);
+    const bool sent = m_controller.apply(reports, error) || m_controller.apply(reports, error);
+    m_open = m_open || sent; // the controller may have come back
+    return sent;
 }
 
 LightApplier::LightApplier(HelperCalls &calls, QObject *parent)

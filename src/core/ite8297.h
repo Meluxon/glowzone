@@ -47,8 +47,14 @@ struct ModeInfo {
     KLazyLocalizedString name; // shown to the user (context "@item fan LED mode")
     bool usesColour;           // false: the colour bytes are ignored (e.g. rainbow)
     bool usesSpeed;            // false: the speed byte is ignored (e.g. static)
-    bool followsTemperature;   // true: the colour comes from the CPU temperature
 };
+
+// The colour comes from the CPU temperature: Glowzone's own mode, which the
+// controller doesn't know.
+inline bool followsTemperature(Mode mode)
+{
+    return mode == Mode::CpuTemperature;
+}
 
 // Every mode the controller is known to accept. A model offers a subset
 // (ModelProfile::fanModes); use modesFor() for anything shown to the user.
@@ -56,9 +62,6 @@ const QList<ModeInfo> &modes();
 QList<ModeInfo> modesFor(const ModelProfile &model);
 const ModeInfo *modeInfo(Mode mode);
 const ModeInfo *modeInfo(const QString &id);
-
-// False for Glowzone's own modes (CPU temperature), which the controller doesn't know.
-bool isControllerMode(Mode mode);
 
 // Speed and brightness start at 1; the top level is per model (ModelProfile::fanLevels).
 inline constexpr quint8 MinLevel = 1;

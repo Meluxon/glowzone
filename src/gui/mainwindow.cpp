@@ -26,6 +26,8 @@
 #include <QVBoxLayout>
 #include <QWindow>
 
+#include <algorithm>
+
 namespace Glowzone::Gui
 {
 
@@ -68,10 +70,10 @@ MainWindow::MainWindow(Lighting *lighting, App *app)
     addAction(quit);
 
     connect(m_lighting, &Lighting::changed, this, &MainWindow::refresh);
-    connect(m_lighting, &Lighting::stateFileChanged, this, &MainWindow::reloadCurrentProfile);
+    connect(m_lighting, &Lighting::savedChanged, this, &MainWindow::reloadCurrentProfile);
     connect(m_lighting, &Lighting::temperatureChanged, this, &MainWindow::refreshTemperature);
     connect(m_app, &App::backgroundChanged, this, &MainWindow::updateBackgroundMessage);
-    connect(m_lighting, &Lighting::problem, this, &MainWindow::showProblem);
+    connect(m_lighting, &Lighting::problemsChanged, this, &MainWindow::updateProblems);
     connect(m_lighting, &Lighting::error, this, &MainWindow::showError);
     connect(m_lighting, &Lighting::errorCleared, this, [this] {
         hideMessage(m_errorMessage);
@@ -87,10 +89,7 @@ MainWindow::MainWindow(Lighting *lighting, App *app)
     m_currentProfile = Settings::currentProfile();
     reloadProfiles();
     m_sidebar->selectFirst();
-    const QStringList earlier = m_lighting->problems(); // found before this window was opened
-    for (const QString &problem : earlier) {
-        showProblem(problem);
-    }
+    updateProblems(); // found before this window was opened
     updateBackgroundMessage();
 
     const QSize stored = Settings::windowSize();
@@ -481,13 +480,22 @@ void MainWindow::deleteProfile(const QString &name)
 
 // --- messages and closing ----------------------------------------------------
 
-void MainWindow::showProblem(const QString &text)
+// Shown again (if it was closed) only when a problem is new.
+void MainWindow::updateProblems()
 {
-    if (!m_problems.contains(text)) {
-        m_problems << text;
+    const QStringList problems = m_lighting->problems();
+    const bool added = std::any_of(problems.cbegin(), problems.cend(), [this](const QString &p) {
+        return !m_problems.contains(p);
+    });
+    m_problems = problems;
+    if (problems.isEmpty()) {
+        hideMessage(m_problemMessage);
+        return;
     }
-    m_problemMessage->setText(m_problems.join(QLatin1String("\n\n")));
-    showMessage(m_problemMessage);
+    m_problemMessage->setText(problems.join(QLatin1String("\n\n")));
+    if (added) {
+        showMessage(m_problemMessage);
+    }
 }
 
 void MainWindow::showError(const QString &text)

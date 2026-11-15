@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <ctime>
 #include <numeric>
 
 namespace Glowzone
@@ -56,18 +57,23 @@ bool TemperatureSensor::find(QString *error)
 
 std::optional<double> TemperatureSensor::read(QString *error)
 {
-    if (m_input.isEmpty() && !find(error)) {
-        return std::nullopt;
-    }
-    bool ok = false;
-    const int milli = readLine(m_input).toInt(&ok); // millidegrees Celsius
-    // A plausible CPU temperature only: a broken sensor reads 0 or nonsense.
-    if (!ok || milli <= 0 || milli > 150000) {
+    // A sensor found earlier that fails gets one new search at once: the hwmon
+    // numbers change when a driver is loaded again.
+    for (bool searched = false; !searched;) {
+        searched = m_input.isEmpty();
+        if (searched && !find(error)) {
+            return std::nullopt;
+        }
+        bool ok = false;
+        const int milli = readLine(m_input).toInt(&ok); // millidegrees Celsius
+        // A plausible CPU temperature only: a broken sensor reads 0 or nonsense.
+        if (ok && milli > 0 && milli <= 150000) {
+            return milli / 1000.0;
+        }
         *error = i18n("The CPU temperature could not be read from %1.", m_input);
         m_input.clear();
-        return std::nullopt;
     }
-    return milli / 1000.0;
+    return std::nullopt;
 }
 
 TemperatureSmoother::TemperatureSmoother(const CpuTemperatureDef &def)
@@ -140,6 +146,18 @@ Ite8297::Rgb colour(const CpuTemperatureDef &def, int step)
 
 } // namespace TemperatureColours
 
+// Unlike the monotonic clock behind QElapsedTimer, this one goes on during
+// suspend, so a pause in the readings shows as one.
+static qint64 bootTimeMs()
+{
+    timespec ts{};
+    clock_gettime(CLOCK_BOOTTIME, &ts);
+    return qint64(ts.tv_sec) * 1000 + ts.tv_nsec / 1000000;
+}
+
+// Well past the readings averaged: after a suspend or a sensor failure.
+static constexpr qint64 LongPauseMs = 10000;
+
 CpuTemperature::CpuTemperature(const CpuTemperatureDef &def, QObject *parent, const QString &hwmonRoot)
     : QObject(parent)
     , m_def(def)
@@ -158,7 +176,7 @@ void CpuTemperature::start()
     m_smoother.reset();
     m_temperature.reset();
     m_step.reset(); // the first reading always reports its colour
-    m_sinceLast.invalidate();
+    m_lastReadingMs = -1;
     m_timer.start();
     read();
 }
@@ -189,12 +207,15 @@ void CpuTemperature::read()
         m_failing = false;
         Q_EMIT recovered();
     }
+    const qint64 now = bootTimeMs();
     double seconds = 0;
-    if (m_sinceLast.isValid()) {
-        seconds = double(m_sinceLast.restart()) / 1000.0;
-    } else {
-        m_sinceLast.start();
+    if (m_lastReadingMs >= 0) {
+        if (now - m_lastReadingMs > LongPauseMs) {
+            m_smoother.reset(); // the readings it holds are stale: start over
+        }
+        seconds = double(now - m_lastReadingMs) / 1000.0;
     }
+    m_lastReadingMs = now;
     m_temperature = m_smoother.add(*reading, seconds);
     const int step = TemperatureColours::step(m_def, *m_temperature, m_step);
     const bool changed = step != m_step;

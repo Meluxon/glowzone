@@ -5,7 +5,6 @@
 #include "ite8297.h"
 #include "model/modelprofile.h"
 
-#include <QElapsedTimer>
 #include <QList>
 #include <QObject>
 #include <QString>
@@ -95,7 +94,7 @@ private:
     TemperatureSensor m_sensor;
     TemperatureSmoother m_smoother;
     QTimer m_timer;
-    QElapsedTimer m_sinceLast;
+    qint64 m_lastReadingMs = -1; // boot time of the last good reading
     std::optional<double> m_temperature;
     std::optional<int> m_step;
     bool m_failing = false;

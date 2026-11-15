@@ -12,6 +12,7 @@
 #include <KLocalizedString>
 #include <QApplication>
 #include <QMessageBox>
+#include <QSessionManager>
 
 namespace Glowzone::Gui
 {
@@ -41,6 +42,14 @@ int run(bool background)
         }
         return 2;
     }
+
+    // An X11 session restore would start Glowzone a second time, as a window,
+    // next to the login start.
+    QObject::connect(qApp, &QGuiApplication::saveStateRequest, qApp, [](QSessionManager &manager) {
+        if (Settings::startsAtLogin()) {
+            manager.setRestartHint(QSessionManager::RestartNever);
+        }
+    });
 
     App app(*model);
     QObject::connect(&service, &KDBusService::activateRequested, &app, [&app](const QStringList &arguments) {
