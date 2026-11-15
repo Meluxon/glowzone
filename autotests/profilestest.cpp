@@ -19,6 +19,12 @@ static const ModelProfile &legion()
     return *matchModel({QStringLiteral("LENOVO"), QStringLiteral("Legion T5 26IOB6"), QStringLiteral("3733")});
 }
 
+// Same lighting, ignoring the name.
+static bool sameSettings(const Profile &a, const Profile &b)
+{
+    return a.fans == b.fans && a.links == b.links && a.lights == b.lights;
+}
+
 static Profile sample(const QString &name)
 {
     Profile p;
@@ -60,7 +66,7 @@ private Q_SLOTS:
         const auto loaded = Profiles::find(legion(), QStringLiteral("Night"));
         QVERIFY(loaded);
         QCOMPARE(loaded->name, QStringLiteral("Night"));
-        QVERIFY(loaded->sameSettings(sample(QStringLiteral("x"))));
+        QVERIFY(sameSettings(*loaded, sample(QStringLiteral("x"))));
     }
 
     void namesAreCaseInsensitiveAndOverwrite()
@@ -138,7 +144,7 @@ private Q_SLOTS:
         QVERIFY(!Profiles::find(legion(), QStringLiteral("Night")));
         const auto p = Profiles::find(legion(), QStringLiteral("evening"));
         QVERIFY(p);
-        QVERIFY(p->sameSettings(sample(QString())));
+        QVERIFY(sameSettings(*p, sample(QString())));
         QCOMPARE(fileCount(), 2);
         QVERIFY(!Profiles::rename(legion(), QStringLiteral("nope"), QStringLiteral("x"), &error));
     }

@@ -16,11 +16,6 @@
 namespace Glowzone
 {
 
-bool Profile::sameSettings(const Profile &other) const
-{
-    return fans == other.fans && links == other.links && lights == other.lights;
-}
-
 namespace Profiles
 {
 

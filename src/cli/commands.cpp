@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Meluxon
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "commands.h"
-#include "config-glowzone.h"
 
 #include "core/eclights.h"
 #include "core/fancontroller.h"
@@ -75,7 +74,7 @@ const QCommandLineOption &ledOption()
 const QCommandLineOption &purgeOption()
 {
     static const QCommandLineOption o(QStringLiteral("purge-user-data"),
-                                      i18n("Delete Glowzone's settings, saved state and autostart entry for this user, then exit."));
+                                      i18n("Delete Glowzone's settings, profiles and saved state for this user, then exit."));
     return o;
 }
 
@@ -565,48 +564,39 @@ int cmdProfile(const ModelProfile &model, const QStringList &args)
     return profileUsage();
 }
 
+// Glowzone keeps user data in two directories: settings and profiles, and the
+// last fan state.
 int purgeUserData()
 {
-    struct Entry {
-        QString path;
-        bool isDir;
-    };
-    const QList<Entry> entries = {
-        {QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation), true},
-        {QStandardPaths::writableLocation(QStandardPaths::StateLocation), true},
-        {QStandardPaths::writableLocation(QStandardPaths::CacheLocation), true},
-        {QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + QLatin1String("/autostart/") + QLatin1String(GLOWZONE_APP_ID)
-             + QLatin1String(".desktop"),
-         false},
+    const QStringList dirs = {
+        QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation),
+        QStandardPaths::writableLocation(QStandardPaths::StateLocation),
     };
 
     int removed = 0;
     int exitCode = ExitOk;
-    for (const Entry &e : entries) {
-        const QFileInfo info(e.path);
+    for (const QString &path : dirs) {
+        const QFileInfo info(path);
         if (!info.exists() && !info.isSymLink()) { // a dangling link still counts
             continue;
         }
         bool ok = false;
         if (info.isSymLink()) {
             // Remove the link itself – never what it points to.
-            ok = QFile::remove(e.path);
-        } else if (e.isDir) {
+            ok = QFile::remove(path);
+        } else if (info.fileName() != QLatin1String("glowzone")) {
             // Never delete a directory that isn't Glowzone's own.
-            if (info.fileName() != QLatin1String("glowzone")) {
-                err() << i18n("Skipping %1: not a Glowzone directory.", e.path) << Qt::endl;
-                exitCode = ExitFailed;
-                continue;
-            }
-            ok = QDir(e.path).removeRecursively();
+            err() << i18n("Skipping %1: not a Glowzone directory.", path) << Qt::endl;
+            exitCode = ExitFailed;
+            continue;
         } else {
-            ok = QFile::remove(e.path);
+            ok = QDir(path).removeRecursively();
         }
         if (ok) {
-            out() << i18n("Removed %1", e.path) << Qt::endl;
+            out() << i18n("Removed %1", path) << Qt::endl;
             ++removed;
         } else {
-            err() << i18n("Could not remove %1", e.path) << Qt::endl;
+            err() << i18n("Could not remove %1", path) << Qt::endl;
             exitCode = ExitFailed;
         }
     }

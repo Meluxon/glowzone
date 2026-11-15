@@ -147,7 +147,7 @@ from the EC.
 
 1. offers `glowzone reset`, because the lights otherwise keep their last setting;
 2. offers `glowzone --purge-user-data` (`~/.config/glowzone` including profiles,
-   `~/.local/state/glowzone`, `~/.cache/glowzone`, the autostart entry);
+   and `~/.local/state/glowzone`);
 3. removes the program – `pacman -Rns glowzone` for the Arch package, or every
    file in the saved install manifest otherwise;
 4. reloads udev and D-Bus and checks that no Glowzone file is left.

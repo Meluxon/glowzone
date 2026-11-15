@@ -20,9 +20,6 @@ struct Profile {
     FanState::Headers fans;
     QMap<QString, bool> links;          // fan id -> linked
     QMap<quint8, EcLightState> lights;  // light index -> state
-
-    // Same lighting, ignoring the name.
-    bool sameSettings(const Profile &other) const;
 };
 
 // One JSON file per profile in ~/.config/glowzone/profiles/, so they're easy to

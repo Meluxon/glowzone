@@ -40,7 +40,7 @@ if command -v glowzone >/dev/null 2>&1; then
     if ask "Turn all lighting off before uninstalling (glowzone reset)?"; then
         glowzone reset || echo "Reset did not fully succeed – continuing."
     fi
-    if ask "Delete your Glowzone settings, saved state and autostart entry?"; then
+    if ask "Delete your Glowzone settings, profiles and saved state?"; then
         glowzone --purge-user-data
     fi
 else
@@ -113,8 +113,7 @@ if [ -n "$leftovers" ]; then
 fi
 echo "No system files left."
 
-for d in "${XDG_CONFIG_HOME:-$HOME/.config}/glowzone" "${XDG_STATE_HOME:-$HOME/.local/state}/glowzone" \
-    "${XDG_CACHE_HOME:-$HOME/.cache}/glowzone" "${XDG_CONFIG_HOME:-$HOME/.config}/autostart/org.glowzone.Glowzone.desktop"; do
+for d in "${XDG_CONFIG_HOME:-$HOME/.config}/glowzone" "${XDG_STATE_HOME:-$HOME/.local/state}/glowzone"; do
     if [ -e "$d" ]; then
         echo "Kept your data: $d"
     fi

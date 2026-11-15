@@ -13,7 +13,6 @@ post_remove() {
   echo "    - The lights keep their last setting (use scripts/uninstall.sh, which runs"
   echo "      'glowzone reset' before removing, to turn everything off)."
   echo "    - Your own data – packages never touch home directories:"
-  echo "      ~/.config/glowzone  ~/.local/state/glowzone  ~/.cache/glowzone"
-  echo "      ~/.config/autostart/org.glowzone.Glowzone.desktop (if autostart was enabled)"
+  echo "      ~/.config/glowzone  ~/.local/state/glowzone"
   echo "    - The acpi_call module stays loaded until reboot (or 'rmmod acpi_call')."
 }

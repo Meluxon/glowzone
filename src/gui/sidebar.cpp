@@ -154,9 +154,8 @@ public:
                                                                                : QPalette::Inactive;
         const bool selected = opt.state & QStyle::State_Selected;
         const bool hovered = opt.state & QStyle::State_MouseOver;
-        const bool clickable = kind != Sidebar::Section;
         const QColor highlight = opt.palette.color(group, QPalette::Highlight);
-        if (clickable && (selected || hovered)) {
+        if (selected || hovered) {
             const QRectF box = QRectF(opt.rect).adjusted(pad + 0.5, 1.5, -pad - 0.5, -1.5);
             p->save();
             p->setRenderHint(QPainter::Antialiasing);

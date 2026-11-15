@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 12:02+0100\n"
+"POT-Creation-Date: 2026-11-15 13:15+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: French\n"
@@ -18,379 +18,379 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/cli/commands.cpp:46
+#: src/cli/commands.cpp:45
 #, kde-format
 msgid "Fan colour as RRGGBB, for modes that use a colour."
 msgstr "Couleur des ventilateurs en RRGGBB, pour les modes qui utilisent une couleur."
 
-#: src/cli/commands.cpp:54
+#: src/cli/commands.cpp:53
 #, kde-format
 msgid "Fan effect speed (levels: see below)."
 msgstr "Vitesse de l’effet des ventilateurs (niveaux : voir ci-dessous)."
 
-#: src/cli/commands.cpp:62
+#: src/cli/commands.cpp:61
 #, kde-format
 msgid "Brightness of fans or case lights (levels: see below)."
 msgstr "Luminosité des ventilateurs ou de l’éclairage du boîtier (niveaux : voir ci-dessous)."
 
-#: src/cli/commands.cpp:70
+#: src/cli/commands.cpp:69
 #, kde-format
 msgid "Set only one LED of a double fan (positions: see below)."
 msgstr "Ne régler qu’une LED d’un ventilateur double (positions : voir ci-dessous)."
 
-#: src/cli/commands.cpp:78
+#: src/cli/commands.cpp:77
 #, kde-format
-msgid "Delete Glowzone's settings, saved state and autostart entry for this user, then exit."
-msgstr "Supprimer les paramètres, l’état enregistré et l’entrée de démarrage automatique de Glowzone pour cet utilisateur, puis quitter."
+msgid "Delete Glowzone's settings, profiles and saved state for this user, then exit."
+msgstr "Supprimer les paramètres, les profils et l’état enregistré de Glowzone pour cet utilisateur, puis quitter."
 
-#: src/cli/commands.cpp:84
+#: src/cli/commands.cpp:83
 #, kde-format
 msgid "Run “glowzone --help” for usage."
 msgstr "Lancez « glowzone --help » pour l’aide."
 
-#: src/cli/commands.cpp:96
+#: src/cli/commands.cpp:95
 #, kde-format
 msgid "“%1” must be a number from %2 to %3."
 msgstr "« %1 » doit être un nombre de %2 à %3."
 
-#: src/cli/commands.cpp:113
+#: src/cli/commands.cpp:112
 #, kde-format
 msgctxt "@info fan effect speed"
 msgid "speed %1"
 msgstr "vitesse %1"
 
-#: src/cli/commands.cpp:115
+#: src/cli/commands.cpp:114
 #, kde-format
 msgctxt "@info"
 msgid "brightness %1"
 msgstr "luminosité %1"
 
-#: src/cli/commands.cpp:122
+#: src/cli/commands.cpp:121
 #, kde-format
 msgctxt "@info unknown mode value"
 msgid "mode %1"
 msgstr "mode %1"
 
-#: src/cli/commands.cpp:123
+#: src/cli/commands.cpp:122
 #, kde-format
 msgctxt "@info light mode, brightness"
 msgid "%1, brightness %2"
 msgstr "%1, luminosité %2"
 
-#: src/cli/commands.cpp:152
+#: src/cli/commands.cpp:151
 #, kde-format
 msgid "Computer: %1"
 msgstr "Ordinateur : %1"
 
-#: src/cli/commands.cpp:154
+#: src/cli/commands.cpp:153
 #, kde-format
 msgid "Fans (as last set by Glowzone – the controller can’t be read back):"
 msgstr "Ventilateurs (tels que Glowzone les a réglés en dernier – le contrôleur ne peut pas être relu) :"
 
-#: src/cli/commands.cpp:168
+#: src/cli/commands.cpp:167
 #, kde-format
 msgid "unknown (not set by Glowzone yet)"
 msgstr "inconnu (pas encore réglé par Glowzone)"
 
-#: src/cli/commands.cpp:172
+#: src/cli/commands.cpp:171
 #, kde-format
 msgctxt "@info fan position: description"
 msgid "%1: %2"
 msgstr "%1 : %2"
 
-#: src/cli/commands.cpp:181 src/cli/commands.cpp:674
+#: src/cli/commands.cpp:180 src/cli/commands.cpp:667
 #, kde-format
 msgid "Lights:"
 msgstr "Éclairage :"
 
-#: src/cli/commands.cpp:185
+#: src/cli/commands.cpp:184
 #, kde-format
 msgid "not available: %1"
 msgstr "non disponible : %1"
 
-#: src/cli/commands.cpp:194
+#: src/cli/commands.cpp:193
 #, kde-format
 msgctxt "@info"
 msgid "all fans detected (layout 0x%1)"
 msgstr "tous les ventilateurs détectés (disposition 0x%1)"
 
-#: src/cli/commands.cpp:193
+#: src/cli/commands.cpp:192
 #, kde-format
 msgid "Fan detection (BIOS): %1"
 msgstr "Détection des ventilateurs (BIOS) : %1"
 
-#: src/cli/commands.cpp:203
+#: src/cli/commands.cpp:202
 #, kde-format
 msgid "Usage: glowzone fan <fan> <mode> [-c RRGGBB] [-s speed] [-b brightness] [-l position]"
 msgstr "Utilisation : glowzone fan <ventilateur> <mode> [-c RRGGBB] [-s vitesse] [-b luminosité] [-l position]"
 
-#: src/cli/commands.cpp:218
+#: src/cli/commands.cpp:217
 #, kde-format
 msgid "Unknown fan “%1”. Choose one of: %2"
 msgstr "Ventilateur « %1 » inconnu. Choisissez parmi : %2"
 
-#: src/cli/commands.cpp:227
+#: src/cli/commands.cpp:226
 #, kde-format
 msgid "Unknown fan mode “%1”. Choose one of: %2"
 msgstr "Mode de ventilateur « %1 » inconnu. Choisissez parmi : %2"
 
-#: src/cli/commands.cpp:240
+#: src/cli/commands.cpp:239
 #, kde-format
 msgid "“%1” is not a colour. Use six hex digits, e.g. ff3d9c."
 msgstr "« %1 » n’est pas une couleur. Indiquez six chiffres hexadécimaux, par ex. ff3d9c."
 
-#: src/cli/commands.cpp:248
+#: src/cli/commands.cpp:247
 #, kde-format
 msgid "--led only works with a single fan that has more than one LED."
 msgstr "--led ne fonctionne qu’avec un seul ventilateur doté de plusieurs LED."
 
-#: src/cli/commands.cpp:256
+#: src/cli/commands.cpp:255
 #, kde-format
 msgid "Unknown position “%1”. Choose one of: %2"
 msgstr "Position « %1 » inconnue. Choisissez parmi : %2"
 
-#: src/cli/commands.cpp:283
+#: src/cli/commands.cpp:282
 #, kde-format
 msgctxt "@item fan (position)"
 msgid "%1 (%2)"
 msgstr "%1 (%2)"
 
-#: src/cli/commands.cpp:297
+#: src/cli/commands.cpp:296
 #, kde-format
 msgid "The fans were changed, but the state could not be saved: %1"
 msgstr "Les ventilateurs ont été modifiés, mais l’état n’a pas pu être enregistré : %1"
 
-#: src/cli/commands.cpp:316
+#: src/cli/commands.cpp:315
 #, kde-format
 msgid "Usage: glowzone light <light> [mode] [-b brightness]"
 msgstr "Utilisation : glowzone light <lumière> [mode] [-b luminosité]"
 
-#: src/cli/commands.cpp:331
+#: src/cli/commands.cpp:330
 #, kde-format
 msgid "Unknown light “%1”. Choose one of: %2"
 msgstr "Lumière « %1 » inconnue. Choisissez parmi : %2"
 
-#: src/cli/commands.cpp:342
+#: src/cli/commands.cpp:341
 #, kde-format
 msgid "Unknown light mode “%1”. Choose one of: %2"
 msgstr "Mode d’éclairage « %1 » inconnu. Choisissez parmi : %2"
 
-#: src/cli/commands.cpp:353
+#: src/cli/commands.cpp:352
 #, kde-format
 msgid "Give a mode, a brightness (-b), or both."
 msgstr "Indiquez un mode, une luminosité (-b), ou les deux."
 
-#: src/cli/commands.cpp:384
+#: src/cli/commands.cpp:383
 #, kde-format
 msgid "Fans: all off."
 msgstr "Ventilateurs : tous éteints."
 
-#: src/cli/commands.cpp:390 src/cli/commands.cpp:443
+#: src/cli/commands.cpp:389 src/cli/commands.cpp:442
 #, kde-format
 msgid "Fans: %1"
 msgstr "Ventilateurs : %1"
 
-#: src/cli/commands.cpp:399
+#: src/cli/commands.cpp:398
 #, kde-format
 msgid "Case lights: off."
 msgstr "Éclairage du boîtier : éteint."
 
-#: src/cli/commands.cpp:401 src/cli/commands.cpp:456
+#: src/cli/commands.cpp:400 src/cli/commands.cpp:455
 #, kde-format
 msgid "Case lights: %1"
 msgstr "Éclairage du boîtier : %1"
 
-#: src/cli/commands.cpp:411
+#: src/cli/commands.cpp:410
 #, kde-format
 msgid "Usage: glowzone profile list | apply <name> | save <name> | rename <old> <new> | delete <name>"
 msgstr "Utilisation : glowzone profile list | apply <nom> | save <nom> | rename <ancien> <nouveau> | delete <nom>"
 
-#: src/cli/commands.cpp:418
+#: src/cli/commands.cpp:417
 #, kde-format
 msgid "No profiles saved yet. Save one with “glowzone profile save <name>”."
 msgstr "Aucun profil enregistré pour l’instant. Enregistrez-en un avec « glowzone profile save <nom> »."
 
-#: src/cli/commands.cpp:433 src/core/profiles.cpp:232 src/core/profiles.cpp:246
+#: src/cli/commands.cpp:432 src/core/profiles.cpp:227 src/core/profiles.cpp:241
 #, kde-format
 msgid "There is no profile called “%1”."
 msgstr "Il n’existe aucun profil nommé « %1 »."
 
-#: src/cli/commands.cpp:462
+#: src/cli/commands.cpp:461
 #, kde-format
 msgid "Applied profile “%1”."
 msgstr "Profil « %1 » appliqué."
 
-#: src/cli/commands.cpp:472 src/core/profiles.cpp:210 src/core/profiles.cpp:251 src/gui/mainwindow.cpp:324
+#: src/cli/commands.cpp:471 src/core/profiles.cpp:205 src/core/profiles.cpp:246 src/gui/mainwindow.cpp:324
 #, kde-format
 msgid "A profile name must be 1 to %1 characters long."
 msgstr "Un nom de profil doit comporter de 1 à %1 caractères."
 
-#: src/cli/commands.cpp:488
+#: src/cli/commands.cpp:487
 #, kde-format
 msgid "Note: Glowzone hasn’t set any fan yet, so the profile contains no fan settings."
 msgstr "Remarque : Glowzone n’a encore réglé aucun ventilateur, le profil ne contient donc aucun réglage de ventilateur."
 
-#: src/cli/commands.cpp:497
+#: src/cli/commands.cpp:496
 #, kde-format
 msgid "Note: the case lights could not be read and are not part of the profile: %1"
 msgstr "Remarque : l’éclairage du boîtier n’a pas pu être lu et ne fait pas partie du profil : %1"
 
-#: src/cli/commands.cpp:507
+#: src/cli/commands.cpp:506
 #, kde-format
 msgid "Saved profile “%1”."
 msgstr "Profil « %1 » enregistré."
 
-#: src/cli/commands.cpp:522
+#: src/cli/commands.cpp:521
 #, kde-format
 msgid "Deleted profile “%1”."
 msgstr "Profil « %1 » supprimé."
 
-#: src/cli/commands.cpp:537
+#: src/cli/commands.cpp:536
 #, kde-format
 msgid "Renamed profile “%1” to “%2”."
 msgstr "Profil « %1 » renommé en « %2 »."
 
-#: src/cli/commands.cpp:594
+#: src/cli/commands.cpp:589
 #, kde-format
 msgid "Skipping %1: not a Glowzone directory."
 msgstr "%1 ignoré : ce n’est pas un répertoire de Glowzone."
 
-#: src/cli/commands.cpp:603
+#: src/cli/commands.cpp:596
 #, kde-format
 msgid "Removed %1"
 msgstr "%1 supprimé"
 
-#: src/cli/commands.cpp:606
+#: src/cli/commands.cpp:599
 #, kde-format
 msgid "Could not remove %1"
 msgstr "Impossible de supprimer %1"
 
-#: src/cli/commands.cpp:611
+#: src/cli/commands.cpp:604
 #, kde-format
 msgid "No Glowzone user data found."
 msgstr "Aucune donnée utilisateur de Glowzone trouvée."
 
-#: src/cli/commands.cpp:642 src/cli/main.cpp:30
+#: src/cli/commands.cpp:635 src/cli/main.cpp:30
 #, kde-format
 msgid "Lighting control for supported Lenovo desktops: fan LEDs and case lights."
 msgstr "Contrôle de l’éclairage des ordinateurs de bureau Lenovo pris en charge : LED des ventilateurs et éclairage du boîtier."
 
-#: src/cli/commands.cpp:643
+#: src/cli/commands.cpp:636
 #, kde-format
 msgid "Commands:"
 msgstr "Commandes :"
 
-#: src/cli/commands.cpp:645
+#: src/cli/commands.cpp:638
 #, kde-format
 msgid "Show the current lighting"
 msgstr "Afficher l’éclairage actuel"
 
-#: src/cli/commands.cpp:646
+#: src/cli/commands.cpp:639
 #, kde-format
 msgid "Set fan LEDs"
 msgstr "Régler les LED des ventilateurs"
 
-#: src/cli/commands.cpp:647
+#: src/cli/commands.cpp:640
 #, kde-format
 msgid "Set a case light"
 msgstr "Régler un éclairage du boîtier"
 
-#: src/cli/commands.cpp:648
+#: src/cli/commands.cpp:641
 #, kde-format
 msgid "Turn all lighting off"
 msgstr "Éteindre tout l’éclairage"
 
-#: src/cli/commands.cpp:649
+#: src/cli/commands.cpp:642
 #, kde-format
 msgid "List saved profiles (* = applied last)"
 msgstr "Lister les profils enregistrés (* = appliqué en dernier)"
 
-#: src/cli/commands.cpp:650
+#: src/cli/commands.cpp:643
 #, kde-format
 msgid "Apply a profile"
 msgstr "Appliquer un profil"
 
-#: src/cli/commands.cpp:651
+#: src/cli/commands.cpp:644
 #, kde-format
 msgid "Save the current lighting as a profile"
 msgstr "Enregistrer l’éclairage actuel comme profil"
 
-#: src/cli/commands.cpp:652
+#: src/cli/commands.cpp:645
 #, kde-format
 msgid "Rename a profile"
 msgstr "Renommer un profil"
 
-#: src/cli/commands.cpp:653
+#: src/cli/commands.cpp:646
 #, kde-format
 msgid "Delete a profile"
 msgstr "Supprimer un profil"
 
-#: src/cli/commands.cpp:655
+#: src/cli/commands.cpp:648
 #, kde-format
 msgid "Run glowzone without arguments to open the window."
 msgstr "Lancez glowzone sans argument pour ouvrir la fenêtre."
 
-#: src/cli/commands.cpp:659
+#: src/cli/commands.cpp:652
 #, kde-format
 msgid "This computer (%1):"
 msgstr "Cet ordinateur (%1) :"
 
-#: src/cli/commands.cpp:660
+#: src/cli/commands.cpp:653
 #, kde-format
 msgid "Fans:"
 msgstr "Ventilateurs :"
 
-#: src/cli/commands.cpp:668
+#: src/cli/commands.cpp:661
 #, kde-format
 msgid "LEDs (--led):"
 msgstr "LED (--led) :"
 
-#: src/cli/commands.cpp:671
+#: src/cli/commands.cpp:664
 #, kde-format
 msgid "Fan modes:"
 msgstr "Modes des ventilateurs :"
 
-#: src/cli/commands.cpp:672
+#: src/cli/commands.cpp:665
 #, kde-format
 msgid "Fan speed, brightness:"
 msgstr "Vitesse, luminosité des ventilateurs :"
 
-#: src/cli/commands.cpp:675
+#: src/cli/commands.cpp:668
 #, kde-format
 msgid "Light modes:"
 msgstr "Modes d’éclairage :"
 
-#: src/cli/commands.cpp:676
+#: src/cli/commands.cpp:669
 #, kde-format
 msgid "Light brightness:"
 msgstr "Luminosité de l’éclairage :"
 
-#: src/cli/commands.cpp:683
+#: src/cli/commands.cpp:676
 #, kde-format
 msgid "This computer is not supported. Supported models: %1"
 msgstr "Cet ordinateur n’est pas pris en charge. Modèles pris en charge : %1"
 
-#: src/cli/commands.cpp:692
+#: src/cli/commands.cpp:685
 #, kde-format
 msgid "status, fan, light, reset or profile"
 msgstr "status, fan, light, reset ou profile"
 
-#: src/cli/commands.cpp:693
+#: src/cli/commands.cpp:686
 #, kde-format
 msgid "Arguments of the command"
 msgstr "Arguments de la commande"
 
-#: src/cli/commands.cpp:713
+#: src/cli/commands.cpp:706
 #, kde-format
 msgid "Unknown command “%1”."
 msgstr "Commande « %1 » inconnue."
 
-#: src/cli/commands.cpp:725
+#: src/cli/commands.cpp:718
 #, kde-format
 msgid "“status” takes no arguments."
 msgstr "« status » n’accepte aucun argument."
 
-#: src/cli/commands.cpp:736
+#: src/cli/commands.cpp:729
 #, kde-format
 msgid "“reset” takes no arguments."
 msgstr "« reset » n’accepte aucun argument."
@@ -516,12 +516,12 @@ msgstr ""
 msgid "Could not initialise HID access: %1"
 msgstr "Impossible d’initialiser l’accès HID : %1"
 
-#: src/core/fancontroller.cpp:45
+#: src/core/fancontroller.cpp:61
 #, kde-format
 msgid "Fan LED controller %1 not found or not accessible (%2)."
 msgstr "Contrôleur de LED des ventilateurs %1 introuvable ou inaccessible (%2)."
 
-#: src/core/fancontroller.cpp:59
+#: src/core/fancontroller.cpp:75
 #, kde-format
 msgid "Sending to the fan LED controller failed: %1"
 msgstr "Échec de l’envoi au contrôleur de LED des ventilateurs : %1"
@@ -536,42 +536,42 @@ msgstr "Impossible de créer le répertoire pour %1."
 msgid "Could not save the fan state to %1: %2"
 msgstr "Impossible d’enregistrer l’état des ventilateurs dans %1 : %2"
 
-#: src/core/ite8297.cpp:11
+#: src/core/ite8297.cpp:14
 msgctxt "@item fan LED mode"
 msgid "Off"
 msgstr "Éteint"
 
-#: src/core/ite8297.cpp:12
+#: src/core/ite8297.cpp:15
 msgctxt "@item fan LED mode"
 msgid "Static"
 msgstr "Statique"
 
-#: src/core/ite8297.cpp:13
+#: src/core/ite8297.cpp:16
 msgctxt "@item fan LED mode"
 msgid "Sparkle"
 msgstr "Scintillement"
 
-#: src/core/ite8297.cpp:14
+#: src/core/ite8297.cpp:17
 msgctxt "@item fan LED mode"
 msgid "Breathing"
 msgstr "Respiration"
 
-#: src/core/ite8297.cpp:15
+#: src/core/ite8297.cpp:18
 msgctxt "@item fan LED mode"
 msgid "Wave"
 msgstr "Vague"
 
-#: src/core/ite8297.cpp:16
+#: src/core/ite8297.cpp:19
 msgctxt "@item fan LED mode"
 msgid "Specter"
 msgstr "Spectre"
 
-#: src/core/ite8297.cpp:17
+#: src/core/ite8297.cpp:20
 msgctxt "@item fan LED mode"
 msgid "Rainbow wave"
 msgstr "Arc-en-ciel"
 
-#: src/core/ite8297.cpp:18
+#: src/core/ite8297.cpp:21
 msgctxt "@item fan LED mode"
 msgid "Random"
 msgstr "Aléatoire"
@@ -597,22 +597,22 @@ msgstr ""
 "Cet ordinateur n’est pas pris en charge (fabricant : %1, modèle : %2, carte mère : %3).\n"
 "Glowzone ne fonctionne que sur : %4"
 
-#: src/core/profiles.cpp:214
+#: src/core/profiles.cpp:209
 #, kde-format
 msgid "Could not create the directory %1."
 msgstr "Impossible de créer le répertoire %1."
 
-#: src/core/profiles.cpp:222
+#: src/core/profiles.cpp:217
 #, kde-format
 msgid "Could not save the profile to %1: %2"
 msgstr "Impossible d’enregistrer le profil dans %1 : %2"
 
-#: src/core/profiles.cpp:236 src/core/profiles.cpp:270
+#: src/core/profiles.cpp:231 src/core/profiles.cpp:265
 #, kde-format
 msgid "Could not delete %1."
 msgstr "Impossible de supprimer %1."
 
-#: src/core/profiles.cpp:256
+#: src/core/profiles.cpp:251
 #, kde-format
 msgid "A profile called “%1” already exists."
 msgstr "Un profil nommé « %1 » existe déjà."
@@ -960,91 +960,91 @@ msgctxt "@info"
 msgid "Not available – see the message below."
 msgstr "Non disponible – voir le message ci-dessous."
 
-#: src/gui/sidebar.cpp:243
+#: src/gui/sidebar.cpp:242
 #, kde-format
 msgctxt "@title sidebar section"
 msgid "Fans"
 msgstr "Ventilateurs"
 
-#: src/gui/sidebar.cpp:261
+#: src/gui/sidebar.cpp:260
 #, kde-format
 msgctxt "@title sidebar section"
 msgid "Case Lights"
 msgstr "Éclairage du boîtier"
 
-#: src/gui/sidebar.cpp:269
+#: src/gui/sidebar.cpp:268
 #, kde-format
 msgctxt "@title sidebar section"
 msgid "Profiles"
 msgstr "Profils"
 
-#: src/gui/sidebar.cpp:294 src/gui/sidebar.cpp:328
+#: src/gui/sidebar.cpp:293 src/gui/sidebar.cpp:327
 #, kde-format
 msgctxt "@info fan state"
 msgid "Not set yet"
 msgstr "Pas encore réglé"
 
-#: src/gui/sidebar.cpp:294 src/gui/sidebar.cpp:349
+#: src/gui/sidebar.cpp:293 src/gui/sidebar.cpp:348
 #, kde-format
 msgctxt "@info LEDs of a double fan set one by one"
 msgid "Separately"
 msgstr "Séparément"
 
-#: src/gui/sidebar.cpp:300 src/gui/sidebar.cpp:352
+#: src/gui/sidebar.cpp:299 src/gui/sidebar.cpp:351
 #, kde-format
 msgctxt "@info %1 is the mode; the BIOS doesn't see the fan"
 msgid "%1 · not detected"
 msgstr "%1 · non détecté"
 
-#: src/gui/sidebar.cpp:311 src/gui/sidebar.cpp:406
+#: src/gui/sidebar.cpp:310 src/gui/sidebar.cpp:405
 #, kde-format
 msgctxt "@action"
 msgid "Save Current Lighting…"
 msgstr "Enregistrer l’éclairage actuel…"
 
-#: src/gui/sidebar.cpp:372
+#: src/gui/sidebar.cpp:371
 #, kde-format
 msgctxt "@info light state not read yet"
 msgid "Unknown"
 msgstr "Inconnu"
 
-#: src/gui/sidebar.cpp:404 src/gui/sidebar.cpp:420
+#: src/gui/sidebar.cpp:403 src/gui/sidebar.cpp:419
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Applied last. Click to apply it again."
 msgstr "Appliqué en dernier. Cliquez pour l’appliquer à nouveau."
 
-#: src/gui/sidebar.cpp:404
+#: src/gui/sidebar.cpp:403
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Click to apply"
 msgstr "Cliquez pour appliquer"
 
-#: src/gui/sidebar.cpp:418
+#: src/gui/sidebar.cpp:417
 #, kde-format
 msgctxt "@item profile, %1 its name"
 msgid "%1 · changed"
 msgstr "%1 · modifié"
 
-#: src/gui/sidebar.cpp:419
+#: src/gui/sidebar.cpp:418
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Changed since it was applied. Click to go back to it, or use Save."
 msgstr "Modifié depuis son application. Cliquez pour y revenir, ou utilisez Enregistrer."
 
-#: src/gui/sidebar.cpp:480
+#: src/gui/sidebar.cpp:479
 #, kde-format
 msgctxt "@action:inmenu"
 msgid "Apply"
 msgstr "Appliquer"
 
-#: src/gui/sidebar.cpp:483
+#: src/gui/sidebar.cpp:482
 #, kde-format
 msgctxt "@action:inmenu"
 msgid "Rename…"
 msgstr "Renommer…"
 
-#: src/gui/sidebar.cpp:487
+#: src/gui/sidebar.cpp:486
 #, kde-format
 msgctxt "@action:inmenu"
 msgid "Delete…"
