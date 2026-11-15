@@ -36,6 +36,9 @@ enum class Mode : quint8 {
     Specter = 0x06,
     Rainbow = 0x09,
     Random = 0x0A,
+    // Glowzone's own: follows the CPU temperature. Never sent to the
+    // controller – resolve() turns it into Static with the matching colour.
+    CpuTemperature = CpuTemperatureMode,
 };
 
 struct ModeInfo {
@@ -44,6 +47,7 @@ struct ModeInfo {
     KLazyLocalizedString name; // shown to the user (context "@item fan LED mode")
     bool usesColour;           // false: the colour bytes are ignored (e.g. rainbow)
     bool usesSpeed;            // false: the speed byte is ignored (e.g. static)
+    bool followsTemperature;   // true: the colour comes from the CPU temperature
 };
 
 // Every mode the controller is known to accept. A model offers a subset
@@ -52,6 +56,9 @@ const QList<ModeInfo> &modes();
 QList<ModeInfo> modesFor(const ModelProfile &model);
 const ModeInfo *modeInfo(Mode mode);
 const ModeInfo *modeInfo(const QString &id);
+
+// False for Glowzone's own modes (CPU temperature), which the controller doesn't know.
+bool isControllerMode(Mode mode);
 
 // Speed and brightness start at 1; the top level is per model (ModelProfile::fanLevels).
 inline constexpr quint8 MinLevel = 1;
@@ -74,6 +81,11 @@ struct HeaderSetting {
     bool operator==(const HeaderSetting &) const = default;
 };
 
+// What goes to the controller for a setting: a CPU-temperature LED becomes
+// static in the given colour (at the lowest speed, as Vantage sends it);
+// anything else is returned as it is.
+HeaderSetting resolve(HeaderSetting setting, Rgb temperatureColour);
+
 // The values used for a header Glowzone hasn't set yet: off, but white and
 // at the lowest speed, so choosing a lit mode shows something sensible.
 HeaderSetting initialSetting(quint8 header);
@@ -86,7 +98,9 @@ bool isKnownHeader(quint8 header);
 QByteArray settingsReport(HeaderSetting s);
 QByteArray commitReport(Group g);
 
-// The full sequence for a batch: settings reports, then one commit per group touched.
+// The full sequence for a batch: settings reports, then one commit per group
+// touched. Settings for unknown headers or in a mode the controller doesn't
+// know (resolve() them first) are left out.
 QList<QByteArray> reportsFor(const QList<HeaderSetting> &settings);
 
 } // namespace Glowzone::Ite8297

@@ -61,6 +61,25 @@ private Q_SLOTS:
         QVERIFY(isKnownHeader(0x3a));
     }
 
+    // Glowzone's own mode value must never reach the controller...
+    void cpuTemperatureModeIsNeverSent()
+    {
+        QVERIFY(reportsFor({{0x13, Mode::CpuTemperature, 1, 2, Rgb{}}}).isEmpty());
+        // ...only what resolve() makes of it. Capture: Vantage's CPU temperature
+        // at idle, CPU fan: cc 13 01 01 02 00 00 ff -> cc 28 0f
+        const HeaderSetting resolved = resolve({0x13, Mode::CpuTemperature, 3, 2, Rgb{0x15, 0x8d, 0xdd}}, Rgb{0x00, 0x00, 0xff});
+        const QList<QByteArray> reports = reportsFor({resolved});
+        QCOMPARE(reports.size(), 2);
+        QCOMPARE(reports.at(0), report("cc130101020000ff"));
+        QCOMPARE(reports.at(1), report("cc280f"));
+        // Other modes pass through unchanged.
+        const HeaderSetting rainbow{0x11, Mode::Rainbow, 2, 3, Rgb{1, 2, 3}};
+        QCOMPARE(resolve(rainbow, Rgb{0, 0, 0xff}), rainbow);
+        QCOMPARE(modeInfo(QStringLiteral("cpu-temperature"))->mode, Mode::CpuTemperature);
+        QVERIFY(modeInfo(Mode::CpuTemperature)->followsTemperature);
+        QVERIFY(!modeInfo(Mode::CpuTemperature)->usesColour);
+    }
+
     void reportsAre64Bytes()
     {
         QCOMPARE(settingsReport({0x11, Mode::Off, 1, 2, Rgb{}}).size(), 64);

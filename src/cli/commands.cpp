@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "commands.h"
 
+#include "core/cputemperature.h"
 #include "core/eclights.h"
 #include "core/fancontroller.h"
 #include "core/fanstate.h"
+#include "core/instance.h"
 #include "core/messages.h"
 #include "core/profiles.h"
 #include "core/settings.h"
@@ -133,6 +135,34 @@ QString describe(EcLightState s)
     return i18nc("@info light mode, brightness", "%1, brightness %2", mode, s.brightness);
 }
 
+// LEDs in the CPU-temperature mode get the colour for the temperature right
+// now. Updating it later is the window's (or the tray's) job; says so if
+// that isn't running.
+QList<HeaderSetting> resolveForNow(const ModelProfile &model, const QList<HeaderSetting> &settings)
+{
+    const bool follows = std::any_of(settings.cbegin(), settings.cend(), [](const HeaderSetting &s) {
+        return s.mode == Mode::CpuTemperature;
+    });
+    if (!follows || !model.cpuTemperature) {
+        return settings;
+    }
+    double celsius = 0;
+    QString error;
+    const auto colour = cpuTemperatureColourNow(*model.cpuTemperature, &celsius, &error);
+    if (!colour) {
+        err() << error << Qt::endl;
+    }
+    QList<HeaderSetting> out;
+    for (const HeaderSetting &s : settings) {
+        out << resolve(s, colour.value_or(TemperatureColours::colour(*model.cpuTemperature, 0)));
+    }
+    if (!Instance::isRunning()) {
+        err() << i18n("Note: LEDs following the CPU temperature only change colour while Glowzone is running (the window, or in the background). Start it with “glowzone” or “glowzone --background”.")
+              << Qt::endl;
+    }
+    return out;
+}
+
 int nameWidth(const ModelProfile &model)
 {
     int w = 0;
@@ -186,6 +216,22 @@ int cmdStatus(const ModelProfile &model)
             text = perLed.constFirst();
         }
         out() << QLatin1String("  ") << fan.name.toString().leftJustified(width) << text << Qt::endl;
+    }
+    const bool follows = std::any_of(saved.cbegin(), saved.cend(), [](const HeaderSetting &s) {
+        return s.mode == Mode::CpuTemperature;
+    });
+    if (follows && model.cpuTemperature) {
+        double celsius = 0;
+        QString error;
+        if (cpuTemperatureColourNow(*model.cpuTemperature, &celsius, &error)) {
+            out() << QLatin1String("  ")
+                  << i18n("CPU temperature: %1 °C (%2)",
+                          QString::number(celsius, 'f', 0),
+                          Instance::isRunning() ? i18n("the colours follow it") : i18n("not followed – Glowzone isn’t running"))
+                  << Qt::endl;
+        } else {
+            out() << QLatin1String("  ") << error << Qt::endl;
+        }
     }
 
     out() << Qt::endl << i18n("Lights:") << Qt::endl;
@@ -287,7 +333,7 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
 
     FanController controller(model);
     QString error;
-    if (!controller.apply(settings, &error)) {
+    if (!controller.apply(resolveForNow(model, settings), &error)) {
         err() << error << Qt::endl;
         return ExitFailed;
     }
@@ -433,7 +479,7 @@ int cmdProfileApply(const ModelProfile &model, const QString &name)
     if (!profile->fans.isEmpty()) {
         FanController controller(model);
         const QList<HeaderSetting> settings = profile->fans.values();
-        if (!controller.apply(settings, &error) || !FanState::merge(settings, &error)) {
+        if (!controller.apply(resolveForNow(model, settings), &error) || !FanState::merge(settings, &error)) {
             err() << i18n("Fans: %1", error) << Qt::endl;
             exitCode = ExitFailed;
         }
@@ -560,8 +606,8 @@ int cmdProfile(const ModelProfile &model, const QStringList &args)
     return profileUsage();
 }
 
-// Glowzone keeps user data in two directories: settings and profiles, and the
-// last fan state.
+// Glowzone keeps user data in two directories – settings and profiles, and the
+// last fan state – plus the autostart entry if "Start at Login" is on.
 int purgeUserData()
 {
     const QStringList dirs = {
@@ -593,6 +639,18 @@ int purgeUserData()
             ++removed;
         } else {
             err() << i18n("Could not remove %1", path) << Qt::endl;
+            exitCode = ExitFailed;
+        }
+    }
+    // "Start at Login": the autostart entry is ours by its file name.
+    const QString autostart = Settings::autostartPath();
+    const QFileInfo autostartInfo(autostart);
+    if (autostartInfo.exists() || autostartInfo.isSymLink()) {
+        if (QFile::remove(autostart)) {
+            out() << i18n("Removed %1", autostart) << Qt::endl;
+            ++removed;
+        } else {
+            err() << i18n("Could not remove %1", autostart) << Qt::endl;
             exitCode = ExitFailed;
         }
     }
@@ -634,7 +692,8 @@ static QString helpText()
             {QStringLiteral("profile rename <old> <new>"), i18n("Rename a profile")},
             {QStringLiteral("profile delete <name>"), i18n("Delete a profile")},
         })
-        + QLatin1Char('\n') + i18n("Run glowzone without arguments to open the window.") + QLatin1String("\n\n");
+        + QLatin1Char('\n') + i18n("Run glowzone without arguments to open the window, or with --background to start in the system tray.")
+        + QLatin1String("\n\n");
 
     QList<Row> values;
     if (const ModelProfile *model = matchModel(DmiInfo::readSystem())) {

@@ -67,6 +67,18 @@ private Q_SLOTS:
         QCOMPARE(loaded.value(0x3a), front);
     }
 
+    // The state keeps the mode, never the colour of the moment.
+    void cpuTemperatureRoundTrip()
+    {
+        QString error;
+        const HeaderSetting cpu{0x13, Mode::CpuTemperature, 1, 3, Rgb{0x15, 0x8d, 0xdd}};
+        QVERIFY2(FanState::merge({cpu}, &error), qPrintable(error));
+        QCOMPARE(FanState::load(model()).value(0x13), cpu);
+        QCOMPARE(FanState::headersToJson({{0x13, cpu}}).value(QLatin1String("0x13")).toObject().value(QLatin1String("mode")).toString(),
+                 QStringLiteral("cpu-temperature"));
+        QVERIFY(FanState::fitsModel(model(), cpu));
+    }
+
     void mergeKeepsOtherHeaders()
     {
         QString error;

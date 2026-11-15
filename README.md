@@ -39,7 +39,8 @@ makepkg -si
 ```
 
 **Other distributions** need Qt ≥ 6.7 with Qt SVG, KDE Frameworks 6 (KAuth with the
-polkit backend, KCoreAddons, KI18n, KWidgetsAddons), extra-cmake-modules,
+polkit backend, KCoreAddons, KDBusAddons, KI18n, KStatusNotifierItem,
+KWidgetsAddons), extra-cmake-modules,
 hidapi (hidraw), polkit, CMake and a C++20 compiler. Then:
 
 ```sh
@@ -60,12 +61,20 @@ sidebar and set its mode, colour, speed and brightness; changes apply at once.
 Double fans can be **set separately**. Click a profile to apply it,
 *Save Current Lighting…* to make one; right-click to rename or delete.
 
+**CPU temperature** is a mode like the others: an LED in it changes colour
+with the CPU temperature – blue when cool, through green and yellow, to red
+when hot – while other fans keep their own effects. Glowzone has to be running
+for that: turn on *Keep Running in Background* in the ☰ menu to keep it in the
+system tray when the window is closed, and *Start at Login* to start it there.
+Both are off by default.
+
 The same from a terminal:
 
 ```sh
 glowzone status
 glowzone fan all rainbow -s 1 -b 2
 glowzone fan top static -c 0000ff --led rear   # one LED of a double fan
+glowzone fan cpu cpu-temperature -b 3          # follows the CPU temperature
 glowzone light logo on -b 1
 glowzone profile apply night
 glowzone reset                                 # everything off
@@ -84,6 +93,10 @@ Good to know:
   are and every LED still gets its settings.
 - Changing a case light can stall the PC for a moment (a BIOS call; Vantage
   does the same on Windows), so its sliders apply when you let go.
+- The CPU-temperature colours follow the CPU's own sensor, read as your user –
+  Vantage reads the embedded controller instead, which would need root. The
+  colours match Vantage's for a steady temperature; while it changes fast they
+  may be a step apart for a few seconds.
 
 ## Uninstall
 
@@ -94,7 +107,8 @@ Good to know:
 It offers to turn the lights off and to delete your settings and profiles,
 then removes the program and checks that nothing is left. With `pacman -Rns glowzone`
 alone, the lights keep their last setting and your files in
-`~/.config/glowzone` and `~/.local/state/glowzone` stay.
+`~/.config/glowzone` and `~/.local/state/glowzone` (and the login start in
+`~/.config/autostart`) stay.
 
 ## More
 

@@ -12,8 +12,9 @@ ctest --test-dir build
 
 The tests need no hardware: they check the fan reports against bytes captured
 from Lenovo Vantage, the root helper's checks against a fake `acpi_call`, the
-case-light queue against a fake helper, the model profiles, profiles and the
-saved fan state.
+case-light queue against a fake helper, the model profiles, profiles, the
+saved fan state, and the CPU-temperature colours against Vantage's (with a
+fake hwmon tree).
 
 `./scripts/install.sh` does the same and installs into `/usr` with sudo; it
 keeps the install manifest in `/usr/share/glowzone/` for
@@ -45,7 +46,9 @@ the first ACPI call outside what that model allows.
 Capture Lenovo Vantage on Windows (USBPcap + Wireshark), map every fan to its
 ITE 8297 header and every mode Vantage offers, check the GameZone WMI methods
 in the DSDT, and add a profile to `src/model/modelprofile.cpp` – fans, modes,
-levels and the case lights with their colours – plus its USB ID in
+levels, the case lights with their colours and, if Vantage offers it, the
+CPU-temperature colours (capture it with a CPU load in steps and log the
+temperature alongside, e.g. with HWiNFO) – plus its USB ID in
 `data/70-glowzone.rules`. The tests check that a profile is consistent and that
 the udev rule covers it. Please include the captures in the pull request.
 
@@ -86,8 +89,9 @@ the menu entry's in `data/io.github.meluxon.Glowzone.desktop`.
 | `/usr/lib/udev/rules.d/70-glowzone.rules` | fan controller access for the logged-in user |
 | `/usr/share/locale/*/LC_MESSAGES/glowzone.mo` | translations |
 
-Your own files: `~/.config/glowzone/` (settings, profiles) and
-`~/.local/state/glowzone/` (the last fan state). `glowzone --purge-user-data`
-removes both.
+Your own files: `~/.config/glowzone/` (settings, profiles),
+`~/.local/state/glowzone/` (the last fan state) and, with *Start at Login*,
+`~/.config/autostart/io.github.meluxon.Glowzone.desktop`.
+`glowzone --purge-user-data` removes them.
 
 The reverse-DNS IDs (`io.github.meluxon.*`) are set in `CMakeLists.txt`.

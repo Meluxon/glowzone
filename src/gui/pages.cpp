@@ -88,6 +88,14 @@ void FanPage::refresh()
             m_headings.at(i)->setVisible(!linked);
         }
     }
+    refreshTemperature();
+}
+
+void FanPage::refreshTemperature()
+{
+    for (LedForm *f : std::as_const(m_forms)) {
+        f->setTemperature(m_lighting->cpuTemperature(), m_lighting->cpuTemperatureError());
+    }
 }
 
 void FanPage::focusLed(quint8 header)

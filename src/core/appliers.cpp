@@ -12,18 +12,28 @@ namespace Glowzone
 static constexpr int FanDelayMs = 80;
 static constexpr int LightDelayMs = 300; // each change is a root helper call and a BIOS SMI
 
-FanApplier::FanApplier(const ModelProfile &model, QObject *parent)
+FanApplier::FanApplier(const ModelProfile &model, QObject *parent, const QString &hwmonRoot)
     : QObject(parent)
     , m_controller(model)
 {
     m_timer.setSingleShot(true);
     m_timer.setInterval(FanDelayMs);
     connect(&m_timer, &QTimer::timeout, this, &FanApplier::flushNow);
+
+    if (model.cpuTemperature) {
+        m_temperature = new CpuTemperature(*model.cpuTemperature, this, hwmonRoot);
+        connect(m_temperature, &CpuTemperature::colourChanged, this, &FanApplier::sendFollowers);
+        connect(m_temperature, &CpuTemperature::updated, this, &FanApplier::temperatureUpdated);
+        connect(m_temperature, &CpuTemperature::failed, this, &FanApplier::temperatureFailed);
+        connect(m_temperature, &CpuTemperature::recovered, this, &FanApplier::temperatureRecovered);
+    }
 }
 
 bool FanApplier::open(QString *error)
 {
-    return m_controller.open(error);
+    m_open = m_controller.open(error);
+    updateTemperatureReading();
+    return m_open;
 }
 
 void FanApplier::queue(const QList<Ite8297::HeaderSetting> &settings)
@@ -34,6 +44,49 @@ void FanApplier::queue(const QList<Ite8297::HeaderSetting> &settings)
     m_timer.start();
 }
 
+void FanApplier::setCurrent(const FanState::Headers &headers)
+{
+    m_followers.clear();
+    follow(headers.values());
+    updateTemperatureReading();
+}
+
+void FanApplier::follow(const QList<Ite8297::HeaderSetting> &settings)
+{
+    for (const Ite8297::HeaderSetting &s : settings) {
+        if (s.mode == Ite8297::Mode::CpuTemperature) {
+            m_followers.insert(s.header, s);
+        } else {
+            m_followers.remove(s.header);
+        }
+    }
+}
+
+// The sensor is only read while an LED needs it. Starting reads right away,
+// and the first reading sends the colour to the LEDs (colourChanged).
+void FanApplier::updateTemperatureReading()
+{
+    if (!m_temperature) {
+        return;
+    }
+    const bool wanted = m_open && !m_followers.isEmpty();
+    if (wanted && !m_temperature->isRunning()) {
+        m_temperature->start();
+    } else if (!wanted && m_temperature->isRunning()) {
+        m_temperature->stop();
+    }
+}
+
+QList<Ite8297::HeaderSetting> FanApplier::resolved(const QList<Ite8297::HeaderSetting> &settings) const
+{
+    const Ite8297::Rgb colour = m_temperature ? m_temperature->colour() : Ite8297::Rgb{};
+    QList<Ite8297::HeaderSetting> out;
+    for (const Ite8297::HeaderSetting &s : settings) {
+        out << Ite8297::resolve(s, colour);
+    }
+    return out;
+}
+
 void FanApplier::flushNow()
 {
     m_timer.stop();
@@ -42,13 +95,39 @@ void FanApplier::flushNow()
     }
     const QList<Ite8297::HeaderSetting> batch = m_pending.values();
     m_pending.clear();
+    follow(batch);
 
+    // A newly following LED gets the colour of the last reading; starting the
+    // reading sends the current one moments later.
     QString error;
-    if (!m_controller.apply(batch, &error) || !FanState::merge(batch, &error)) {
+    const bool sent = m_controller.apply(resolved(batch), &error);
+    m_open = m_open || sent; // the controller may have come back
+    const bool ok = sent && FanState::merge(batch, &error);
+    updateTemperatureReading();
+    if (!ok) {
         Q_EMIT failed(error);
         return;
     }
     Q_EMIT applied();
+}
+
+// The temperature step changed: only the following LEDs get the new colour.
+// Nothing is saved – the state keeps the mode, not the colour of the moment.
+void FanApplier::sendFollowers()
+{
+    if (m_followers.isEmpty() || !m_open) {
+        return;
+    }
+    QList<Ite8297::HeaderSetting> list;
+    for (const Ite8297::HeaderSetting &s : std::as_const(m_followers)) {
+        if (!m_pending.contains(s.header)) { // a queued change sends its own colour
+            list << s;
+        }
+    }
+    QString error;
+    if (!list.isEmpty() && !m_controller.apply(resolved(list), &error)) {
+        Q_EMIT failed(error);
+    }
 }
 
 LightApplier::LightApplier(HelperCalls &calls, QObject *parent)

@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Meluxon
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// One binary: "glowzone" alone opens the window, "glowzone <command>" is the CLI.
+// One binary: "glowzone" alone opens the window, "glowzone --background" starts
+// in the tray, "glowzone <command>" is the CLI.
 
 #include "commands.h"
 #include "config-glowzone.h"
@@ -13,11 +14,14 @@
 #include <QCommandLineParser>
 #include <memory>
 
+enum class Start { Window, Background, Cli };
+
 // The window when there are no arguments – or only Qt's own (e.g.
-// "-style fusion", "--reverse"), which QApplication takes. Anything else is
-// the CLI.
-static bool wantsWindow(int argc, char **argv)
+// "-style fusion", "--reverse"), which QApplication takes – and the tray with
+// "--background" besides those. Anything else is the CLI.
+static Start startKind(int argc, char **argv)
 {
+    bool background = false;
     static const QByteArrayList withValue{"-display", "-geometry", "-name", "-platform", "-platformpluginpath",
                                           "-platformtheme", "-plugin", "-qmljsdebugger", "-qwindowgeometry", "-qwindowicon",
                                           "-qwindowtitle", "-session", "-style", "-stylesheet", "-title"};
@@ -29,6 +33,10 @@ static bool wantsWindow(int argc, char **argv)
         }
         const qsizetype eq = arg.indexOf('=');
         const QByteArray name = eq >= 0 ? arg.left(eq) : arg;
+        if (name == "-background" && eq < 0) {
+            background = true;
+            continue;
+        }
         if (flags.contains(name)) {
             continue;
         }
@@ -36,14 +44,15 @@ static bool wantsWindow(int argc, char **argv)
             i += eq >= 0 ? 0 : 1; // "-style fusion" or "-style=fusion"
             continue;
         }
-        return false;
+        return Start::Cli;
     }
-    return true;
+    return background ? Start::Background : Start::Window;
 }
 
 int main(int argc, char **argv)
 {
-    const bool gui = wantsWindow(argc, argv);
+    const Start start = startKind(argc, argv);
+    const bool gui = start != Start::Cli;
     std::unique_ptr<QCoreApplication> app;
     if (gui) {
         app = std::make_unique<QApplication>(argc, argv);
@@ -66,7 +75,7 @@ int main(int argc, char **argv)
     KAboutData::setApplicationData(about);
 
     if (gui) {
-        return Glowzone::Gui::run();
+        return Glowzone::Gui::run(start == Start::Background);
     }
 
     QCommandLineParser parser;

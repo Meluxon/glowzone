@@ -5,9 +5,13 @@
 #include "core/helpercall.h"
 #include "core/profiles.h"
 
+#include <QDateTime>
 #include <QObject>
+#include <QTimer>
 
 #include <memory>
+
+class QFileSystemWatcher;
 
 class QWindow;
 
@@ -30,9 +34,15 @@ class Lighting : public QObject
 public:
     Lighting(const ModelProfile &model, QObject *parent);
 
-    // Opens the fan controller and reads the case lights. The window is used
-    // as parent for a polkit dialog, should one ever be needed.
+    // Opens the fan controller (once) – from then on LEDs in the
+    // CPU-temperature mode follow it, window or not. With a window, the case
+    // lights are read too, and the window is the parent for a polkit dialog,
+    // should one ever be needed. Without one (started in the background) the
+    // root helper isn't used at all.
     void start(QWindow *window);
+
+    // Lasting problems so far (a window opened later shows them too).
+    QStringList problems() const { return m_problems; }
 
     const ModelProfile &model() const { return m_model; }
 
@@ -45,6 +55,18 @@ public:
     void setLed(const FanDef &fan, quint8 header, Ite8297::HeaderSetting values);
     // Linking copies the first LED's settings to the others.
     void setLinked(const FanDef &fan, bool linked);
+
+    // --- CPU temperature
+    bool offersCpuTemperature() const { return m_model.cpuTemperature.has_value(); }
+    // Does any LED follow it right now?
+    bool followsCpuTemperature() const;
+    // The smoothed temperature the colours follow (nullopt: not read yet,
+    // or no LED follows it).
+    std::optional<double> cpuTemperature() const;
+    bool cpuTemperatureFailed() const { return !m_temperatureError.isEmpty(); }
+    QString cpuTemperatureError() const { return m_temperatureError; }
+    // The colour the following LEDs show.
+    Ite8297::Rgb cpuTemperatureColour() const;
 
     // --- case lights
     bool lightsAvailable() const { return m_lightsLoaded; }
@@ -75,6 +97,7 @@ public:
 
 Q_SIGNALS:
     void changed();
+    void temperatureChanged();          // a new reading (every couple of seconds while followed)
     void problem(const QString &text);  // something is missing (lasting)
     void error(const QString &text);    // a change failed
     void errorCleared();
@@ -93,6 +116,14 @@ private:
 
     void checkFanLayout();
     void loadFans();
+    void addProblem(const QString &text);
+    void stateDirChanged();
+    QStringList m_problems;
+    QString m_temperatureError;
+    bool m_started = false;
+    QFileSystemWatcher *m_stateWatcher = nullptr;
+    QTimer m_stateReload;
+    QDateTime m_stateStamp; // fans.json as last read
     void setError(const QString &text, int source);
     void clearError(int source);
     int m_errorSource = 0; // which queue the shown error came from (0: none)

@@ -6,6 +6,10 @@
 #include "core/eclights.h"
 #include "core/settings.h"
 
+#include <QDir>
+#include <QFileInfo>
+#include <QFileSystemWatcher>
+
 namespace Glowzone::Gui
 {
 
@@ -21,6 +25,29 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
     , m_lightApplier(new LightApplier(*m_helper, this))
 {
     loadFans();
+
+    // The command line may change the fans while Glowzone runs – maybe only in
+    // the tray, with LEDs following the CPU temperature. Its saved state is
+    // read again when it changes (QSaveFile replaces the file: watch the directory).
+    m_stateReload.setSingleShot(true);
+    m_stateReload.setInterval(300);
+    connect(&m_stateReload, &QTimer::timeout, this, &Lighting::stateDirChanged);
+    const QString stateDir = QFileInfo(FanState::filePath()).absolutePath();
+    if (QDir().mkpath(stateDir)) {
+        m_stateWatcher = new QFileSystemWatcher({stateDir}, this);
+        connect(m_stateWatcher, &QFileSystemWatcher::directoryChanged, &m_stateReload, qOverload<>(&QTimer::start));
+    }
+
+    connect(m_fanApplier, &FanApplier::temperatureUpdated, this, &Lighting::temperatureChanged);
+    connect(m_fanApplier, &FanApplier::temperatureFailed, this, [this](const QString &text) {
+        m_temperatureError = text;
+        addProblem(text);
+        Q_EMIT temperatureChanged();
+    });
+    connect(m_fanApplier, &FanApplier::temperatureRecovered, this, [this] {
+        m_temperatureError.clear();
+        Q_EMIT temperatureChanged();
+    });
 
     connect(m_fanApplier, &FanApplier::failed, this, [this](const QString &text) {
         // Show what was last sent successfully, not values that never arrived.
@@ -47,7 +74,7 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
             setError(text, LightErrors);
         } else {
             m_lightsFailed = true;
-            Q_EMIT problem(text);
+            addProblem(text);
             Q_EMIT changed();
         }
     });
@@ -56,7 +83,7 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
         m_fanLayout = code;
         const QString warning = EcLights::layoutWarning(m_model, code);
         if (!warning.isEmpty()) {
-            Q_EMIT problem(warning);
+            addProblem(warning);
             Q_EMIT changed(); // mark the fans in the sidebar
         }
     });
@@ -64,15 +91,64 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
 
 void Lighting::start(QWindow *window)
 {
-    m_helper->setWindow(window);
-    QString error;
-    if (!m_fanApplier->open(&error)) {
-        m_fansAvailable = false;
-        Q_EMIT problem(error);
-        Q_EMIT changed();
+    if (!m_started) {
+        m_started = true;
+        QString error;
+        if (!m_fanApplier->open(&error)) {
+            m_fansAvailable = false;
+            addProblem(error);
+            Q_EMIT changed();
+        }
     }
-    if (!m_model.ecLights.isEmpty()) {
+    m_helper->setWindow(window);
+    if (window && !m_model.ecLights.isEmpty() && !m_lightsLoaded && !m_lightApplier->isBusy()) {
+        m_lightsFailed = false; // try again with this window
         m_lightApplier->refresh();
+    }
+}
+
+void Lighting::addProblem(const QString &text)
+{
+    if (!m_problems.contains(text)) {
+        m_problems << text;
+    }
+    Q_EMIT problem(text);
+}
+
+bool Lighting::followsCpuTemperature() const
+{
+    return m_fanApplier->followsTemperature();
+}
+
+std::optional<double> Lighting::cpuTemperature() const
+{
+    const CpuTemperature *t = m_fanApplier->temperature();
+    return t && t->isRunning() ? t->temperature() : std::nullopt;
+}
+
+Ite8297::Rgb Lighting::cpuTemperatureColour() const
+{
+    const CpuTemperature *t = m_fanApplier->temperature();
+    return t ? t->colour() : Ite8297::Rgb{};
+}
+
+// Something in the state directory changed – the command line, most likely.
+// Our own saves land here as well; they read back what we already show.
+void Lighting::stateDirChanged()
+{
+    const QDateTime stamp = QFileInfo(FanState::filePath()).lastModified();
+    if (stamp == m_stateStamp) {
+        return; // the lock file, a backup, ...
+    }
+    if (m_fanApplier->isBusy()) {
+        m_stateReload.start(); // after our own change is out
+        return;
+    }
+    const FanState::Headers before = m_fans;
+    const QMap<QString, bool> linksBefore = m_links;
+    loadFans();
+    if (m_fans != before || m_links != linksBefore) {
+        Q_EMIT changed();
     }
 }
 
@@ -230,6 +306,7 @@ bool Lighting::isBusy() const
 
 void Lighting::loadFans()
 {
+    m_stateStamp = QFileInfo(FanState::filePath()).lastModified();
     const FanState::Headers saved = FanState::load(m_model);
     m_fans.clear();
     for (const FanDef &fan : m_model.fans) {
@@ -243,6 +320,7 @@ void Lighting::loadFans()
             m_links.insert(id, Settings::linked(id).value_or(FanState::defaultLinked(fan, saved)));
         }
     }
+    m_fanApplier->setCurrent(m_fans);
 }
 
 void Lighting::reloadFromDisk()

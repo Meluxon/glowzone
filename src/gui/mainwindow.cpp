@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "mainwindow.h"
 #include "aboutdialog.h"
+#include "app.h"
 #include "lighting.h"
 #include "pages.h"
 #include "sidebar.h"
@@ -46,10 +47,11 @@ static QWidget *headerRow(QWidget *parent, QHBoxLayout **layout)
     return w;
 }
 
-MainWindow::MainWindow(const ModelProfile &model, QWidget *parent)
-    : QMainWindow(parent)
-    , m_model(model)
-    , m_lighting(new Lighting(model, this))
+MainWindow::MainWindow(Lighting *lighting, App *app)
+    : QMainWindow(nullptr)
+    , m_model(lighting->model())
+    , m_lighting(lighting)
+    , m_app(app)
 {
     auto *central = new QWidget(this);
     auto *layout = new QHBoxLayout(central);
@@ -62,10 +64,12 @@ MainWindow::MainWindow(const ModelProfile &model, QWidget *parent)
 
     auto *quit = new QAction(this);
     quit->setShortcut(QKeySequence::Quit);
-    connect(quit, &QAction::triggered, this, &MainWindow::close);
+    connect(quit, &QAction::triggered, this, &MainWindow::quitRequested);
     addAction(quit);
 
     connect(m_lighting, &Lighting::changed, this, &MainWindow::refresh);
+    connect(m_lighting, &Lighting::temperatureChanged, this, &MainWindow::refreshTemperature);
+    connect(m_app, &App::backgroundChanged, this, &MainWindow::updateBackgroundMessage);
     connect(m_lighting, &Lighting::problem, this, &MainWindow::showProblem);
     connect(m_lighting, &Lighting::error, this, &MainWindow::showError);
     connect(m_lighting, &Lighting::errorCleared, this, [this] {
@@ -82,6 +86,10 @@ MainWindow::MainWindow(const ModelProfile &model, QWidget *parent)
     m_currentProfile = Settings::currentProfile();
     reloadProfiles();
     m_sidebar->selectFirst();
+    for (const QString &problem : m_lighting->problems()) {
+        showProblem(problem); // found before this window was opened
+    }
+    updateBackgroundMessage();
 
     const QSize stored = Settings::windowSize();
     resize(stored.isValid() ? stored : QSize(fontMetrics().averageCharWidth() * 125, fontMetrics().height() * 36));
@@ -112,11 +120,29 @@ QWidget *MainWindow::buildSidebarPanel()
     menuButton->setToolTip(i18nc("@info:tooltip", "Menu"));
     menuButton->setAccessibleName(i18nc("@info:tooltip", "Menu"));
     auto *menu = new QMenu(menuButton);
+    // Running on in the tray is what keeps LEDs following the CPU temperature
+    // after the window is closed.
+    auto *keepRunning = menu->addAction(i18nc("@option:check", "Keep Running in Background"));
+    keepRunning->setCheckable(true);
+    keepRunning->setToolTip(i18nc("@info:tooltip", "Closing the window keeps Glowzone in the system tray, so fans following the CPU temperature keep changing colour."));
+    auto *startAtLogin = menu->addAction(i18nc("@option:check", "Start at Login"));
+    startAtLogin->setCheckable(true);
+    startAtLogin->setToolTip(i18nc("@info:tooltip", "Start Glowzone in the system tray when you log in."));
+    menu->setToolTipsVisible(true);
+    auto syncBackground = [this, keepRunning, startAtLogin] {
+        keepRunning->setChecked(m_app->keepsRunning());
+        startAtLogin->setChecked(m_app->startsAtLogin());
+    };
+    syncBackground();
+    connect(m_app, &App::backgroundChanged, menu, syncBackground);
+    connect(keepRunning, &QAction::triggered, m_app, &App::setKeepRunning);
+    connect(startAtLogin, &QAction::triggered, m_app, &App::setStartAtLogin);
+    menu->addSeparator();
     menu->addAction(QIcon::fromTheme(QStringLiteral("help-about")), i18nc("@action:inmenu", "About Glowzone"), this, [this] {
         AboutDialog(m_lighting, this).exec();
     });
     menu->addSeparator();
-    menu->addAction(QIcon::fromTheme(QStringLiteral("application-exit")), i18nc("@action:inmenu", "Quit"), this, &MainWindow::close);
+    menu->addAction(QIcon::fromTheme(QStringLiteral("application-exit")), i18nc("@action:inmenu", "Quit"), this, &MainWindow::quitRequested);
     menuButton->setMenu(menu);
     header->addWidget(modelName, 1);
     header->addWidget(menuButton);
@@ -186,6 +212,21 @@ QWidget *MainWindow::buildPagePanel()
     connect(saveNew, &QAction::triggered, this, &MainWindow::saveNewProfile);
     m_changedMessage->addAction(save);
     m_changedMessage->addAction(saveNew);
+    m_backgroundMessage = makeMessage(KMessageWidget::Information, true);
+    m_backgroundMessage->setText(i18n("Fans following the CPU temperature only change colour while Glowzone is running. "
+                                      "Closing the window quits it."));
+    auto *runOn = new QAction(i18nc("@action:button", "Keep Running in Background"), m_backgroundMessage);
+    connect(runOn, &QAction::triggered, m_app, [this] {
+        m_app->setKeepRunning(true);
+    });
+    m_backgroundMessage->addAction(runOn);
+    connect(m_backgroundMessage, &KMessageWidget::hideAnimationFinished, this, [this] {
+        // Closed with its close button: not again while this window is open.
+        if (!(m_lighting->followsCpuTemperature() && !m_app->keepsRunning())) {
+            return;
+        }
+        m_backgroundMessageDismissed = true;
+    });
 
     layout->addWidget(headerWidget);
     layout->addWidget(line(Qt::Horizontal, panel));
@@ -193,6 +234,7 @@ QWidget *MainWindow::buildPagePanel()
     layout->addWidget(m_problemMessage);
     layout->addWidget(m_errorMessage);
     layout->addWidget(m_changedMessage);
+    layout->addWidget(m_backgroundMessage);
     return panel;
 }
 
@@ -222,6 +264,24 @@ void MainWindow::refresh()
     }
     m_sidebar->refresh();
     updateBanner();
+    updateBackgroundMessage();
+}
+
+void MainWindow::refreshTemperature()
+{
+    for (FanPage *p : std::as_const(m_fanPages)) {
+        p->refreshTemperature();
+    }
+    m_sidebar->refresh(); // the dots show the colour of the moment
+}
+
+void MainWindow::updateBackgroundMessage()
+{
+    if (m_lighting->followsCpuTemperature() && !m_app->keepsRunning() && !m_backgroundMessageDismissed) {
+        showMessage(m_backgroundMessage);
+    } else {
+        hideMessage(m_backgroundMessage);
+    }
 }
 
 // --- profiles ---------------------------------------------------------------
@@ -427,19 +487,13 @@ void MainWindow::changeEvent(QEvent *event)
     reloadProfiles();
 }
 
+// Whether Glowzone goes on in the tray or quits is the app's decision; the
+// lighting state outlives this window either way.
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     Settings::setWindowSize(size());
-    // Don't lose a change made in the last moment before closing.
-    if (m_lighting->isBusy()) {
-        hide();
-        connect(m_lighting, &Lighting::idle, qApp, &QApplication::quit, Qt::QueuedConnection);
-        m_lighting->finish();
-        event->ignore();
-        return;
-    }
-    m_lighting->finish();
     event->accept();
+    Q_EMIT closed();
 }
 
 } // namespace Glowzone::Gui

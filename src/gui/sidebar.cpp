@@ -37,7 +37,7 @@ struct DotPart {
 };
 using Dot = QList<DotPart>;
 
-static DotPart ledDot(HeaderSetting s, bool known)
+static DotPart ledDot(HeaderSetting s, bool known, Rgb temperatureColour)
 {
     if (!known) {
         return {DotKind::Unknown};
@@ -46,6 +46,9 @@ static DotPart ledDot(HeaderSetting s, bool known)
         return {DotKind::Off};
     }
     const ModeInfo *info = modeInfo(s.mode);
+    if (info && info->followsTemperature) {
+        return {DotKind::Solid, QColor(temperatureColour.r, temperatureColour.g, temperatureColour.b)};
+    }
     if (info && info->usesColour) {
         return {DotKind::Solid, QColor(s.colour.r, s.colour.g, s.colour.b)};
     }
@@ -300,8 +303,18 @@ void Sidebar::fitWidth()
     for (const QString &st : std::as_const(fanSubtitles)) {
         text = std::max(text, small.horizontalAdvance(i18nc("@info %1 is the mode; the BIOS doesn't see the fan", "%1 · not detected", st)));
     }
+    int longestMode = 0;
+    for (const ModeInfo &m : modesFor(model)) {
+        longestMode = std::max(longestMode, fm.horizontalAdvance(m.name.toString())); // LED rows use the normal font
+    }
     for (const FanDef &fan : model.fans) {
         text = std::max(text, fm.horizontalAdvance(fan.name.toString()));
+        // LED rows: indented, position on the left, mode on the right
+        for (const LedDef &led : fan.leds) {
+            if (fan.isDouble()) {
+                text = std::max(text, fm.height() + fm.horizontalAdvance(capitalised(led.name.toString())) + pad * 3 + longestMode);
+            }
+        }
     }
     for (const EcLightDef &light : model.ecLights) {
         text = std::max(text, fm.horizontalAdvance(light.name.toString()));
@@ -327,6 +340,7 @@ void Sidebar::refresh()
 {
     const ModelProfile &model = m_lighting->model();
     const QString notSet = i18nc("@info fan state", "Not set yet");
+    const Rgb temperature = m_lighting->cpuTemperatureColour();
     auto modeName = [](HeaderSetting s) {
         const ModeInfo *m = modeInfo(s.mode);
         return m ? m->name.toString() : QString();
@@ -341,11 +355,11 @@ void Sidebar::refresh()
         Dot dot;
         QString subtitle;
         if (linked) {
-            dot << ledDot(m_lighting->led(first), m_lighting->isKnown(first));
+            dot << ledDot(m_lighting->led(first), m_lighting->isKnown(first), temperature);
             subtitle = m_lighting->isKnown(first) ? modeName(m_lighting->led(first)) : notSet;
         } else {
             for (const LedDef &led : fan.leds) {
-                dot << ledDot(m_lighting->led(led.header), m_lighting->isKnown(led.header));
+                dot << ledDot(m_lighting->led(led.header), m_lighting->isKnown(led.header), temperature);
             }
             subtitle = i18nc("@info LEDs of a double fan set one by one", "Separately");
         }
@@ -359,7 +373,7 @@ void Sidebar::refresh()
             QTreeWidgetItem *child = item->child(c);
             const quint8 header = quint8(child->data(0, HeaderRole).toInt());
             child->setHidden(linked);
-            child->setData(0, DotRole, QVariant::fromValue(Dot{ledDot(m_lighting->led(header), m_lighting->isKnown(header))}));
+            child->setData(0, DotRole, QVariant::fromValue(Dot{ledDot(m_lighting->led(header), m_lighting->isKnown(header), temperature)}));
             child->setData(0, SubtitleRole, m_lighting->isKnown(header) ? modeName(m_lighting->led(header)) : notSet);
         }
         if (linked && currentItem() && currentItem()->parent() == item) {

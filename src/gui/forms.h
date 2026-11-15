@@ -8,6 +8,7 @@
 
 class QComboBox;
 class QFormLayout;
+class QLabel;
 class QSlider;
 
 namespace Glowzone::Gui
@@ -40,6 +41,9 @@ public:
     LedForm(const ModelProfile &model, QFormLayout *form, QWidget *parent);
 
     void setValues(Ite8297::HeaderSetting values, bool known);
+    // Shown while the mode follows the CPU temperature: the temperature the
+    // colour is chosen by (nullopt: not read yet), or why it can't be read.
+    void setTemperature(std::optional<double> celsius, const QString &error);
     Ite8297::HeaderSetting values() const;
     void setEnabled(bool enabled);
     void setVisible(bool visible);
@@ -57,6 +61,7 @@ private:
     ColourButton *m_colour;
     LevelSlider *m_speed;
     LevelSlider *m_brightness;
+    QLabel *m_temperature;
     bool m_visible = true;
 };
 

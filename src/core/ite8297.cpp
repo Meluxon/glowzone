@@ -11,16 +11,17 @@ const QList<ModeInfo> &modes()
 {
     // To add a mode: a value in the Mode enum, a row here (fields: see ModeInfo),
     // and the value in the fanModes of every model that offers it.
-    // Each row: mode, id, name, uses colour, uses speed.
+    // Each row: mode, id, name, uses colour, uses speed, follows the temperature.
     static const QList<ModeInfo> list = {
-        {Mode::Off, "off", kli18nc("@item fan LED mode", "Off"), false, false},
-        {Mode::Static, "static", kli18nc("@item fan LED mode", "Static"), true, false},
-        {Mode::Sparkle, "sparkle", kli18nc("@item fan LED mode", "Sparkle"), true, true},
-        {Mode::Breathing, "breathing", kli18nc("@item fan LED mode", "Breathing"), true, true},
-        {Mode::Wave, "wave", kli18nc("@item fan LED mode", "Wave"), true, true},
-        {Mode::Specter, "specter", kli18nc("@item fan LED mode", "Specter"), false, true},
-        {Mode::Rainbow, "rainbow", kli18nc("@item fan LED mode", "Rainbow wave"), false, true},
-        {Mode::Random, "random", kli18nc("@item fan LED mode", "Random"), false, true},
+        {Mode::Off, "off", kli18nc("@item fan LED mode", "Off"), false, false, false},
+        {Mode::Static, "static", kli18nc("@item fan LED mode", "Static"), true, false, false},
+        {Mode::Sparkle, "sparkle", kli18nc("@item fan LED mode", "Sparkle"), true, true, false},
+        {Mode::Breathing, "breathing", kli18nc("@item fan LED mode", "Breathing"), true, true, false},
+        {Mode::Wave, "wave", kli18nc("@item fan LED mode", "Wave"), true, true, false},
+        {Mode::Specter, "specter", kli18nc("@item fan LED mode", "Specter"), false, true, false},
+        {Mode::Rainbow, "rainbow", kli18nc("@item fan LED mode", "Rainbow wave"), false, true, false},
+        {Mode::Random, "random", kli18nc("@item fan LED mode", "Random"), false, true, false},
+        {Mode::CpuTemperature, "cpu-temperature", kli18nc("@item fan LED mode", "CPU temperature"), false, false, true},
     };
     return list;
 }
@@ -83,6 +84,21 @@ QString rgbToString(Rgb c)
         .arg(c.b, 2, 16, QLatin1Char('0'));
 }
 
+bool isControllerMode(Mode mode)
+{
+    return mode != Mode::CpuTemperature;
+}
+
+HeaderSetting resolve(HeaderSetting setting, Rgb temperatureColour)
+{
+    if (setting.mode == Mode::CpuTemperature) {
+        setting.mode = Mode::Static;
+        setting.speed = MinLevel;
+        setting.colour = temperatureColour;
+    }
+    return setting;
+}
+
 HeaderSetting initialSetting(quint8 header)
 {
     return {header, Mode::Off, MinLevel, 2, Rgb{0xff, 0xff, 0xff}};
@@ -141,8 +157,8 @@ QList<QByteArray> reportsFor(const QList<HeaderSetting> &settings)
     bool a = false, b = false;
     for (const HeaderSetting &s : settings) {
         const auto g = groupOf(s.header);
-        if (!g) {
-            continue; // never send to a header we don't know
+        if (!g || !isControllerMode(s.mode)) {
+            continue; // never send to a header or a mode value the controller doesn't know
         }
         out.append(settingsReport(s));
         (*g == Group::A ? a : b) = true;

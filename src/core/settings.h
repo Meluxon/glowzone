@@ -24,4 +24,16 @@ void setCurrentProfile(const QString &name);
 QSize windowSize();
 void setWindowSize(QSize size);
 
+// Closing the window keeps Glowzone running in the system tray, so fans
+// following the CPU temperature keep changing colour. Off by default.
+bool keepRunning();
+void setKeepRunning(bool on);
+
+// Start in the tray at login: a .desktop file in ~/.config/autostart that
+// runs "glowzone --background". The file itself is the setting.
+QString autostartPath();
+bool startsAtLogin();
+// Errors are translated.
+bool setStartAtLogin(bool on, QString *error);
+
 } // namespace Glowzone::Settings

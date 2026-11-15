@@ -6,7 +6,8 @@
 
 #include <QObject>
 
-class QWindow;
+#include <QPointer>
+#include <QWindow>
 
 namespace Glowzone
 {
@@ -53,7 +54,7 @@ public:
     HelperCall *create(HelperCall::Kind kind, const QList<EcRequest> &requests, QObject *parent) override;
 
 private:
-    QWindow *m_window = nullptr;
+    QPointer<QWindow> m_window; // the window may close while Glowzone runs on
 };
 
 // Runs one call to the end, for the CLI.

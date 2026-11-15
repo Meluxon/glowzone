@@ -28,9 +28,13 @@ add_library(glowzone_core STATIC
     core/profiles.cpp
     core/helpercall.cpp
     core/appliers.cpp
+    core/cputemperature.cpp
+    core/instance.cpp
 )
 target_link_libraries(glowzone_core PUBLIC
     glowzone_model
+    Qt6::DBus
+    Qt6::Gui
     KF6::AuthCore
     KF6::CoreAddons
     KF6::I18n
@@ -42,6 +46,7 @@ add_executable(glowzone
     cli/main.cpp
     cli/commands.cpp
     gui/gui.cpp
+    gui/app.cpp
     gui/mainwindow.cpp
     gui/sidebar.cpp
     gui/pages.cpp
@@ -51,7 +56,7 @@ add_executable(glowzone
     gui/colourbutton.cpp
     gui/glowzone.qrc
 )
-target_link_libraries(glowzone PRIVATE glowzone_core Qt6::Widgets KF6::WidgetsAddons)
+target_link_libraries(glowzone PRIVATE glowzone_core Qt6::Widgets KF6::WidgetsAddons KF6::DBusAddons KF6::StatusNotifierItem)
 install(TARGETS glowzone ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 
 # --- Root helper for the case lights (KAuth, D-Bus activated)

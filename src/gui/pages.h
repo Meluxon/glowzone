@@ -29,6 +29,7 @@ public:
     FanPage(const FanDef &fan, Lighting *lighting, QWidget *parent);
     const FanDef &fan() const { return m_fan; }
     void refresh();
+    void refreshTemperature();
     void focusLed(quint8 header);
 
 private:

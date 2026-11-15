@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: 2026 Meluxon
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "gui.h"
-#include "mainwindow.h"
+#include "app.h"
 
 #include "core/messages.h"
+#include "core/settings.h"
 
 #include "config-glowzone.h"
 
+#include <KDBusService>
 #include <KLocalizedString>
 #include <QApplication>
 #include <QMessageBox>
@@ -14,23 +16,39 @@
 namespace Glowzone::Gui
 {
 
-int run()
+int run(bool background)
 {
     // Installed icon first (themes may override it); the built-in copy covers
     // running from the build directory.
     QApplication::setWindowIcon(QIcon::fromTheme(QStringLiteral(GLOWZONE_APP_ID), QIcon(QStringLiteral(":/icons/glowzone.svg"))));
 
+    // Started at login, but running in the background was switched off since.
+    if (background && !Settings::keepRunning()) {
+        return 0;
+    }
+
+    // One Glowzone per user: starting it again shows the running one's window
+    // (unless it's the login start, which has nothing to show). This process
+    // then exits here.
+    KDBusService service(KDBusService::Unique | KDBusService::NoExitOnFailure);
+
     // Model lock, as in the CLI: no profile, no window.
     const DmiInfo dmi = DmiInfo::readSystem();
     const ModelProfile *model = matchModel(dmi);
     if (!model) {
-        QMessageBox::critical(nullptr, i18nc("@title:window", "Unsupported Computer"), unsupportedModelMessage(dmi));
+        if (!background) {
+            QMessageBox::critical(nullptr, i18nc("@title:window", "Unsupported Computer"), unsupportedModelMessage(dmi));
+        }
         return 2;
     }
 
-    MainWindow window(*model);
-    window.show();
-    window.start();
+    App app(*model);
+    QObject::connect(&service, &KDBusService::activateRequested, &app, [&app](const QStringList &arguments) {
+        if (!arguments.contains(QLatin1String("--background"))) {
+            app.showWindow();
+        }
+    });
+    app.start(background);
     return QApplication::exec();
 }
 

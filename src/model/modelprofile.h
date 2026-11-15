@@ -7,6 +7,8 @@
 #include <KLazyLocalizedString>
 #include <QList>
 
+#include <optional>
+
 namespace Glowzone
 {
 
@@ -48,6 +50,33 @@ struct FanLayoutDef {
     QList<const char *> undetectedFans; // fan ids; empty = all detected
 };
 
+// Fan LEDs that follow the CPU temperature, like Lenovo Vantage's "CPU
+// temperature" lighting – but as a mode of its own for each fan LED.
+//
+// Vantage reads the EC's CPU temperature, which follows the package
+// temperature with a ramp of a few °C per second, every 2 s, and picks one of
+// a ladder of colours. Reading the EC needs root, so Glowzone reads the CPU's
+// own sensor instead (hwmon, readable by any user) and imitates the EC's
+// smoothing: the average of the last few readings plus an offset, changing by
+// at most a few °C per second.
+struct CpuTemperatureDef {
+    const char *hwmonName;       // hwmon driver, e.g. "coretemp"
+    const char *sensorLabel;     // tempN_label of the sensor to use, e.g. "Package id 0"
+    double offset;               // °C added to the reading (the EC reads a little higher)
+    int averageSamples;          // readings averaged
+    double maxChangePerSecond;   // °C the shown temperature may move per second
+    int intervalMs;              // how often the sensor is read
+    double firstStep;            // °C at which the second colour starts
+    double stepSize;             // °C per colour
+    double hysteresis;           // °C below a step's start before going back down (Glowzone's own)
+    QList<quint32> colours;      // 0xRRGGBB, coolest first
+};
+
+// Mode value Glowzone uses for "follows the CPU temperature". It is not a value
+// of the fan controller and is never sent to it: on the wire the LED is set
+// to static with the colour for the current temperature.
+inline constexpr quint8 CpuTemperatureMode = 0xF0;
+
 // Everything Glowzone needs to know about one PC model. A machine is supported
 // only if vendor, product version and board name all match exactly.
 struct ModelProfile {
@@ -75,6 +104,9 @@ struct ModelProfile {
     quint8 ecBrightnessLevels;        // SetLED brightness: 1 to ecBrightnessLevels
     quint8 ecDefaultBrightness;       // factory setting, used by "reset"
 
+    // Fan LEDs following the CPU temperature (nullopt: the model doesn't offer it).
+    std::optional<CpuTemperatureDef> cpuTemperature;
+
     bool matches(const DmiInfo &dmi) const;
     QString displayName() const;   // vendor and product version, as DMI reports them
     const FanDef *fan(const QString &id) const;
@@ -82,7 +114,10 @@ struct ModelProfile {
     const EcLightDef *ecLightByIndex(quint8 index) const;
     // Fans the BIOS misses with this fan-layout code (empty if none or unknown).
     QList<const FanDef *> undetectedFans(int layout) const;
-    bool hasFanMode(quint8 value) const { return fanModes.contains(value); }
+    bool hasFanMode(quint8 value) const
+    {
+        return value == CpuTemperatureMode ? cpuTemperature.has_value() : fanModes.contains(value);
+    }
     bool hasEcLightMode(quint8 value) const { return ecLightModes.contains(value); }
 };
 

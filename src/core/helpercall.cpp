@@ -181,7 +181,7 @@ private:
 
     Kind m_kind;
     QList<EcRequest> m_requests;
-    QWindow *m_window;
+    QPointer<QWindow> m_window;
     std::unique_ptr<QLockFile> m_lock;
     QElapsedTimer m_waiting;
     QTimer m_watchdog;

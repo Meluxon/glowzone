@@ -36,11 +36,17 @@ ask() {
 }
 
 # --- 1 + 2: things only the installed program can do -------------------------
+# A Glowzone running in the system tray would keep changing the fans – and
+# keep running from the deleted binary until logout.
+if command -v pgrep >/dev/null 2>&1 && pgrep -x -u "$(id -u)" glowzone >/dev/null 2>&1; then
+    echo "Glowzone is running (window or system tray) – quitting it."
+    pkill -x -u "$(id -u)" glowzone || true
+fi
 if command -v glowzone >/dev/null 2>&1; then
     if ask "Turn all lighting off before uninstalling (glowzone reset)?"; then
         glowzone reset || echo "Reset did not fully succeed – continuing."
     fi
-    if ask "Delete your Glowzone settings, profiles and saved state?"; then
+    if ask "Delete your Glowzone settings, profiles, saved state and login start?"; then
         glowzone --purge-user-data || echo "Some user data could not be removed – continuing."
     fi
 else
@@ -113,7 +119,8 @@ if [ -n "$leftovers" ]; then
 fi
 echo "No system files left."
 
-for d in "${XDG_CONFIG_HOME:-$HOME/.config}/glowzone" "${XDG_STATE_HOME:-$HOME/.local/state}/glowzone"; do
+for d in "${XDG_CONFIG_HOME:-$HOME/.config}/glowzone" "${XDG_STATE_HOME:-$HOME/.local/state}/glowzone" \
+    "${XDG_CONFIG_HOME:-$HOME/.config}/autostart/io.github.meluxon.Glowzone.desktop"; do
     if [ -e "$d" ]; then
         echo "Kept your data: $d"
     fi

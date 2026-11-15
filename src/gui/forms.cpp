@@ -52,6 +52,7 @@ LedForm::LedForm(const ModelProfile &model, QFormLayout *form, QWidget *parent)
     , m_colour(new ColourButton(parent))
     , m_speed(new LevelSlider(MinLevel, model.fanLevels, i18nc("@item:inrange", "Slow"), i18nc("@item:inrange", "Fast"), parent))
     , m_brightness(new LevelSlider(MinLevel, model.fanLevels, i18nc("@item:inrange", "Dim"), i18nc("@item:inrange", "Bright"), parent))
+    , m_temperature(new QLabel(parent))
 {
     for (const ModeInfo &m : modesFor(model)) {
         m_mode->addItem(m.name.toString(), int(m.mode));
@@ -60,6 +61,7 @@ LedForm::LedForm(const ModelProfile &model, QFormLayout *form, QWidget *parent)
     m_mode->setCurrentIndex(-1);
 
     form->addRow(i18nc("@label:listbox", "Mode:"), m_mode);
+    form->addRow(i18nc("@label CPU temperature now", "Temperature:"), m_temperature);
     form->addRow(i18nc("@label:chooser", "Colour:"), m_colour);
     form->addRow(i18nc("@label:slider", "Speed:"), m_speed);
     form->addRow(i18nc("@label:slider", "Brightness:"), m_brightness);
@@ -84,6 +86,18 @@ void LedForm::setValues(HeaderSetting values, bool known)
     updateRows();
 }
 
+void LedForm::setTemperature(std::optional<double> celsius, const QString &error)
+{
+    if (!error.isEmpty()) {
+        m_temperature->setText(i18nc("@info CPU temperature", "Not available"));
+        m_temperature->setToolTip(error);
+        return;
+    }
+    m_temperature->setToolTip(i18nc("@info:tooltip", "The colour shows how warm the CPU is. It only changes while Glowzone is running."));
+    m_temperature->setText(celsius ? i18nc("@info CPU temperature in degrees Celsius", "%1 °C", QString::number(*celsius, 'f', 0))
+                                   : i18nc("@info CPU temperature not read yet", "Reading…"));
+}
+
 HeaderSetting LedForm::values() const
 {
     HeaderSetting s;
@@ -96,7 +110,7 @@ HeaderSetting LedForm::values() const
 
 void LedForm::setEnabled(bool enabled)
 {
-    for (QWidget *w : std::initializer_list<QWidget *>{m_mode, m_colour, m_speed, m_brightness}) {
+    for (QWidget *w : std::initializer_list<QWidget *>{m_mode, m_colour, m_speed, m_brightness, m_temperature}) {
         w->setEnabled(enabled);
     }
 }
@@ -117,6 +131,7 @@ void LedForm::updateRows()
     const ModeInfo *info = m_mode->currentIndex() >= 0 ? modeInfo(Mode(m_mode->currentData().toInt())) : nullptr;
     const bool lit = info && info->mode != Mode::Off;
     m_form->setRowVisible(m_mode, m_visible);
+    m_form->setRowVisible(m_temperature, m_visible && info && info->followsTemperature);
     m_form->setRowVisible(m_colour, m_visible && lit && info->usesColour);
     m_form->setRowVisible(m_speed, m_visible && lit && info->usesSpeed);
     m_form->setRowVisible(m_brightness, m_visible && lit);

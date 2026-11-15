@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 cmake_minimum_required(VERSION 3.22)
-project(glowzone VERSION 0.7.2 LANGUAGES CXX)
+project(glowzone VERSION 0.8.0 LANGUAGES CXX)
 
 set(QT_MIN_VERSION "6.7.0")   # 6.7: QStandardPaths::StateLocation
 set(KF_MIN_VERSION "6.0.0")
@@ -19,8 +19,8 @@ include(KDECompilerSettings NO_POLICY_SCOPE)
 include(ECMAddTests)
 include(FeatureSummary)
 
-find_package(Qt6 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Core Gui Widgets)
-find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS Auth CoreAddons I18n WidgetsAddons)
+find_package(Qt6 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS Core DBus Gui Widgets)
+find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS Auth CoreAddons DBusAddons I18n StatusNotifierItem WidgetsAddons)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(HIDAPI REQUIRED IMPORTED_TARGET hidapi-hidraw)
 

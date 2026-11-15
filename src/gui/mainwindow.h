@@ -15,6 +15,7 @@ class QStackedWidget;
 namespace Glowzone::Gui
 {
 
+class App;
 class FanPage;
 class LightPage;
 class Lighting;
@@ -27,11 +28,16 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(const ModelProfile &model, QWidget *parent = nullptr);
+    // The lighting state and the app outlive the window (it may be closed to the tray).
+    MainWindow(Lighting *lighting, App *app);
     ~MainWindow() override;
 
     // Call once the window is shown (KAuth wants a real window as parent).
     void start();
+
+Q_SIGNALS:
+    void closed();
+    void quitRequested();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -53,6 +59,8 @@ private:
     void renameProfile(const QString &name);
     void deleteProfile(const QString &name);
     void updateBanner();
+    void updateBackgroundMessage();
+    void refreshTemperature();
 
     void showProblem(const QString &text);
     void showError(const QString &text);
@@ -61,6 +69,7 @@ private:
 
     const ModelProfile &m_model;
     Lighting *m_lighting;
+    App *m_app;
     Sidebar *m_sidebar = nullptr;
     QLabel *m_pageTitle = nullptr;
     QStackedWidget *m_stack = nullptr;
@@ -71,6 +80,8 @@ private:
     KMessageWidget *m_problemMessage = nullptr; // lasting: missing hardware, BIOS detection
     KMessageWidget *m_errorMessage = nullptr;   // a change failed
     KMessageWidget *m_changedMessage = nullptr; // "You changed “X”. [Save] [Save as New…]"
+    KMessageWidget *m_backgroundMessage = nullptr; // LEDs follow the temperature, but closing quits
+    bool m_backgroundMessageDismissed = false;
     QStringList m_problems;
     QList<Profile> m_profiles;
     QString m_currentProfile;

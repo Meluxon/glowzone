@@ -68,7 +68,18 @@ private Q_SLOTS:
             for (quint8 v : m.fanModes) {
                 QVERIFY2(Ite8297::modeInfo(Ite8297::Mode(v)), name.constData());
             }
-            QCOMPARE(Ite8297::modesFor(m).size(), m.fanModes.size());
+            // fanModes are controller values only; the CPU-temperature mode
+            // comes with cpuTemperature.
+            QVERIFY2(!m.fanModes.contains(CpuTemperatureMode), name.constData());
+            QCOMPARE(Ite8297::modesFor(m).size(), m.fanModes.size() + (m.cpuTemperature ? 1 : 0));
+            if (m.cpuTemperature) {
+                const CpuTemperatureDef &t = *m.cpuTemperature;
+                QVERIFY2(t.hwmonName && *t.hwmonName && t.sensorLabel && *t.sensorLabel, name.constData());
+                QVERIFY2(t.averageSamples >= 1 && t.maxChangePerSecond > 0 && t.intervalMs >= 500, name.constData());
+                QVERIFY2(t.stepSize > 0 && t.hysteresis >= 0 && t.hysteresis < t.stepSize, name.constData());
+                QVERIFY2(t.colours.size() >= 2, name.constData());
+                QVERIFY2(!Ite8297::isControllerMode(Ite8297::Mode::CpuTemperature), name.constData());
+            }
             QVERIFY2(m.fanLevels >= Ite8297::MinLevel, name.constData());
             for (const FanDef &f : m.fans) {
                 for (quint8 h : f.headers()) {
