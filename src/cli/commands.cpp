@@ -303,7 +303,10 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
         }
     }
 
-    // Unspecified values keep what Glowzone last sent to that header.
+    // Unspecified values keep what Glowzone last sent to that header. The lock
+    // is taken first, so a running Glowzone can't change them before they're
+    // sent and saved.
+    const FanState::Lock lock;
     const FanState::Headers saved = FanState::load(model);
     QList<HeaderSetting> settings;
     QStringList labels; // one per setting, for the summary
@@ -335,16 +338,13 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
 
     FanController controller(model);
     QString error;
-    {
-        const FanState::Lock lock;
-        if (!controller.apply(resolveForNow(model, settings), &error)) {
-            err() << error << Qt::endl;
-            return ExitFailed;
-        }
-        if (!FanState::merge(lock, settings, &error)) {
-            err() << i18n("The fans were changed, but the state could not be saved: %1", error) << Qt::endl;
-            return ExitFailed;
-        }
+    if (!controller.apply(resolveForNow(model, settings), &error)) {
+        err() << error << Qt::endl;
+        return ExitFailed;
+    }
+    if (!FanState::merge(lock, settings, &error)) {
+        err() << i18n("The fans were changed, but the state could not be saved: %1", error) << Qt::endl;
+        return ExitFailed;
     }
     if (onlyLed) {
         // One LED set on its own: the pair is now set separately (as in the window).
