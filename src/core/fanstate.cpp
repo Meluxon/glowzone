@@ -7,11 +7,14 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLockFile>
 #include <QSaveFile>
 #include <QStandardPaths>
 
 namespace Glowzone::FanState
 {
+
+using namespace std::chrono_literals;
 
 static constexpr int FormatVersion = 1;
 
@@ -25,17 +28,21 @@ static QString headerKey(quint8 header)
     return QStringLiteral("0x%1").arg(header, 2, 16, QLatin1Char('0'));
 }
 
+static QJsonObject settingToJson(Ite8297::HeaderSetting s)
+{
+    return {
+        {QLatin1String("mode"), QLatin1String(Ite8297::modeInfo(s.mode)->id)},
+        {QLatin1String("speed"), s.speed},
+        {QLatin1String("brightness"), s.brightness},
+        {QLatin1String("colour"), Ite8297::rgbToString(s.colour)},
+    };
+}
+
 QJsonObject headersToJson(const Headers &headers)
 {
     QJsonObject h;
     for (const Ite8297::HeaderSetting &s : headers) {
-        h.insert(headerKey(s.header),
-                 QJsonObject{
-                     {QLatin1String("mode"), QLatin1String(Ite8297::modeInfo(s.mode)->id)},
-                     {QLatin1String("speed"), s.speed},
-                     {QLatin1String("brightness"), s.brightness},
-                     {QLatin1String("colour"), Ite8297::rgbToString(s.colour)},
-                 });
+        h.insert(headerKey(s.header), settingToJson(s));
     }
     return h;
 }
@@ -118,31 +125,52 @@ Headers load(const ModelProfile &model)
     return result;
 }
 
-bool save(const Headers &headers, QString *error)
+// Only the changed headers are replaced; every other entry stays exactly as it
+// is in the file, even one this version doesn't understand. The window and the
+// CLI may both save at the same moment, hence the lock.
+bool merge(const QList<Ite8297::HeaderSetting> &changed, QString *error)
 {
-    const QJsonObject root{{QLatin1String("version"), FormatVersion}, {QLatin1String("headers"), headersToJson(headers)}};
-
     const QString path = filePath();
     if (!QDir().mkpath(QFileInfo(path).absolutePath())) {
         *error = i18n("Could not create the directory for %1.", path);
         return false;
     }
+    QLockFile lock(path + QLatin1String(".lock"));
+    lock.setStaleLockTime(30s);
+    if (!lock.tryLock(5s)) {
+        *error = i18n("Could not save the fan state to %1: %2", path, i18n("another Glowzone is saving it"));
+        return false;
+    }
+
+    QJsonObject headers;
+    QFile current(path);
+    if (current.open(QIODevice::ReadOnly)) {
+        QJsonParseError parseError;
+        const QJsonDocument doc = QJsonDocument::fromJson(current.readAll(), &parseError);
+        current.close();
+        const int version = doc.object().value(QLatin1String("version")).toInt();
+        if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
+            // Unreadable: keep a copy for inspection, start afresh.
+            QFile::remove(path + QLatin1String(".broken"));
+            QFile::rename(path, path + QLatin1String(".broken"));
+        } else if (version > FormatVersion) {
+            *error = i18n("%1 was saved by a newer version of Glowzone and is left as it is.", path);
+            return false;
+        } else if (version == FormatVersion) {
+            headers = doc.object().value(QLatin1String("headers")).toObject();
+        }
+    }
+    for (const Ite8297::HeaderSetting &s : changed) {
+        headers.insert(headerKey(s.header), settingToJson(s));
+    }
+
+    const QByteArray data = QJsonDocument(QJsonObject{{QLatin1String("version"), FormatVersion}, {QLatin1String("headers"), headers}}).toJson();
     QSaveFile f(path);
-    if (!f.open(QIODevice::WriteOnly) || f.write(QJsonDocument(root).toJson()) < 0 || !f.commit()) {
+    if (!f.open(QIODevice::WriteOnly) || f.write(data) != data.size() || !f.commit()) {
         *error = i18n("Could not save the fan state to %1: %2", path, f.errorString());
         return false;
     }
     return true;
-}
-
-bool merge(const QList<Ite8297::HeaderSetting> &changed, QString *error)
-{
-    // Keep whatever else is in the file untouched.
-    Headers all = loadFile();
-    for (const Ite8297::HeaderSetting &s : changed) {
-        all.insert(s.header, s);
-    }
-    return save(all, error);
 }
 
 } // namespace Glowzone::FanState

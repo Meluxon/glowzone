@@ -21,7 +21,6 @@ using Headers = QMap<quint8, Ite8297::HeaderSetting>;
 
 QString filePath();
 Headers load(const ModelProfile &model);         // only what fits the model; empty if nothing saved yet
-bool save(const Headers &headers, QString *error);
 bool merge(const QList<Ite8297::HeaderSetting> &changed, QString *error);
 
 // {"0x13": {"mode": "rainbow", "speed": 1, "brightness": 2, "colour": "#158ddd"}, ...}

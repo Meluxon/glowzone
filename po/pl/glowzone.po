@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 14:34+0100\n"
+"POT-Creation-Date: 2026-11-15 14:39+0100\n"
 "PO-Revision-Date: 2026-11-15 01:03+0100\n"
 "Last-Translator: Claude (vibecoded draft – please review)\n"
 "Language-Team: Polish\n"
@@ -476,8 +476,18 @@ msgstr "Nie udało się utworzyć katalogu dla %1."
 
 #: src/core/fanstate.cpp
 #, kde-format
+msgid "another Glowzone is saving it"
+msgstr "inny proces Glowzone właśnie go zapisuje"
+
+#: src/core/fanstate.cpp
+#, kde-format
 msgid "Could not save the fan state to %1: %2"
 msgstr "Nie udało się zapisać stanu wentylatorów w %1: %2"
+
+#: src/core/fanstate.cpp
+#, kde-format
+msgid "%1 was saved by a newer version of Glowzone and is left as it is."
+msgstr "%1 został zapisany przez nowszą wersję Glowzone i pozostaje bez zmian."
 
 #: src/core/helpercall.cpp
 #, kde-format

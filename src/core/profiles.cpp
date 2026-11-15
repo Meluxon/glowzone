@@ -214,8 +214,9 @@ bool save(const ModelProfile &model, const Profile &profile, QString *error)
     const auto existing = findStored(model, p.name);
     const QString path = existing ? existing->path : newFilePath(p.name);
 
+    const QByteArray data = QJsonDocument(toJson(model, p)).toJson();
     QSaveFile f(path);
-    if (!f.open(QIODevice::WriteOnly) || f.write(QJsonDocument(toJson(model, p)).toJson()) < 0 || !f.commit()) {
+    if (!f.open(QIODevice::WriteOnly) || f.write(data) != data.size() || !f.commit()) {
         *error = i18n("Could not save the profile to %1: %2", path, f.errorString());
         return false;
     }

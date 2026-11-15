@@ -112,6 +112,47 @@ private Q_SLOTS:
         QCOMPARE(FanState::load(model()).size(), 2); // 0x11 kept by merge
     }
 
+    // Entries this version doesn't understand stay in the file untouched.
+    void mergeKeepsEntriesItCannotRead()
+    {
+        writeState(1, {{QStringLiteral("0x11"), entry("laser", 1)}});
+        QString error;
+        QVERIFY(FanState::merge({{0x13, Mode::Static, 1, 2, Rgb{}}}, &error));
+        QFile f(FanState::filePath());
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        const QJsonObject headers = QJsonDocument::fromJson(f.readAll()).object().value(QStringLiteral("headers")).toObject();
+        QCOMPARE(headers.value(QStringLiteral("0x11")).toObject().value(QStringLiteral("mode")).toString(), QStringLiteral("laser"));
+        QVERIFY(headers.contains(QStringLiteral("0x13")));
+    }
+
+    void mergeLeavesANewerFormatAlone()
+    {
+        writeState(2, {{QStringLiteral("0x13"), entry("static", 1)}});
+        QFile f(FanState::filePath());
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        const QByteArray before = f.readAll();
+        f.close();
+        QString error;
+        QVERIFY(!FanState::merge({{0x13, Mode::Off, 1, 2, Rgb{}}}, &error));
+        QVERIFY(!error.isEmpty());
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        QCOMPARE(f.readAll(), before);
+    }
+
+    void mergeKeepsACopyOfAnUnreadableFile()
+    {
+        {
+            QFile f(FanState::filePath());
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write("{ not json");
+        }
+        QString error;
+        QVERIFY(FanState::merge({{0x13, Mode::Off, 1, 2, Rgb{}}}, &error));
+        QVERIFY(QFile::exists(FanState::filePath() + QStringLiteral(".broken")));
+        QCOMPARE(FanState::load(model()).size(), 1);
+        QFile::remove(FanState::filePath() + QStringLiteral(".broken"));
+    }
+
     void ignoresOtherVersions()
     {
         writeState(2, {{QStringLiteral("0x13"), entry("static", 1)}});
