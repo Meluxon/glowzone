@@ -45,6 +45,9 @@ Q_SIGNALS:
     void renameRequested(const QString &name);
     void deleteRequested(const QString &name);
 
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+
 private:
     void itemSelected(QTreeWidgetItem *item);
     void itemTriggered(QTreeWidgetItem *item);

@@ -295,6 +295,10 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
         err() << i18n("The fans were changed, but the state could not be saved: %1", error) << Qt::endl;
         return ExitFailed;
     }
+    if (onlyLed) {
+        // One LED set on its own: the pair is now set separately (as in the window).
+        Settings::setLinked(QLatin1String(fans.constFirst()->id), false);
+    }
 
     int width = nameWidth(model);
     for (const QString &label : std::as_const(labels)) {

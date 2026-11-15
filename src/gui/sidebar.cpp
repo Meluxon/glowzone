@@ -8,6 +8,7 @@
 
 #include <KLocalizedString>
 #include <QHeaderView>
+#include <QKeyEvent>
 #include <QMenu>
 #include <QPainter>
 #include <QPainterPath>
@@ -271,8 +272,9 @@ Sidebar::Sidebar(Lighting *lighting, QWidget *parent)
     connect(this, &QTreeWidget::currentItemChanged, this, [this](QTreeWidgetItem *item) {
         itemSelected(item);
     });
+    // A click, or Enter (keyPressEvent). Not itemActivated: depending on the
+    // single/double-click setting it comes on top of the click.
     connect(this, &QTreeWidget::itemClicked, this, &Sidebar::itemTriggered);
-    connect(this, &QTreeWidget::itemActivated, this, &Sidebar::itemTriggered);
     connect(this, &QWidget::customContextMenuRequested, this, &Sidebar::contextMenu);
     refresh();
 }
@@ -448,6 +450,15 @@ void Sidebar::itemSelected(QTreeWidgetItem *item)
     default:
         break;
     }
+}
+
+void Sidebar::keyPressEvent(QKeyEvent *event)
+{
+    if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) && currentItem()) {
+        itemTriggered(currentItem());
+        return;
+    }
+    QTreeWidget::keyPressEvent(event);
 }
 
 // Profiles and "save current" act on click/Enter and never become the
