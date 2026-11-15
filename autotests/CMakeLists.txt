@@ -7,3 +7,4 @@ ecm_add_test(modeltest.cpp TEST_NAME modeltest LINK_LIBRARIES glowzone_core Qt6:
 target_compile_definitions(modeltest PRIVATE GLOWZONE_UDEV_RULES="${PROJECT_SOURCE_DIR}/data/70-glowzone.rules")
 ecm_add_test(fanstatetest.cpp TEST_NAME fanstatetest LINK_LIBRARIES glowzone_core Qt6::Test)
 ecm_add_test(profilestest.cpp TEST_NAME profilestest LINK_LIBRARIES glowzone_core Qt6::Test)
+ecm_add_test(lightappliertest.cpp TEST_NAME lightappliertest LINK_LIBRARIES glowzone_core Qt6::Test)

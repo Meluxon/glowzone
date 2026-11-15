@@ -1,19 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Meluxon
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "eclights.h"
-#include "config-glowzone.h"
 
-#include <KAuth/Action>
-#include <KAuth/ActionReply>
-#include <KAuth/ExecuteJob>
+#include "helpercall.h"
+
 #include <KLocalizedString>
-
-#include <memory>
 
 namespace Glowzone::EcLights
 {
-
-namespace HP = HelperProtocol;
 
 const QList<ModeInfo> &modes()
 {
@@ -58,123 +52,28 @@ const ModeInfo *modeInfo(const QString &id)
     return nullptr;
 }
 
-static QString errorMessage(int code, const QString &detail)
-{
-    QString msg;
-    switch (code) {
-    case HP::UnsupportedModel:
-        msg = i18n("The helper refused to run: this computer is not a supported model.");
-        break;
-    case HP::AcpiCallUnavailable:
-        msg = i18n("The acpi_call kernel module is not available. Install acpi_call-dkms "
-                   "(or acpi_call / acpi_call-lts for your kernel).");
-        break;
-    case HP::BiosLedMissing:
-        msg = i18n("The BIOS does not report the case lights on this computer.");
-        break;
-    case HP::InvalidArguments:
-        msg = i18n("The helper rejected the request as invalid.");
-        break;
-    case HP::AcpiCallFailed:
-    case HP::UnexpectedReply:
-        msg = i18n("The firmware call for the case lights failed.");
-        break;
-    case KAuth::ActionReply::AuthorizationDeniedError:
-        msg = i18n("Not authorised to change the case lights.");
-        break;
-    case KAuth::ActionReply::UserCancelledError:
-        msg = i18n("Authorisation was cancelled.");
-        break;
-    case KAuth::ActionReply::BackendError:
-        msg = i18n("The authorisation system (polkit) reported an error.");
-        break;
-    case KAuth::ActionReply::NoResponderError:
-    case KAuth::ActionReply::NoSuchActionError:
-    case KAuth::ActionReply::DBusError:
-        msg = i18n("Could not reach the Glowzone helper. Is Glowzone installed correctly?");
-        break;
-    default:
-        msg = i18n("The Glowzone helper reported an error (code %1).", code);
-        break;
-    }
-    if (!detail.isEmpty()) {
-        msg += QLatin1Char('\n') + i18nc("@info technical details follow", "Details: %1", detail);
-    }
-    return msg;
-}
-
-static KAuth::ExecuteJob *makeJob(const char *slot, const QVariantMap &args, QWindow *parent)
-{
-    KAuth::Action action(QLatin1String(GLOWZONE_HELPER_ID ".") + QLatin1String(slot));
-    action.setHelperId(QStringLiteral(GLOWZONE_HELPER_ID));
-    action.setArguments(args);
-    action.setTimeout(30000);
-    if (parent) {
-        action.setParentWindow(parent);
-    }
-    return action.execute();
-}
-
-KAuth::ExecuteJob *statusJob(QWindow *parent)
-{
-    return makeJob(HP::ActionStatus, {}, parent);
-}
-
-KAuth::ExecuteJob *setJob(const QList<EcRequest> &requests, QWindow *parent)
-{
-    return makeJob(HP::ActionSetLed, HP::requestsToVariant(requests), parent);
-}
-
-std::optional<QList<EcLightState>> result(KAuth::ExecuteJob *job, QString *error)
-{
-    if (job->error()) {
-        *error = errorMessage(job->error(), job->errorText());
-        return std::nullopt;
-    }
-    return HP::statesFromVariant(job->data());
-}
-
-// For the CLI: runs the job to the end and keeps it for reading the result.
-static std::unique_ptr<KAuth::ExecuteJob> runToEnd(KAuth::ExecuteJob *job)
-{
-    job->setAutoDelete(false);
-    job->exec();
-    return std::unique_ptr<KAuth::ExecuteJob>(job);
-}
-
 std::optional<QList<EcLightState>> status(QString *error)
 {
-    return result(runToEnd(statusJob()).get(), error);
+    KAuthHelperCalls calls;
+    HelperResult r = runToEnd(calls, HelperCall::Status);
+    *error = r.error;
+    return r.ok() ? std::optional(r.lights) : std::nullopt;
 }
 
 std::optional<QList<EcLightState>> set(const QList<EcRequest> &requests, QString *error)
 {
-    return result(runToEnd(setJob(requests)).get(), error);
-}
-
-KAuth::ExecuteJob *layoutJob(QWindow *parent)
-{
-    return makeJob(HP::ActionLayout, {}, parent);
-}
-
-std::optional<int> layoutResult(KAuth::ExecuteJob *job, QString *error)
-{
-    if (job->error()) {
-        *error = errorMessage(job->error(), job->errorText());
-        return std::nullopt;
-    }
-    bool ok = false;
-    const int value = job->data().value(QLatin1String(HP::KeyLayout)).toInt(&ok);
-    if (!ok) {
-        *error = errorMessage(HP::UnexpectedReply, {});
-        return std::nullopt;
-    }
-    return value;
+    KAuthHelperCalls calls;
+    HelperResult r = runToEnd(calls, HelperCall::Set, requests);
+    *error = r.error;
+    return r.ok() ? std::optional(r.lights) : std::nullopt;
 }
 
 std::optional<int> layout(QString *error)
 {
-    return layoutResult(runToEnd(layoutJob()).get(), error);
+    KAuthHelperCalls calls;
+    HelperResult r = runToEnd(calls, HelperCall::Layout);
+    *error = r.error;
+    return r.ok() ? std::optional(r.layout) : std::nullopt;
 }
 
 QString layoutCode(int code)

@@ -2,17 +2,23 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
+#include "core/helpercall.h"
 #include "core/profiles.h"
 
 #include <QObject>
 
+#include <memory>
+
 class QWindow;
+
+namespace Glowzone
+{
+class FanApplier;
+class LightApplier;
+}
 
 namespace Glowzone::Gui
 {
-
-class FanApplier;
-class LightApplier;
 
 // The lighting as the window shows it, and the single place that changes it.
 // Pages and the sidebar read from here and call the setters; everything they
@@ -80,9 +86,9 @@ private:
     bool m_lightsFailed = false;
     int m_fanLayout = -1;
     bool m_layoutChecked = false;
-    QWindow *m_window = nullptr;
 
     void checkFanLayout();
+    std::unique_ptr<KAuthHelperCalls> m_helper;
     FanApplier *m_fanApplier;
     LightApplier *m_lightApplier;
 };

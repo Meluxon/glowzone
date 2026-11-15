@@ -2,12 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "appliers.h"
 
-#include "core/eclights.h"
-#include "core/fanstate.h"
+#include "fanstate.h"
 
-#include <KAuth/ExecuteJob>
-
-namespace Glowzone::Gui
+namespace Glowzone
 {
 
 static constexpr int FanDelayMs = 80;
@@ -52,8 +49,9 @@ void FanApplier::flushNow()
     Q_EMIT applied();
 }
 
-LightApplier::LightApplier(QObject *parent)
+LightApplier::LightApplier(HelperCalls &calls, QObject *parent)
     : QObject(parent)
+    , m_calls(calls)
 {
     m_timer.setSingleShot(true);
     m_timer.setInterval(LightDelayMs);
@@ -100,49 +98,48 @@ void LightApplier::finish()
 
 bool LightApplier::isBusy() const
 {
-    return m_job || !m_pending.isEmpty();
+    return m_call || !m_pending.isEmpty();
 }
 
 void LightApplier::startNext()
 {
-    if (m_job) {
-        return; // picked up when the running job finishes
+    if (m_call) {
+        return; // picked up when the running call finishes
     }
+    HelperCall::Kind kind = HelperCall::Status;
+    QList<EcRequest> requests;
     if (!m_pending.isEmpty()) {
-        m_job = EcLights::setJob(m_pending.values(), m_window);
-        m_jobIsSet = true;
+        kind = HelperCall::Set;
+        requests = m_pending.values();
         m_pending.clear();
         m_refreshWanted = false; // a set reply carries the new state anyway
     } else if (m_refreshWanted) {
-        m_job = EcLights::statusJob(m_window);
-        m_jobIsSet = false;
         m_refreshWanted = false;
     } else {
         Q_EMIT idle();
         return;
     }
 
-    connect(m_job, &KJob::result, this, [this] {
-        QString error;
-        const auto lights = EcLights::result(m_job, &error);
-        m_job = nullptr; // auto-deleted by KJob
-        if (!lights) {
+    m_call = m_calls.create(kind, requests, this);
+    connect(m_call, &HelperCall::finished, this, [this, kind](const HelperResult &r) {
+        m_call = nullptr;
+        if (!r.ok()) {
             m_known.clear(); // unsure now – don't skip anything
             // A failed change may have set some lights and not others (each is
             // its own BIOS call): read back what they really show.
-            m_refreshWanted = m_refreshWanted || m_jobIsSet;
-            Q_EMIT failed(error);
+            m_refreshWanted = m_refreshWanted || kind == HelperCall::Set;
+            Q_EMIT failed(r.error);
         } else {
-            for (const EcLightState &l : *lights) {
+            for (const EcLightState &l : r.lights) {
                 m_known.insert(l.index, l);
             }
             if (m_pending.isEmpty() && !m_timer.isActive()) {
-                Q_EMIT stateChanged(*lights);
+                Q_EMIT stateChanged(r.lights);
             }
         }
         startNext();
     });
-    m_job->start();
+    m_call->start();
 }
 
-} // namespace Glowzone::Gui
+} // namespace Glowzone

@@ -8,13 +8,6 @@
 #include <KLazyLocalizedString>
 #include <optional>
 
-class QWindow;
-
-namespace KAuth
-{
-class ExecuteJob;
-}
-
 namespace Glowzone::EcLights
 {
 
@@ -36,22 +29,11 @@ inline constexpr quint8 ModeOff = 1;
 // Brightness starts at 1; the top level is per model (ModelProfile::ecBrightnessLevels).
 inline constexpr quint8 MinBrightness = 1;
 
-// Everything here goes through the root helper (KAuth). Errors are translated.
-// Blocking versions, for the CLI:
+// Blocking calls to the root helper, for the CLI (the window uses LightApplier).
+// Errors are translated.
 std::optional<QList<EcLightState>> status(QString *error);
 std::optional<QList<EcLightState>> set(const QList<EcRequest> &requests, QString *error);
-
-// Asynchronous versions, for the GUI: start() the job, then read the outcome
-// with result() in its KJob::result handler.
-// parent: the window a polkit dialog would belong to (nullptr for the CLI).
-KAuth::ExecuteJob *statusJob(QWindow *parent = nullptr);
-KAuth::ExecuteJob *setJob(const QList<EcRequest> &requests, QWindow *parent = nullptr);
-std::optional<QList<EcLightState>> result(KAuth::ExecuteJob *job, QString *error);
-
-// Fan layout as the BIOS detects it right now (see FanLayoutDef).
-KAuth::ExecuteJob *layoutJob(QWindow *parent = nullptr);
-std::optional<int> layoutResult(KAuth::ExecuteJob *job, QString *error);
-std::optional<int> layout(QString *error); // blocking, for the CLI
+std::optional<int> layout(QString *error); // fan layout as the BIOS detects it now (see FanLayoutDef)
 
 // "0x0b"
 QString layoutCode(int code);

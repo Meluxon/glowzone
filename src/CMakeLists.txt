@@ -26,6 +26,8 @@ add_library(glowzone_core STATIC
     core/messages.cpp
     core/settings.cpp
     core/profiles.cpp
+    core/helpercall.cpp
+    core/appliers.cpp
 )
 target_link_libraries(glowzone_core PUBLIC
     glowzone_model
@@ -47,7 +49,6 @@ add_executable(glowzone
     gui/lighting.cpp
     gui/aboutdialog.cpp
     gui/colourbutton.cpp
-    gui/appliers.cpp
     gui/glowzone.qrc
 )
 target_link_libraries(glowzone PRIVATE glowzone_core Qt6::Widgets KF6::WidgetsAddons)

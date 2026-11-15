@@ -1,12 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Meluxon
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "lighting.h"
-#include "appliers.h"
 
+#include "core/appliers.h"
 #include "core/eclights.h"
 #include "core/settings.h"
-
-#include <KAuth/ExecuteJob>
 
 namespace Glowzone::Gui
 {
@@ -16,8 +14,9 @@ using namespace Ite8297;
 Lighting::Lighting(const ModelProfile &model, QObject *parent)
     : QObject(parent)
     , m_model(model)
+    , m_helper(std::make_unique<KAuthHelperCalls>())
     , m_fanApplier(new FanApplier(model, this))
-    , m_lightApplier(new LightApplier(this))
+    , m_lightApplier(new LightApplier(*m_helper, this))
 {
     const FanState::Headers saved = FanState::load(model);
     for (const FanDef &fan : model.fans) {
@@ -56,8 +55,7 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
 
 void Lighting::start(QWindow *window)
 {
-    m_window = window;
-    m_lightApplier->setWindow(window);
+    m_helper->setWindow(window);
     QString error;
     if (!m_fanApplier->open(&error)) {
         m_fansAvailable = false;
@@ -77,20 +75,19 @@ void Lighting::checkFanLayout()
         return;
     }
     m_layoutChecked = true;
-    KAuth::ExecuteJob *job = EcLights::layoutJob(m_window);
-    connect(job, &KJob::result, this, [this, job] {
-        QString error;
-        if (const auto layout = EcLights::layoutResult(job, &error)) {
-            m_fanLayout = *layout;
-            const QString warning = EcLights::layoutWarning(m_model, *layout);
+    HelperCall *call = m_helper->create(HelperCall::Layout, {}, this);
+    connect(call, &HelperCall::finished, this, [this](const HelperResult &r) {
+        // An error here is not worth a message: the lights already work.
+        if (r.ok()) {
+            m_fanLayout = r.layout;
+            const QString warning = EcLights::layoutWarning(m_model, r.layout);
             if (!warning.isEmpty()) {
                 Q_EMIT problem(warning);
                 Q_EMIT changed(); // mark the fans in the sidebar
             }
         }
-        // An error here is not worth a message: the lights already work.
     });
-    job->start();
+    call->start();
 }
 
 bool Lighting::isUndetected(const FanDef &fan) const

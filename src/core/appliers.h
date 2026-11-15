@@ -2,21 +2,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
-#include "core/fancontroller.h"
-#include "model/helperprotocol.h"
+#include "fancontroller.h"
+#include "helpercall.h"
 
 #include <QMap>
 #include <QObject>
 #include <QTimer>
 
-class QWindow;
-
-namespace KAuth
-{
-class ExecuteJob;
-}
-
-namespace Glowzone::Gui
+namespace Glowzone
 {
 
 // Changes apply live, like in Vantage, but are collected for a short moment so
@@ -54,8 +47,8 @@ class LightApplier : public QObject
     Q_OBJECT
 
 public:
-    explicit LightApplier(QObject *parent);
-    void setWindow(QWindow *window) { m_window = window; } // for KAuth/polkit
+    LightApplier(HelperCalls &calls, QObject *parent);
+    void setDelay(int ms) { m_timer.setInterval(ms); } // for tests
 
     void refresh();
     void queue(EcRequest request);
@@ -75,10 +68,9 @@ private:
     QMap<quint8, EcRequest> m_pending;
     QMap<quint8, EcLightState> m_known; // last state reported by the helper
     QTimer m_timer;
-    KAuth::ExecuteJob *m_job = nullptr;
-    QWindow *m_window = nullptr;
+    HelperCalls &m_calls;
+    HelperCall *m_call = nullptr;
     bool m_refreshWanted = false;
-    bool m_jobIsSet = false;
 };
 
-} // namespace Glowzone::Gui
+} // namespace Glowzone
