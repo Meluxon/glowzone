@@ -336,12 +336,12 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
     FanController controller(model);
     QString error;
     {
-        const FanState::SendLock lock;
+        const FanState::Lock lock;
         if (!controller.apply(resolveForNow(model, settings), &error)) {
             err() << error << Qt::endl;
             return ExitFailed;
         }
-        if (!FanState::merge(settings, &error)) {
+        if (!FanState::merge(lock, settings, &error)) {
             err() << i18n("The fans were changed, but the state could not be saved: %1", error) << Qt::endl;
             return ExitFailed;
         }
@@ -426,10 +426,10 @@ int cmdReset(const ModelProfile &model)
     }
     FanController controller(model);
     {
-        const FanState::SendLock lock;
+        const FanState::Lock lock;
         if (controller.apply(settings, &error)) {
             out() << i18n("Fans: all off.") << Qt::endl;
-            if (!FanState::merge(settings, &error)) {
+            if (!FanState::merge(lock, settings, &error)) {
                 err() << error << Qt::endl;
                 exitCode = ExitFailed;
             }
@@ -487,8 +487,8 @@ int cmdProfileApply(const ModelProfile &model, const QString &name)
     if (!profile->fans.isEmpty()) {
         FanController controller(model);
         const QList<HeaderSetting> settings = profile->fans.values();
-        const FanState::SendLock lock;
-        if (!controller.apply(resolveForNow(model, settings), &error) || !FanState::merge(settings, &error)) {
+        const FanState::Lock lock;
+        if (!controller.apply(resolveForNow(model, settings), &error) || !FanState::merge(lock, settings, &error)) {
             err() << i18n("Fans: %1", error) << Qt::endl;
             exitCode = ExitFailed;
         }

@@ -6,7 +6,9 @@
 
 #include "core/fanstate.h"
 
+#include <QElapsedTimer>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QStandardPaths>
@@ -60,7 +62,7 @@ private Q_SLOTS:
         QString error;
         const HeaderSetting cpu{0x13, Mode::Rainbow, 1, 2, Rgb{0x15, 0x8d, 0xdd}};
         const HeaderSetting front{0x3a, Mode::Static, 1, 3, Rgb{0xff, 0x3d, 0x9c}};
-        QVERIFY2(FanState::merge({cpu, front}, &error), qPrintable(error));
+        QVERIFY2(FanState::merge(FanState::Lock(), {cpu, front}, &error), qPrintable(error));
         const FanState::Headers loaded = FanState::load(model());
         QCOMPARE(loaded.size(), 2);
         QCOMPARE(loaded.value(0x13), cpu);
@@ -72,7 +74,7 @@ private Q_SLOTS:
     {
         QString error;
         const HeaderSetting cpu{0x13, Mode::CpuTemperature, 1, 3, Rgb{0x15, 0x8d, 0xdd}};
-        QVERIFY2(FanState::merge({cpu}, &error), qPrintable(error));
+        QVERIFY2(FanState::merge(FanState::Lock(), {cpu}, &error), qPrintable(error));
         QCOMPARE(FanState::load(model()).value(0x13), cpu);
         QCOMPARE(FanState::headersToJson({{0x13, cpu}}).value(QLatin1String("0x13")).toObject().value(QLatin1String("mode")).toString(),
                  QStringLiteral("cpu-temperature"));
@@ -82,8 +84,8 @@ private Q_SLOTS:
     void mergeKeepsOtherHeaders()
     {
         QString error;
-        QVERIFY(FanState::merge({{0x13, Mode::Rainbow, 1, 2, Rgb{}}}, &error));
-        QVERIFY(FanState::merge({{0x11, Mode::Off, 1, 2, Rgb{}}}, &error));
+        QVERIFY(FanState::merge(FanState::Lock(), {{0x13, Mode::Rainbow, 1, 2, Rgb{}}}, &error));
+        QVERIFY(FanState::merge(FanState::Lock(), {{0x11, Mode::Off, 1, 2, Rgb{}}}, &error));
         QCOMPARE(FanState::load(model()).size(), 2);
     }
 
@@ -119,8 +121,8 @@ private Q_SLOTS:
         QCOMPARE(FanState::load(model()).size(), 1);                   // fine for the full model
 
         QString error;
-        QVERIFY(FanState::merge({{0x13, Mode::Off, 1, 1, Rgb{}}, {0x11, Mode::Off, 1, 1, Rgb{}}}, &error));
-        QVERIFY(FanState::merge({{0x13, Mode::Static, 1, 1, Rgb{}}}, &error));
+        QVERIFY(FanState::merge(FanState::Lock(), {{0x13, Mode::Off, 1, 1, Rgb{}}, {0x11, Mode::Off, 1, 1, Rgb{}}}, &error));
+        QVERIFY(FanState::merge(FanState::Lock(), {{0x13, Mode::Static, 1, 1, Rgb{}}}, &error));
         QCOMPARE(FanState::load(model()).size(), 2); // 0x11 kept by merge
     }
 
@@ -129,7 +131,7 @@ private Q_SLOTS:
     {
         writeState(1, {{QStringLiteral("0x11"), entry("laser", 1)}});
         QString error;
-        QVERIFY(FanState::merge({{0x13, Mode::Static, 1, 2, Rgb{}}}, &error));
+        QVERIFY(FanState::merge(FanState::Lock(), {{0x13, Mode::Static, 1, 2, Rgb{}}}, &error));
         QFile f(FanState::filePath());
         QVERIFY(f.open(QIODevice::ReadOnly));
         const QJsonObject headers = QJsonDocument::fromJson(f.readAll()).object().value(QStringLiteral("headers")).toObject();
@@ -145,7 +147,7 @@ private Q_SLOTS:
         const QByteArray before = f.readAll();
         f.close();
         QString error;
-        QVERIFY(!FanState::merge({{0x13, Mode::Off, 1, 2, Rgb{}}}, &error));
+        QVERIFY(!FanState::merge(FanState::Lock(), {{0x13, Mode::Off, 1, 2, Rgb{}}}, &error));
         QVERIFY(!error.isEmpty());
         QVERIFY(f.open(QIODevice::ReadOnly));
         QCOMPARE(f.readAll(), before);
@@ -159,7 +161,7 @@ private Q_SLOTS:
             f.write("{ not json");
         }
         QString error;
-        QVERIFY(FanState::merge({{0x13, Mode::Off, 1, 2, Rgb{}}}, &error));
+        QVERIFY(FanState::merge(FanState::Lock(), {{0x13, Mode::Off, 1, 2, Rgb{}}}, &error));
         QVERIFY(QFile::exists(FanState::filePath() + QStringLiteral(".broken")));
         QCOMPARE(FanState::load(model()).size(), 1);
         QFile::remove(FanState::filePath() + QStringLiteral(".broken"));
@@ -169,6 +171,30 @@ private Q_SLOTS:
     {
         writeState(2, {{QStringLiteral("0x13"), entry("static", 1)}});
         QVERIFY(FanState::load(model()).isEmpty());
+    }
+
+    // Two holders take turns (the second gives up after its short wait). The
+    // lock file stays as it is: taking the lock writes nothing.
+    void lockTakesTurns()
+    {
+        const QString path = QFileInfo(FanState::filePath()).absolutePath() + QLatin1String("/fans.lock");
+        QDateTime stamp;
+        QElapsedTimer waited;
+        {
+            const FanState::Lock first;
+            QVERIFY(QFileInfo::exists(path));
+            stamp = QFileInfo(path).lastModified();
+            waited.start();
+            const FanState::Lock second;
+            QVERIFY(waited.elapsed() >= 1900);
+        }
+        waited.restart();
+        {
+            const FanState::Lock again;
+            QVERIFY(waited.elapsed() < 500);
+        }
+        QVERIFY(QFileInfo::exists(path));
+        QCOMPARE(QFileInfo(path).lastModified(), stamp);
     }
 };
 

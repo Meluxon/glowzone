@@ -27,6 +27,7 @@ xgettext --from-code=UTF-8 --language=C++ --kde --add-location=file \
 for po in po/*/glowzone.po; do
     [ -e "$po" ] || continue
     msgmerge --quiet --update --backup=none --no-wrap --add-location=file "$po" po/glowzone.pot
+    msgattrib --no-obsolete --no-wrap --output-file="$po" "$po" # strings no longer used
     printf '%s: ' "$po"
     msgfmt --check --statistics -o /dev/null "$po"
 done

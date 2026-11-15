@@ -6,7 +6,6 @@
 #include "model/modelprofile.h"
 
 #include <QJsonObject>
-#include <QLockFile>
 #include <QMap>
 
 namespace Glowzone
@@ -21,21 +20,27 @@ using Headers = QMap<quint8, Ite8297::HeaderSetting>;
 
 QString filePath();
 Headers load(const ModelProfile &model);         // only what fits the model; empty if nothing saved yet
-bool merge(const QList<Ite8297::HeaderSetting> &changed, QString *error);
 
 // Held while sending to the controller together with reading or saving the
 // state, so a command and a running Glowzone take turns. Otherwise the running
 // one could send a temperature colour, by the old state, to an LED the command
-// has just set but not saved yet. Advisory: after a short wait (a hung
-// process) it goes ahead without the lock.
-class SendLock
+// has just set but not saved yet. It's flock() on a file that stays, so taking
+// it writes nothing, and the kernel releases it if the holder dies. Advisory:
+// after a short wait (a hung process) it goes ahead without it.
+class Lock
 {
 public:
-    SendLock();
+    Lock();
+    ~Lock();
+    Q_DISABLE_COPY_MOVE(Lock)
 
 private:
-    QLockFile m_lock;
+    int m_fd = -1;
 };
+
+// Replaces the given headers in the saved state and keeps every other entry.
+// Takes the lock to show it is held.
+bool merge(const Lock &lock, const QList<Ite8297::HeaderSetting> &changed, QString *error);
 
 // {"0x13": {"mode": "rainbow", "speed": 1, "brightness": 2, "colour": "#158ddd"}, ...}
 // When reading, anything the model doesn't offer (header, mode, level) is dropped.

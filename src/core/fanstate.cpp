@@ -7,10 +7,16 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
+#include <QDeadlineTimer>
 #include <QJsonObject>
-#include <QLockFile>
 #include <QSaveFile>
 #include <QStandardPaths>
+#include <QThread>
+
+#include <cerrno>
+#include <fcntl.h>
+#include <sys/file.h>
+#include <unistd.h>
 
 namespace Glowzone::FanState
 {
@@ -117,19 +123,12 @@ Headers load(const ModelProfile &model)
 }
 
 // Only the changed headers are replaced; every other entry stays exactly as it
-// is in the file, even one this version doesn't understand. The window and the
-// CLI may both save at the same moment, hence the lock.
-bool merge(const QList<Ite8297::HeaderSetting> &changed, QString *error)
+// is in the file, even one this version doesn't understand.
+bool merge(const Lock &, const QList<Ite8297::HeaderSetting> &changed, QString *error)
 {
     const QString path = filePath();
     if (!QDir().mkpath(QFileInfo(path).absolutePath())) {
         *error = i18n("Could not create the directory for %1.", path);
-        return false;
-    }
-    QLockFile lock(path + QLatin1String(".lock"));
-    lock.setStaleLockTime(30s);
-    if (!lock.tryLock(5s)) {
-        *error = i18n("Could not save the fan state to %1: %2", path, i18n("another Glowzone is saving it"));
         return false;
     }
 
@@ -164,12 +163,27 @@ bool merge(const QList<Ite8297::HeaderSetting> &changed, QString *error)
     return true;
 }
 
-SendLock::SendLock()
-    : m_lock(filePath() + QLatin1String(".send.lock"))
+Lock::Lock()
 {
-    if (QDir().mkpath(QFileInfo(filePath()).absolutePath())) {
-        m_lock.setStaleLockTime(30s);
-        (void)m_lock.tryLock(2s);
+    const QString path = QFileInfo(filePath()).absolutePath() + QLatin1String("/fans.lock");
+    const QByteArray name = QFile::encodeName(path);
+    m_fd = ::open(name.constData(), O_RDWR | O_CREAT | O_CLOEXEC, 0600);
+    if (m_fd < 0 && errno == ENOENT && QDir().mkpath(QFileInfo(path).absolutePath())) {
+        m_fd = ::open(name.constData(), O_RDWR | O_CREAT | O_CLOEXEC, 0600);
+    }
+    if (m_fd < 0) {
+        return; // can't lock: go ahead without
+    }
+    const QDeadlineTimer deadline(2s);
+    while (::flock(m_fd, LOCK_EX | LOCK_NB) != 0 && (errno == EWOULDBLOCK || errno == EINTR) && !deadline.hasExpired()) {
+        QThread::msleep(10);
+    }
+}
+
+Lock::~Lock()
+{
+    if (m_fd >= 0) {
+        ::close(m_fd); // releases the lock
     }
 }
 

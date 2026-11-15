@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 19:58+0100\n"
+"POT-Creation-Date: 2026-11-15 21:46+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: Japanese\n"
@@ -517,18 +517,13 @@ msgstr "%1 用のディレクトリを作成できませんでした。"
 
 #: src/core/fanstate.cpp
 #, kde-format
-msgid "another Glowzone is saving it"
-msgstr "別の Glowzone が保存中です"
+msgid "%1 was saved by a newer version of Glowzone and is left as it is."
+msgstr "%1 は新しいバージョンの Glowzone で保存されたため、変更しません。"
 
 #: src/core/fanstate.cpp
 #, kde-format
 msgid "Could not save the fan state to %1: %2"
 msgstr "ファンの状態を %1 に保存できませんでした：%2"
-
-#: src/core/fanstate.cpp
-#, kde-format
-msgid "%1 was saved by a newer version of Glowzone and is left as it is."
-msgstr "%1 は新しいバージョンの Glowzone で保存されたため、変更しません。"
 
 #: src/core/helpercall.cpp
 #, kde-format

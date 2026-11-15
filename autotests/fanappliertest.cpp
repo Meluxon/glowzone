@@ -203,14 +203,14 @@ private Q_SLOTS:
         fans.flushNow();
         sent();
 
-        QVERIFY(FanState::merge({{0x13, Mode::Static, 1, 2, Rgb{0xff, 0, 0xff}}}, &error)); // as the CLI does
+        QVERIFY(FanState::merge(FanState::Lock(), {{0x13, Mode::Static, 1, 2, Rgb{0xff, 0, 0xff}}}, &error)); // as the CLI does
         setTemperature(75); // 76: a0ff00, reached in steps (the smoothing)
         QVERIFY(QTest::qWaitFor([&] { return fans.temperature()->colour() == Rgb{0xa0, 0xff, 0x00}; }));
         const QStringList reports = sent();
         QVERIFY(coloursFor(reports, QStringLiteral("13")).isEmpty());
         QCOMPARE(coloursFor(reports, QStringLiteral("11")).constLast(), QStringLiteral("a0ff00"));
 
-        QVERIFY(FanState::merge({{0x11, Mode::Off, 1, 2, Rgb{}}}, &error)); // nothing follows any more
+        QVERIFY(FanState::merge(FanState::Lock(), {{0x11, Mode::Off, 1, 2, Rgb{}}}, &error)); // nothing follows any more
         setTemperature(45);
         QVERIFY(QTest::qWaitFor([&] { return !fans.temperature()->isRunning(); }));
         QVERIFY(s_reports.isEmpty());

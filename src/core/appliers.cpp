@@ -114,8 +114,8 @@ void FanApplier::flushNow()
     QString error;
     bool ok = false;
     {
-        const FanState::SendLock lock;
-        ok = sendNow(batch, &error) && FanState::merge(batch, &error);
+        const FanState::Lock lock;
+        ok = sendNow(batch, &error) && FanState::merge(lock, batch, &error);
     }
     updateTemperatureReading();
     if (!ok) {
@@ -134,7 +134,7 @@ void FanApplier::sendFollowers()
     // overwritten. The lock keeps a command from changing an LED between the
     // two. Our own changes are saved as they are sent, or are still pending.
     {
-        const FanState::SendLock lock;
+        const FanState::Lock lock;
         m_followers.clear();
         follow(FanState::load(m_model).values());
         follow(m_pending.values()); // changes on their way win
