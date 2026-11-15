@@ -80,6 +80,9 @@ public:
     void setLight(quint8 index, quint8 mode, quint8 brightness);
 
     // --- profiles
+    // The profile applied last, as glowzone.conf records it; the window sets
+    // it through here, so a change made elsewhere can be told apart.
+    void setCurrentProfile(const QString &name);
     Profile current() const;
     // Does the lighting match what the profile contains?
     bool matches(const Profile &profile) const;
@@ -116,9 +119,11 @@ private:
     FanState::Headers m_fans;
     QMap<QString, bool> m_links;
     QMap<quint8, EcLightState> m_lights;
+    QString m_currentProfile;
     bool m_fansAvailable = true; // until opening the controller fails
     bool m_lightsLoaded = false;
     bool m_lightsFailed = false;
+    bool m_lightsStale = false; // a profile was applied elsewhere: being read again
     int m_fanLayout = -1;
     bool m_layoutChecked = false;
     QString m_fanProblem;

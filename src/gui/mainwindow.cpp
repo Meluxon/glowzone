@@ -428,7 +428,7 @@ void MainWindow::saveNewProfile()
         return;
     }
     m_currentProfile = name;
-    Settings::setCurrentProfile(name);
+    m_lighting->setCurrentProfile(name);
     reloadProfiles();
 }
 
@@ -451,7 +451,7 @@ void MainWindow::renameProfile(const QString &name)
     }
     if (m_currentProfile.compare(name, Qt::CaseInsensitive) == 0) {
         m_currentProfile = Profiles::cleanName(raw);
-        Settings::setCurrentProfile(m_currentProfile);
+        m_lighting->setCurrentProfile(m_currentProfile);
     }
     reloadProfiles();
 }
@@ -473,7 +473,7 @@ void MainWindow::deleteProfile(const QString &name)
     }
     if (m_currentProfile.compare(name, Qt::CaseInsensitive) == 0) {
         m_currentProfile.clear();
-        Settings::setCurrentProfile({});
+        m_lighting->setCurrentProfile({});
     }
     reloadProfiles();
 }

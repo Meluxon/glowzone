@@ -7,7 +7,7 @@
 # For an AUR release, source=() will point at a release tarball instead.
 
 pkgname=glowzone
-pkgver=0.8.3
+pkgver=0.8.4
 pkgrel=1
 pkgdesc='Lighting control for supported Lenovo desktops (fan LEDs and case lights)'
 arch=('x86_64')

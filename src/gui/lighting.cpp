@@ -28,6 +28,7 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
     , m_lightApplier(new LightApplier(*m_helper, this))
 {
     loadFans();
+    m_currentProfile = Settings::currentProfile();
 
     // The command line may change things while Glowzone runs – maybe only in
     // the tray, with LEDs following the CPU temperature: the fan state, the
@@ -81,11 +82,13 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
         }
         m_lightsLoaded = true;
         m_lightsFailed = false;
+        m_lightsStale = false;
         setProblem(m_lightProblem, {});
         Q_EMIT changed();
         checkFanLayout();
     });
     connect(m_lightApplier, &LightApplier::failed, this, [this](const QString &text) {
+        m_lightsStale = false;
         if (m_lightsLoaded) {
             setError(text, LightErrors);
         } else {
@@ -160,6 +163,16 @@ void Lighting::reloadSaved()
     const bool settingsChanged = std::exchange(m_settingsChanged, false);
     if (!settingsChanged && QFileInfo(FanState::filePath()).lastModified() == m_stateStamp) {
         return; // our own save, the lock file, ...
+    }
+    // A profile applied elsewhere changes the case lights too, and they can only
+    // be read back. The command sets them after recording the profile; through
+    // the helper's lock this read comes after that.
+    if (const QString profile = Settings::currentProfile(); profile != m_currentProfile) {
+        m_currentProfile = profile;
+        if (m_lightsLoaded) {
+            m_lightsStale = true;
+            m_lightApplier->refresh();
+        }
     }
     const FanState::Headers before = m_fans;
     const QMap<QString, bool> linksBefore = m_links;
@@ -264,7 +277,7 @@ bool Lighting::matches(const Profile &profile) const
             return false;
         }
     }
-    if (m_lightsLoaded) {
+    if (m_lightsLoaded && !m_lightsStale) { // otherwise unknown: they don't count
         for (const EcLightState &l : profile.lights) {
             if (m_lights.value(l.index) != l) {
                 return false;
@@ -290,8 +303,14 @@ void Lighting::apply(const Profile &profile)
         m_lights.insert(l.index, l);
         m_lightApplier->queue({l.index, l.mode, l.brightness});
     }
-    Settings::setCurrentProfile(profile.name);
+    setCurrentProfile(profile.name);
     Q_EMIT changed();
+}
+
+void Lighting::setCurrentProfile(const QString &name)
+{
+    m_currentProfile = name;
+    Settings::setCurrentProfile(name);
 }
 
 void Lighting::turnAllOff()
