@@ -110,10 +110,12 @@ void LightApplier::startNext()
     }
     if (!m_pending.isEmpty()) {
         m_job = EcLights::setJob(m_pending.values(), m_window);
+        m_jobIsSet = true;
         m_pending.clear();
         m_refreshWanted = false; // a set reply carries the new state anyway
     } else if (m_refreshWanted) {
         m_job = EcLights::statusJob(m_window);
+        m_jobIsSet = false;
         m_refreshWanted = false;
     } else {
         Q_EMIT idle();
@@ -126,6 +128,9 @@ void LightApplier::startNext()
         m_job = nullptr; // auto-deleted by KJob
         if (!lights) {
             m_known.clear(); // unsure now – don't skip anything
+            // A failed change may have set some lights and not others (each is
+            // its own BIOS call): read back what they really show.
+            m_refreshWanted = m_refreshWanted || m_jobIsSet;
             Q_EMIT failed(error);
         } else {
             for (const EcLightState &l : *lights) {

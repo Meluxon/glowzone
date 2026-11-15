@@ -65,12 +65,18 @@ QByteArray EcService::gameZoneCall(quint8 method, const QByteArray &arg) const
     return QByteArray(m_model->acpiGameZone) + " 0 0x" + hex2(method) + ' ' + arg;
 }
 
-int EcService::preflight(QString *detail)
+int EcService::checkModel(QString *detail) const
 {
     if (!m_model) {
         *detail = QStringLiteral("unsupported model: ") + m_unsupportedDmi;
         return HP::UnsupportedModel;
     }
+    return 0;
+}
+
+// Loads acpi_call if needed and asks the BIOS whether the lights are fitted.
+int EcService::prepareBios(QString *detail)
+{
     if (!m_acpi.ensureReady(detail)) {
         return HP::AcpiCallUnavailable;
     }
@@ -96,6 +102,28 @@ int EcService::preflight(QString *detail)
     return 0;
 }
 
+int EcService::preflight(QString *detail)
+{
+    if (const int error = checkModel(detail)) {
+        return error;
+    }
+    return prepareBios(detail);
+}
+
+// The state of every light, as the EC sees it now.
+bool EcService::readAll(Result *r)
+{
+    for (const EcLightDef &light : m_model->ecLights) {
+        const auto state = getLed(light.index, &r->error, &r->detail);
+        if (!state) {
+            r->lights.clear();
+            return false;
+        }
+        r->lights.append(*state);
+    }
+    return true;
+}
+
 std::optional<EcLightState> EcService::getLed(quint8 index, int *error, QString *detail)
 {
     const auto reply = m_acpi.call(gameZoneCall(MethodGetLed, QByteArray::number(index)), detail);
@@ -119,16 +147,8 @@ EcService::Result EcService::status()
 {
     Result r;
     r.error = preflight(&r.detail);
-    if (r.error) {
-        return r;
-    }
-    for (const EcLightDef &light : m_model->ecLights) {
-        const auto state = getLed(light.index, &r.error, &r.detail);
-        if (!state) {
-            r.lights.clear();
-            return r;
-        }
-        r.lights.append(*state);
+    if (!r.error) {
+        readAll(&r);
     }
     return r;
 }
@@ -173,13 +193,22 @@ std::optional<QList<EcRequest>> EcService::parseRequest(const QVariantMap &args,
         return std::nullopt;
     }
 
+    // Integers only – no text, fractions or booleans that Qt would convert.
     auto readByte = [](const QVariantMap &m, const char *key, uint max, quint8 *out) {
-        bool ok = false;
-        const uint v = m.value(QLatin1String(key)).toUInt(&ok);
-        if (!ok || v > max) {
+        const QVariant v = m.value(QLatin1String(key));
+        switch (v.typeId()) {
+        case QMetaType::Int:
+        case QMetaType::UInt:
+        case QMetaType::LongLong:
+        case QMetaType::ULongLong:
+            break;
+        default:
             return false;
         }
-        *out = quint8(v);
+        if (v.toLongLong() < 0 || v.toULongLong() > max) {
+            return false;
+        }
+        *out = quint8(v.toUInt());
         return true;
     };
 
@@ -214,14 +243,19 @@ std::optional<QList<EcRequest>> EcService::parseRequest(const QVariantMap &args,
 
 EcService::Result EcService::set(const QVariantMap &args)
 {
+    // Check the request before anything runs as root (module load, BIOS calls).
     Result r;
-    r.error = preflight(&r.detail);
+    r.error = checkModel(&r.detail);
     if (r.error) {
         return r;
     }
     const auto requests = parseRequest(args, &r.detail);
     if (!requests) {
         r.error = HP::InvalidArguments;
+        return r;
+    }
+    r.error = prepareBios(&r.detail);
+    if (r.error) {
         return r;
     }
 
@@ -241,15 +275,7 @@ EcService::Result EcService::set(const QVariantMap &args)
         }
     }
 
-    // Report the state as the EC now sees it.
-    for (const EcLightDef &light : m_model->ecLights) {
-        const auto state = getLed(light.index, &r.error, &r.detail);
-        if (!state) {
-            r.lights.clear();
-            return r;
-        }
-        r.lights.append(*state);
-    }
+    readAll(&r);
     return r;
 }
 

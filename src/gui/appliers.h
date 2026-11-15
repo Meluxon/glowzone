@@ -78,6 +78,7 @@ private:
     KAuth::ExecuteJob *m_job = nullptr;
     QWindow *m_window = nullptr;
     bool m_refreshWanted = false;
+    bool m_jobIsSet = false;
 };
 
 } // namespace Glowzone::Gui

@@ -140,9 +140,15 @@ private Q_SLOTS:
         QTest::newRow("duplicate") << request({light(1, 2, 1), light(1, 1, 1)});
         QTest::newRow("too many") << request({light(1, 2, 1), light(2, 2, 1), light(1, 1, 1)});
         QTest::newRow("not a map") << request({QStringLiteral("b01020300")});
-        QTest::newRow("text mode") << request({QVariantMap{{QLatin1String(HP::KeyIndex), 1u},
-                                                           {QLatin1String(HP::KeyMode), QStringLiteral("0x10")},
-                                                           {QLatin1String(HP::KeyBrightness), 1u}}});
+        auto typed = [](const QVariant &mode) {
+            return request({QVariantMap{{QLatin1String(HP::KeyIndex), 1u}, {QLatin1String(HP::KeyMode), mode}, {QLatin1String(HP::KeyBrightness), 1u}}});
+        };
+        QTest::newRow("text mode") << typed(QStringLiteral("0x10"));
+        QTest::newRow("numeric text") << typed(QStringLiteral("2"));
+        QTest::newRow("fraction") << typed(2.0);
+        QTest::newRow("boolean") << typed(true);
+        QTest::newRow("negative") << typed(-1);
+        QTest::newRow("huge") << typed(qulonglong(1) << 40);
     }
 
     void rejectsAnythingOutsideTheWhitelist()
@@ -151,7 +157,16 @@ private Q_SLOTS:
         FakeAcpi acpi;
         EcService service(legion, acpi);
         QCOMPARE(service.set(args).error, int(HP::InvalidArguments));
-        QCOMPARE(acpi.setCalls(), 0);
+        QVERIFY(acpi.commands.isEmpty()); // rejected before any ACPI call
+    }
+
+    void acceptsAnyIntegerType()
+    {
+        FakeAcpi acpi;
+        EcService service(legion, acpi);
+        const QVariantMap entry{{QLatin1String(HP::KeyIndex), 1}, {QLatin1String(HP::KeyMode), qlonglong(2)}, {QLatin1String(HP::KeyBrightness), qulonglong(3)}};
+        QCOMPARE(service.set(request({entry})).error, 0);
+        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b01020300"));
     }
 
     void zeroMeansUnchanged()
