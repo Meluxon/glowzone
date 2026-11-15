@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "appliers.h"
 
-#include "fanstate.h"
-
 #include <utility>
 
 namespace Glowzone
@@ -14,6 +12,7 @@ static constexpr int LightDelayMs = 300; // each change is a root helper call an
 
 FanApplier::FanApplier(const ModelProfile &model, QObject *parent, const QString &hwmonRoot)
     : QObject(parent)
+    , m_model(model)
     , m_controller(model)
 {
     m_timer.setSingleShot(true);
@@ -46,8 +45,19 @@ void FanApplier::queue(const QList<Ite8297::HeaderSetting> &settings)
 
 void FanApplier::setCurrent(const FanState::Headers &headers)
 {
+    const auto before = m_followers;
     m_followers.clear();
     follow(headers.values());
+    if (m_temperature && m_temperature->isRunning()) {
+        // E.g. set from the command line, with its own one-off reading.
+        QList<Ite8297::HeaderSetting> added;
+        for (const Ite8297::HeaderSetting &s : std::as_const(m_followers)) {
+            if (!before.contains(s.header)) {
+                added << s;
+            }
+        }
+        send(added);
+    }
     updateTemperatureReading();
 }
 
@@ -94,11 +104,13 @@ void FanApplier::flushNow()
         return;
     }
     const QList<Ite8297::HeaderSetting> batch = m_pending.values();
-    m_pending.clear();
     follow(batch);
+    // The first LED to follow starts the reading, so the batch below goes out
+    // with the current colour. Its LEDs are still pending here: the reading's
+    // first colour leaves them out.
+    updateTemperatureReading();
+    m_pending.clear();
 
-    // A newly following LED gets the colour of the last reading; starting the
-    // reading sends the current one moments later.
     QString error;
     const bool sent = m_controller.apply(resolved(batch), &error);
     m_open = m_open || sent; // the controller may have come back
@@ -112,14 +124,26 @@ void FanApplier::flushNow()
 }
 
 // The temperature step changed: only the following LEDs get the new colour.
-// Nothing is saved – the state keeps the mode, not the colour of the moment.
 void FanApplier::sendFollowers()
 {
-    if (m_followers.isEmpty() || !m_open) {
+    // The command line may have changed an LED a moment ago, before the window
+    // read the saved state again – go by the saved state, so its change isn't
+    // overwritten. (Changes of our own are saved before they leave the queue.)
+    m_followers.clear();
+    follow(FanState::load(m_model).values());
+    follow(m_pending.values()); // changes on their way win
+    send(m_followers.values());
+    updateTemperatureReading();
+}
+
+// Nothing is saved – the state keeps the mode, not the colour of the moment.
+void FanApplier::send(const QList<Ite8297::HeaderSetting> &followers)
+{
+    if (!m_open) {
         return;
     }
     QList<Ite8297::HeaderSetting> list;
-    for (const Ite8297::HeaderSetting &s : std::as_const(m_followers)) {
+    for (const Ite8297::HeaderSetting &s : followers) {
         if (!m_pending.contains(s.header)) { // a queued change sends its own colour
             list << s;
         }

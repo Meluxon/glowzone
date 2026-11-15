@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
+#include "core/ite8297.h"
 #include "core/profiles.h"
 
 #include <QElapsedTimer>
@@ -32,7 +33,8 @@ public:
     MainWindow(Lighting *lighting, App *app);
     ~MainWindow() override;
 
-    // Call once the window is shown (KAuth wants a real window as parent).
+    // Call after show(). The lighting gets the window as parent for a polkit
+    // dialog once it is on screen: on Wayland it can only be referenced then.
     void start();
 
 Q_SIGNALS:
@@ -42,6 +44,7 @@ Q_SIGNALS:
 protected:
     void closeEvent(QCloseEvent *event) override;
     void changeEvent(QEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
     QWidget *buildSidebarPanel();
@@ -61,6 +64,7 @@ private:
     void updateBanner();
     void updateBackgroundMessage();
     void refreshTemperature();
+    void reloadCurrentProfile();
 
     void showProblem(const QString &text);
     void showError(const QString &text);
@@ -83,6 +87,7 @@ private:
     KMessageWidget *m_backgroundMessage = nullptr; // LEDs follow the temperature, but closing quits
     bool m_backgroundMessageDismissed = false;
     QStringList m_problems;
+    Ite8297::Rgb m_temperatureColour; // as the sidebar shows it
     QList<Profile> m_profiles;
     QString m_currentProfile;
     QElapsedTimer m_lastReload; // the CLI may change things while the window is open

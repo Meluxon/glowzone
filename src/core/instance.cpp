@@ -6,6 +6,8 @@
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
 
+#include <algorithm>
+
 namespace Glowzone::Instance
 {
 

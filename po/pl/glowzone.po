@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 17:00+0100\n"
+"POT-Creation-Date: 2026-11-15 19:58+0100\n"
 "PO-Revision-Date: 2026-11-15 01:03+0100\n"
 "Last-Translator: Claude (vibecoded draft – please review)\n"
 "Language-Team: Polish\n"
@@ -268,6 +268,11 @@ msgstr "Usunięto profil „%1”."
 #, kde-format
 msgid "Renamed profile “%1” to “%2”."
 msgstr "Zmieniono nazwę profilu „%1” na „%2”."
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "Glowzone is running (the window or in the system tray). Quit it first."
+msgstr "Glowzone działa (okno lub w zasobniku systemowym). Najpierw je zamknij."
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -683,14 +688,14 @@ msgstr "Nie udało się usunąć %1."
 
 #: src/core/settings.cpp
 #, kde-format
-msgctxt "@info autostart entry"
-msgid "Keeps the fan lighting running in the background"
-msgstr "Utrzymuje oświetlenie wentylatorów w tle"
+msgid "Could not write %1: %2"
+msgstr "Nie udało się zapisać %1: %2"
 
 #: src/core/settings.cpp
 #, kde-format
-msgid "Could not write %1: %2"
-msgstr "Nie udało się zapisać %1: %2"
+msgctxt "@info autostart entry"
+msgid "Keeps the fan lighting running in the background"
+msgstr "Utrzymuje oświetlenie wentylatorów w tle"
 
 #: src/gui/aboutdialog.cpp
 #, kde-format

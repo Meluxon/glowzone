@@ -12,6 +12,7 @@
 #include <QLockFile>
 #include <QStandardPaths>
 #include <QTimer>
+#include <QWindow>
 
 #include <chrono>
 #include <memory>
@@ -81,13 +82,10 @@ using namespace std::chrono_literals;
 constexpr auto LockWait = 30s; // another Glowzone may be in the middle of a slow SetLED
 constexpr auto CallLimit = 60s;
 
+// The user's runtime directory (Qt makes a private one if XDG_RUNTIME_DIR is unset).
 QString lockPath()
 {
-    QString dir = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
-    if (dir.isEmpty()) {
-        dir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
-    }
-    return dir + QLatin1String("/glowzone-helper.lock");
+    return QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + QLatin1String("/glowzone-helper.lock");
 }
 
 class KAuthCall : public HelperCall
@@ -190,6 +188,11 @@ private:
 };
 
 } // namespace
+
+void KAuthHelperCalls::setWindow(QWindow *window)
+{
+    m_window = window;
+}
 
 HelperCall *KAuthHelperCalls::create(HelperCall::Kind kind, const QList<EcRequest> &requests, QObject *parent)
 {

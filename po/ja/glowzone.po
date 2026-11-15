@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 17:00+0100\n"
+"POT-Creation-Date: 2026-11-15 19:58+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: Japanese\n"
@@ -269,6 +269,11 @@ msgstr "プロファイル「%1」を削除しました。"
 #, kde-format
 msgid "Renamed profile “%1” to “%2”."
 msgstr "プロファイル「%1」の名前を「%2」に変更しました。"
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "Glowzone is running (the window or in the system tray). Quit it first."
+msgstr "Glowzone が実行中です（ウィンドウまたはシステムトレイ）。先に終了してください。"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -684,14 +689,14 @@ msgstr "%1 を削除できませんでした。"
 
 #: src/core/settings.cpp
 #, kde-format
-msgctxt "@info autostart entry"
-msgid "Keeps the fan lighting running in the background"
-msgstr "ファンのライティングをバックグラウンドで実行し続けます"
+msgid "Could not write %1: %2"
+msgstr "%1 に書き込めませんでした：%2"
 
 #: src/core/settings.cpp
 #, kde-format
-msgid "Could not write %1: %2"
-msgstr "%1 に書き込めませんでした：%2"
+msgctxt "@info autostart entry"
+msgid "Keeps the fan lighting running in the background"
+msgstr "ファンのライティングをバックグラウンドで実行し続けます"
 
 #: src/gui/aboutdialog.cpp
 #, kde-format

@@ -135,32 +135,38 @@ QString describe(EcLightState s)
     return i18nc("@info light mode, brightness", "%1, brightness %2", mode, s.brightness);
 }
 
+template<typename List>
+bool anyFollowsTemperature(const List &settings)
+{
+    return std::any_of(settings.cbegin(), settings.cend(), [](HeaderSetting s) {
+        return s.mode == Mode::CpuTemperature;
+    });
+}
+
 // LEDs in the CPU-temperature mode get the colour for the temperature right
 // now. Updating it later is the window's (or the tray's) job; says so if
 // that isn't running.
 QList<HeaderSetting> resolveForNow(const ModelProfile &model, const QList<HeaderSetting> &settings)
 {
-    const bool follows = std::any_of(settings.cbegin(), settings.cend(), [](const HeaderSetting &s) {
-        return s.mode == Mode::CpuTemperature;
-    });
-    if (!follows || !model.cpuTemperature) {
+    if (!model.cpuTemperature || !anyFollowsTemperature(settings)) {
         return settings;
     }
-    double celsius = 0;
+    const CpuTemperatureDef &def = *model.cpuTemperature;
     QString error;
-    const auto colour = cpuTemperatureColourNow(*model.cpuTemperature, &celsius, &error);
-    if (!colour) {
-        err() << error << Qt::endl;
+    const auto celsius = cpuTemperatureNow(def, &error);
+    if (!celsius) {
+        err() << error << Qt::endl; // the coolest colour, then
     }
-    QList<HeaderSetting> out;
+    const Rgb colour = TemperatureColours::colour(def, celsius ? TemperatureColours::step(def, *celsius) : 0);
+    QList<HeaderSetting> resolved;
     for (const HeaderSetting &s : settings) {
-        out << resolve(s, colour.value_or(TemperatureColours::colour(*model.cpuTemperature, 0)));
+        resolved << resolve(s, colour);
     }
     if (!Instance::isRunning()) {
         err() << i18n("Note: LEDs following the CPU temperature only change colour while Glowzone is running (the window, or in the background). Start it with “glowzone” or “glowzone --background”.")
               << Qt::endl;
     }
-    return out;
+    return resolved;
 }
 
 int nameWidth(const ModelProfile &model)
@@ -217,16 +223,12 @@ int cmdStatus(const ModelProfile &model)
         }
         out() << QLatin1String("  ") << fan.name.toString().leftJustified(width) << text << Qt::endl;
     }
-    const bool follows = std::any_of(saved.cbegin(), saved.cend(), [](const HeaderSetting &s) {
-        return s.mode == Mode::CpuTemperature;
-    });
-    if (follows && model.cpuTemperature) {
-        double celsius = 0;
+    if (model.cpuTemperature && anyFollowsTemperature(saved)) {
         QString error;
-        if (cpuTemperatureColourNow(*model.cpuTemperature, &celsius, &error)) {
+        if (const auto celsius = cpuTemperatureNow(*model.cpuTemperature, &error)) {
             out() << QLatin1String("  ")
                   << i18n("CPU temperature: %1 °C (%2)",
-                          QString::number(celsius, 'f', 0),
+                          QString::number(*celsius, 'f', 0),
                           Instance::isRunning() ? i18n("the colours follow it") : i18n("not followed – Glowzone isn’t running"))
                   << Qt::endl;
         } else {
@@ -610,6 +612,11 @@ int cmdProfile(const ModelProfile &model, const QStringList &args)
 // last fan state – plus the autostart entry if "Start at Login" is on.
 int purgeUserData()
 {
+    if (Instance::isRunning()) {
+        // It would write its settings and fan state again.
+        err() << i18n("Glowzone is running (the window or in the system tray). Quit it first.") << Qt::endl;
+        return ExitFailed;
+    }
     const QStringList dirs = {
         QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation),
         QStandardPaths::writableLocation(QStandardPaths::StateLocation),

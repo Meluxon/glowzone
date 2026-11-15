@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 
 namespace Glowzone
 {
@@ -80,10 +81,7 @@ double TemperatureSmoother::add(double reading, double secondsSinceLast)
     while (m_readings.size() > std::max(1, m_def.averageSamples)) {
         m_readings.removeFirst();
     }
-    double sum = 0;
-    for (double r : std::as_const(m_readings)) {
-        sum += r;
-    }
+    const double sum = std::accumulate(m_readings.cbegin(), m_readings.cend(), 0.0);
     const double target = sum / double(m_readings.size()) + m_def.offset;
     if (!m_value) {
         m_value = target;
@@ -121,7 +119,7 @@ static double stepStart(const CpuTemperatureDef &def, int step)
 int step(const CpuTemperatureDef &def, double celsius, std::optional<int> current)
 {
     const int plain = plainStep(def, celsius);
-    if (!current || plain >= *current || *current <= 0) {
+    if (!current || plain >= *current) {
         return plain;
     }
     // Going down: only once clearly below the current step.
@@ -191,8 +189,10 @@ void CpuTemperature::read()
         m_failing = false;
         Q_EMIT recovered();
     }
-    const double seconds = m_sinceLast.isValid() ? m_sinceLast.restart() / 1000.0 : 0.0;
-    if (!m_sinceLast.isValid()) {
+    double seconds = 0;
+    if (m_sinceLast.isValid()) {
+        seconds = double(m_sinceLast.restart()) / 1000.0;
+    } else {
         m_sinceLast.start();
     }
     m_temperature = m_smoother.add(*reading, seconds);
@@ -205,15 +205,11 @@ void CpuTemperature::read()
     }
 }
 
-std::optional<Ite8297::Rgb> cpuTemperatureColourNow(const CpuTemperatureDef &def, double *celsius, QString *error)
+std::optional<double> cpuTemperatureNow(const CpuTemperatureDef &def, QString *error)
 {
     TemperatureSensor sensor(def);
     const auto reading = sensor.read(error);
-    if (!reading) {
-        return std::nullopt;
-    }
-    *celsius = *reading + def.offset;
-    return TemperatureColours::colour(def, TemperatureColours::step(def, *celsius));
+    return reading ? std::optional(*reading + def.offset) : std::nullopt;
 }
 
 } // namespace Glowzone

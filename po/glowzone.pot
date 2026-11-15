@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 17:00+0100\n"
+"POT-Creation-Date: 2026-11-15 19:58+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -279,6 +279,11 @@ msgstr ""
 #: src/cli/commands.cpp
 #, kde-format
 msgid "Renamed profile “%1” to “%2”."
+msgstr ""
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "Glowzone is running (the window or in the system tray). Quit it first."
 msgstr ""
 
 #: src/cli/commands.cpp
@@ -702,13 +707,13 @@ msgstr ""
 
 #: src/core/settings.cpp
 #, kde-format
-msgctxt "@info autostart entry"
-msgid "Keeps the fan lighting running in the background"
+msgid "Could not write %1: %2"
 msgstr ""
 
 #: src/core/settings.cpp
 #, kde-format
-msgid "Could not write %1: %2"
+msgctxt "@info autostart entry"
+msgid "Keeps the fan lighting running in the background"
 msgstr ""
 
 #: src/gui/aboutdialog.cpp

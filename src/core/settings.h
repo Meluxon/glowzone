@@ -33,7 +33,9 @@ void setKeepRunning(bool on);
 // runs "glowzone --background". The file itself is the setting.
 QString autostartPath();
 bool startsAtLogin();
-// Errors are translated.
+// Errors are translated. The entry starts the program that is running now.
 bool setStartAtLogin(bool on, QString *error);
+// The entry's text for a program path (escaped as the Desktop Entry spec wants).
+QString autostartEntry(const QString &program);
 
 } // namespace Glowzone::Settings

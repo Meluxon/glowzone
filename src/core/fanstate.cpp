@@ -102,27 +102,17 @@ bool defaultLinked(const FanDef &fan, const Headers &saved)
     return known.size() < 2 || known.count(known.constFirst()) == known.size();
 }
 
-static Headers loadFile()
+Headers load(const ModelProfile &model)
 {
-    Headers result;
     QFile f(filePath());
     if (!f.open(QIODevice::ReadOnly)) {
-        return result;
+        return {};
     }
     const QJsonObject root = QJsonDocument::fromJson(f.readAll()).object();
     if (root.value(QLatin1String("version")).toInt() != FormatVersion) {
-        return result;
+        return {};
     }
-    return parseHeaders(root.value(QLatin1String("headers")).toObject());
-}
-
-Headers load(const ModelProfile &model)
-{
-    Headers result = loadFile();
-    result.removeIf([&model](const auto &it) {
-        return !fitsModel(model, it.value());
-    });
-    return result;
+    return headersFromJson(root.value(QLatin1String("headers")).toObject(), model);
 }
 
 // Only the changed headers are replaced; every other entry stays exactly as it

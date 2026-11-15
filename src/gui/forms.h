@@ -50,7 +50,7 @@ public:
     QWidget *focusWidget() const;
 
 Q_SIGNALS:
-    void edited(const Ite8297::HeaderSetting &values);
+    void edited(const Glowzone::Ite8297::HeaderSetting &values);
 
 private:
     void updateRows();

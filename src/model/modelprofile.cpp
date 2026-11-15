@@ -53,13 +53,13 @@ const QList<ModelProfile> &supportedModels()
             .ecLightModes = {1, 2, 3, 4, 5},
             .ecBrightnessLevels = 4,
             .ecDefaultBrightness = 3,
-            // Vantage's "CPU temperature" lighting, captured with a CPU load in
+            // Vantage's "CPU temperature" lighting, captured under a CPU load in
             // steps: every 2 s it reads the EC's CPU temperature (GameZone
             // GetSensorTemperature, index 2 = EC byte B06C) and picks one colour
             // per 5 °C, from blue below 40 °C to yellow at 80 °C. The three
-            // reddest colours (85, 90, ≥ 95 °C) continue the same hue steps;
-            // this CPU never got that hot. The EC value follows the package
-            // temperature 0–1 °C higher, ramping at about 4 °C/s.
+            // reddest colours (85, 90, ≥ 95 °C) continue the same hue steps; the
+            // test machine never got that hot. The EC value is the package
+            // temperature plus 0–1 °C, moving at about 4 °C/s.
             .cpuTemperature = CpuTemperatureDef{
                 .hwmonName = "coretemp",
                 .sensorLabel = "Package id 0",

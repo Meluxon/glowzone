@@ -9,3 +9,5 @@ ecm_add_test(fanstatetest.cpp TEST_NAME fanstatetest LINK_LIBRARIES glowzone_cor
 ecm_add_test(profilestest.cpp TEST_NAME profilestest LINK_LIBRARIES glowzone_core Qt6::Test)
 ecm_add_test(lightappliertest.cpp TEST_NAME lightappliertest LINK_LIBRARIES glowzone_core Qt6::Test)
 ecm_add_test(cputemperaturetest.cpp TEST_NAME cputemperaturetest LINK_LIBRARIES glowzone_core Qt6::Test)
+ecm_add_test(fanappliertest.cpp TEST_NAME fanappliertest LINK_LIBRARIES glowzone_core Qt6::Test)
+ecm_add_test(settingstest.cpp TEST_NAME settingstest LINK_LIBRARIES glowzone_core Qt6::Test)

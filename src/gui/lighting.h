@@ -11,8 +11,6 @@
 
 #include <memory>
 
-class QFileSystemWatcher;
-
 class QWindow;
 
 namespace Glowzone
@@ -24,9 +22,10 @@ class LightApplier;
 namespace Glowzone::Gui
 {
 
-// The lighting as the window shows it, and the single place that changes it.
-// Pages and the sidebar read from here and call the setters; everything they
-// show is refreshed from changed().
+// The lighting as Glowzone knows it, and the single place that changes it. It
+// lives as long as Glowzone runs – also in the tray, without a window. Pages
+// and the sidebar read from here and call the setters; everything they show is
+// refreshed from changed().
 class Lighting : public QObject
 {
     Q_OBJECT
@@ -57,13 +56,12 @@ public:
     void setLinked(const FanDef &fan, bool linked);
 
     // --- CPU temperature
-    bool offersCpuTemperature() const { return m_model.cpuTemperature.has_value(); }
     // Does any LED follow it right now?
     bool followsCpuTemperature() const;
     // The smoothed temperature the colours follow (nullopt: not read yet,
     // or no LED follows it).
     std::optional<double> cpuTemperature() const;
-    bool cpuTemperatureFailed() const { return !m_temperatureError.isEmpty(); }
+    // Why it can't be read (empty while it can).
     QString cpuTemperatureError() const { return m_temperatureError; }
     // The colour the following LEDs show.
     Ite8297::Rgb cpuTemperatureColour() const;
@@ -97,6 +95,7 @@ public:
 
 Q_SIGNALS:
     void changed();
+    void stateFileChanged();            // the saved fan state changed elsewhere (e.g. the CLI)
     void temperatureChanged();          // a new reading (every couple of seconds while followed)
     void problem(const QString &text);  // something is missing (lasting)
     void error(const QString &text);    // a change failed
@@ -104,29 +103,28 @@ Q_SIGNALS:
     void idle();
 
 private:
+    void checkFanLayout();
+    void loadFans();
+    void stateDirChanged();
+    void addProblem(const QString &text);
+    void setError(const QString &text, int source);
+    void clearError(int source);
+
     const ModelProfile &m_model;
     FanState::Headers m_fans;
     QMap<QString, bool> m_links;
     QMap<quint8, EcLightState> m_lights;
+    bool m_started = false;
     bool m_fansAvailable = true;
     bool m_lightsLoaded = false;
     bool m_lightsFailed = false;
     int m_fanLayout = -1;
     bool m_layoutChecked = false;
-
-    void checkFanLayout();
-    void loadFans();
-    void addProblem(const QString &text);
-    void stateDirChanged();
     QStringList m_problems;
     QString m_temperatureError;
-    bool m_started = false;
-    QFileSystemWatcher *m_stateWatcher = nullptr;
-    QTimer m_stateReload;
+    int m_errorSource = 0;  // which queue the shown error came from (0: none)
     QDateTime m_stateStamp; // fans.json as last read
-    void setError(const QString &text, int source);
-    void clearError(int source);
-    int m_errorSource = 0; // which queue the shown error came from (0: none)
+    QTimer m_stateReload;
     std::unique_ptr<KAuthHelperCalls> m_helper;
     FanApplier *m_fanApplier;
     LightApplier *m_lightApplier;

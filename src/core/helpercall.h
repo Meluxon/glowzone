@@ -5,9 +5,9 @@
 #include "model/helperprotocol.h"
 
 #include <QObject>
-
 #include <QPointer>
-#include <QWindow>
+
+class QWindow;
 
 namespace Glowzone
 {
@@ -50,7 +50,7 @@ class KAuthHelperCalls : public HelperCalls
 {
 public:
     // The window a polkit dialog would belong to (none for the CLI).
-    void setWindow(QWindow *window) { m_window = window; }
+    void setWindow(QWindow *window);
     HelperCall *create(HelperCall::Kind kind, const QList<EcRequest> &requests, QObject *parent) override;
 
 private:

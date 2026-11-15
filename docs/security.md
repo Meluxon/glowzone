@@ -54,6 +54,17 @@ To require your password instead, set `Policy=auth_self` and
 `Persistence=session` in `data/io.github.meluxon.glowzone.ledhelper.actions`
 and rebuild.
 
+## Running in the background
+
+With *Keep Running in Background* on, Glowzone stays in the system tray after
+the window is closed, so fans following the CPU temperature keep changing
+colour. That process is the normal program, as your user: it reads the CPU
+temperature from hwmon (readable by everyone) and talks to the fan controller
+like the window does. It doesn't use the root helper – the case lights are
+only read when a window is open. *Start at Login* adds
+`~/.config/autostart/io.github.meluxon.Glowzone.desktop`, which starts the
+same program with `--background`; nothing system-wide is installed for it.
+
 ## Model lock
 
 Glowzone only runs on models it has a profile for – vendor, product version and

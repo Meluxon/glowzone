@@ -42,7 +42,7 @@ enum class Mode : quint8 {
 };
 
 struct ModeInfo {
-    Mode mode;                 // value sent to the controller
+    Mode mode;                 // the settings report's mode byte (CpuTemperature: see resolve())
     const char *id;            // stable key for the CLI and saved state/profiles – never change it
     KLazyLocalizedString name; // shown to the user (context "@item fan LED mode")
     bool usesColour;           // false: the colour bytes are ignored (e.g. rainbow)

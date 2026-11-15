@@ -10,13 +10,12 @@
 #include "core/settings.h"
 
 #include <KLocalizedString>
+#include <KMessageWidget>
 #include <QAction>
-#include <QApplication>
 #include <QCloseEvent>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QInputDialog>
-#include <KMessageWidget>
 #include <QLabel>
 #include <QMenu>
 #include <QMessageBox>
@@ -25,6 +24,7 @@
 #include <QStackedWidget>
 #include <QToolButton>
 #include <QVBoxLayout>
+#include <QWindow>
 
 namespace Glowzone::Gui
 {
@@ -68,6 +68,7 @@ MainWindow::MainWindow(Lighting *lighting, App *app)
     addAction(quit);
 
     connect(m_lighting, &Lighting::changed, this, &MainWindow::refresh);
+    connect(m_lighting, &Lighting::stateFileChanged, this, &MainWindow::reloadCurrentProfile);
     connect(m_lighting, &Lighting::temperatureChanged, this, &MainWindow::refreshTemperature);
     connect(m_app, &App::backgroundChanged, this, &MainWindow::updateBackgroundMessage);
     connect(m_lighting, &Lighting::problem, this, &MainWindow::showProblem);
@@ -86,8 +87,9 @@ MainWindow::MainWindow(Lighting *lighting, App *app)
     m_currentProfile = Settings::currentProfile();
     reloadProfiles();
     m_sidebar->selectFirst();
-    for (const QString &problem : m_lighting->problems()) {
-        showProblem(problem); // found before this window was opened
+    const QStringList earlier = m_lighting->problems(); // found before this window was opened
+    for (const QString &problem : earlier) {
+        showProblem(problem);
     }
     updateBackgroundMessage();
 
@@ -99,7 +101,21 @@ MainWindow::~MainWindow() = default;
 
 void MainWindow::start()
 {
-    m_lighting->start(windowHandle());
+    QWindow *window = windowHandle();
+    if (window->isExposed()) {
+        m_lighting->start(window);
+    } else {
+        window->installEventFilter(this); // see eventFilter()
+    }
+}
+
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == windowHandle() && event->type() == QEvent::Expose && windowHandle()->isExposed()) {
+        windowHandle()->removeEventFilter(this);
+        m_lighting->start(windowHandle());
+    }
+    return QMainWindow::eventFilter(watched, event);
 }
 
 QWidget *MainWindow::buildSidebarPanel()
@@ -221,11 +237,11 @@ QWidget *MainWindow::buildPagePanel()
     });
     m_backgroundMessage->addAction(runOn);
     connect(m_backgroundMessage, &KMessageWidget::hideAnimationFinished, this, [this] {
-        // Closed with its close button: not again while this window is open.
-        if (!(m_lighting->followsCpuTemperature() && !m_app->keepsRunning())) {
-            return;
+        // Hidden while it still applies: the user closed it. Not again while
+        // this window is open.
+        if (m_lighting->followsCpuTemperature() && !m_app->keepsRunning()) {
+            m_backgroundMessageDismissed = true;
         }
-        m_backgroundMessageDismissed = true;
     });
 
     layout->addWidget(headerWidget);
@@ -272,7 +288,18 @@ void MainWindow::refreshTemperature()
     for (FanPage *p : std::as_const(m_fanPages)) {
         p->refreshTemperature();
     }
-    m_sidebar->refresh(); // the dots show the colour of the moment
+    // The dots show the colour of the moment – it changes only now and then.
+    if (const Ite8297::Rgb colour = m_lighting->cpuTemperatureColour(); colour != m_temperatureColour) {
+        m_temperatureColour = colour;
+        m_sidebar->refresh();
+    }
+}
+
+// The command line changed the fans – maybe by applying a profile.
+void MainWindow::reloadCurrentProfile()
+{
+    m_currentProfile = Settings::currentProfile();
+    reloadProfiles();
 }
 
 void MainWindow::updateBackgroundMessage()

@@ -20,7 +20,6 @@ namespace Glowzone::Gui
 
 App::App(const ModelProfile &model, QObject *parent)
     : QObject(parent)
-    , m_model(model)
     , m_lighting(new Lighting(model, this))
     , m_keepRunning(Settings::keepRunning())
 {
@@ -88,14 +87,10 @@ void App::quit()
     delete m_tray;
     m_tray = nullptr;
     m_trayShow = nullptr;
-    // Don't lose a change made in the last moment.
-    if (m_lighting->isBusy()) {
-        connect(m_lighting, &Lighting::idle, qApp, &QApplication::quit, Qt::QueuedConnection);
-        m_lighting->finish();
-        return;
-    }
+    // Don't lose a change made in the last moment: idle() follows once
+    // everything is sent (at once if nothing is pending).
+    connect(m_lighting, &Lighting::idle, qApp, &QApplication::quit, Qt::QueuedConnection);
     m_lighting->finish();
-    QMetaObject::invokeMethod(qApp, &QApplication::quit, Qt::QueuedConnection);
 }
 
 void App::setKeepRunning(bool on)
@@ -136,6 +131,7 @@ void App::updateTray()
         delete m_tray; // and its menu
         m_tray = nullptr;
         m_trayShow = nullptr;
+        m_trayToolTip.clear();
         return;
     }
     if (!m_tray) {
@@ -161,21 +157,27 @@ void App::updateTray()
     updateTrayToolTip();
 }
 
+// Called on every temperature reading; only a new text goes out over D-Bus.
 void App::updateTrayToolTip()
 {
     if (!m_tray) {
         return;
     }
     QString text = i18nc("@info:tooltip", "Running in the background");
-    if (m_lighting->followsCpuTemperature()) {
+    if (!m_lighting->fansAvailable() && !m_lighting->problems().isEmpty()) {
+        text = m_lighting->problems().constFirst(); // the fan controller is missing
+    } else if (m_lighting->followsCpuTemperature()) {
         const auto celsius = m_lighting->cpuTemperature();
-        if (m_lighting->cpuTemperatureFailed()) {
+        if (!m_lighting->cpuTemperatureError().isEmpty()) {
             text = m_lighting->cpuTemperatureError();
         } else if (celsius) {
             text = i18nc("@info:tooltip", "Fans follow the CPU temperature: %1 °C", QString::number(*celsius, 'f', 0));
         }
     }
-    m_tray->setToolTip(QStringLiteral(GLOWZONE_APP_ID), i18n("Glowzone"), text);
+    if (text != m_trayToolTip) {
+        m_trayToolTip = text;
+        m_tray->setToolTip(QStringLiteral(GLOWZONE_APP_ID), i18n("Glowzone"), text);
+    }
 }
 
 } // namespace Glowzone::Gui

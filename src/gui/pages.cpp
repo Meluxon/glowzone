@@ -7,11 +7,11 @@
 #include "core/eclights.h"
 
 #include <KLocalizedString>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QCheckBox>
 #include <QSignalBlocker>
 #include <QSlider>
 #include <QVBoxLayout>

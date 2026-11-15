@@ -6,7 +6,6 @@
 #include "model/modelprofile.h"
 
 #include <QJsonObject>
-
 #include <QMap>
 
 namespace Glowzone

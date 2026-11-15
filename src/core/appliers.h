@@ -29,7 +29,7 @@ class FanApplier : public QObject
     Q_OBJECT
 
 public:
-    FanApplier(const ModelProfile &model, QObject *parent, const QString &hwmonRoot = QStringLiteral("/sys/class/hwmon"));
+    FanApplier(const ModelProfile &model, QObject *parent, const QString &hwmonRoot = QLatin1String(HwmonRoot));
 
     bool open(QString *error);
     void queue(const QList<Ite8297::HeaderSetting> &settings);
@@ -37,14 +37,15 @@ public:
     bool isBusy() const { return !m_pending.isEmpty(); }
 
     // What the LEDs are set to, e.g. after reading the saved state again: the
-    // CPU-temperature LEDs among them are followed from now on. Sends nothing
-    // else.
+    // CPU-temperature LEDs among them are followed from now on, and one that
+    // wasn't followed before gets the current colour. Sends nothing else.
     void setCurrent(const FanState::Headers &headers);
 
     // Any LED in the CPU-temperature mode?
     bool followsTemperature() const { return !m_followers.isEmpty(); }
     // nullptr if the model doesn't offer the mode.
     const CpuTemperature *temperature() const { return m_temperature; }
+    void setTemperatureInterval(int ms) { m_temperature->setInterval(ms); } // for tests
 
 Q_SIGNALS:
     void failed(const QString &error);
@@ -57,8 +58,10 @@ private:
     void follow(const QList<Ite8297::HeaderSetting> &settings);
     void updateTemperatureReading();
     void sendFollowers();
+    void send(const QList<Ite8297::HeaderSetting> &followers);
     QList<Ite8297::HeaderSetting> resolved(const QList<Ite8297::HeaderSetting> &settings) const;
 
+    const ModelProfile &m_model;
     FanController m_controller;
     bool m_open = false;
     QMap<quint8, Ite8297::HeaderSetting> m_pending;
@@ -68,9 +71,9 @@ private:
 };
 
 // The case lights go through the root helper, asynchronously and one call at a
-// time – including the fan-layout read, so the window never has two calls
-// running (KAuth's helper serves one call at a time and doesn't queue them). State from the helper is reported only when nothing newer is queued,
-// so it never overwrites what the user is doing.
+// time, the fan-layout read included: KAuth's helper serves one call at a time
+// and doesn't queue them. State from the helper is reported only when nothing
+// newer is queued, so it never overwrites what the user is doing.
 // Each SetLED triggers a BIOS SMI that can freeze the PC for seconds, so
 // requests that wouldn't change anything are dropped.
 class LightApplier : public QObject

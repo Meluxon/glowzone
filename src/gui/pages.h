@@ -7,10 +7,10 @@
 #include <QList>
 #include <QWidget>
 
+class QCheckBox;
 class QComboBox;
 class QFormLayout;
 class QLabel;
-class QCheckBox;
 
 namespace Glowzone::Gui
 {

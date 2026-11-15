@@ -53,12 +53,12 @@ struct FanLayoutDef {
 // Fan LEDs that follow the CPU temperature, like Lenovo Vantage's "CPU
 // temperature" lighting – but as a mode of its own for each fan LED.
 //
-// Vantage reads the EC's CPU temperature, which follows the package
-// temperature with a ramp of a few °C per second, every 2 s, and picks one of
-// a ladder of colours. Reading the EC needs root, so Glowzone reads the CPU's
-// own sensor instead (hwmon, readable by any user) and imitates the EC's
-// smoothing: the average of the last few readings plus an offset, changing by
-// at most a few °C per second.
+// Every 2 s Vantage reads the EC's CPU temperature and picks a colour from a
+// list, one per temperature step. The EC's value trails the CPU package
+// temperature, moving a few °C per second. Reading the EC needs root, so
+// Glowzone reads the CPU's own sensor instead (hwmon, readable by any user)
+// and imitates the EC: the average of the last few readings plus an offset,
+// moving by at most a few °C per second.
 struct CpuTemperatureDef {
     const char *hwmonName;       // hwmon driver, e.g. "coretemp"
     const char *sensorLabel;     // tempN_label of the sensor to use, e.g. "Package id 0"

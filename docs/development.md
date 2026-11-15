@@ -37,8 +37,8 @@ the first ACPI call outside what that model allows.
 |---|---|
 | `src/model` | DMI and the model profiles – the only place a model's details live |
 | `src/helper` | the root helper (`EcService` holds its checks) |
-| `src/core` | fan reports, the fan controller, helper calls, the light and fan queues, profiles, saved state |
-| `src/cli`, `src/gui` | the command line and the window |
+| `src/core` | fan reports, the fan controller, helper calls, the light and fan queues, the CPU temperature, profiles, saved state, settings |
+| `src/cli`, `src/gui` | the command line; the window and the tray |
 | `autotests`, `fuzz` | tests and the fuzzer |
 
 ## Adding a model

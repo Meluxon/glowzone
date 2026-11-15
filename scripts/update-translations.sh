@@ -5,7 +5,8 @@
 # Extract translatable strings into po/glowzone.pot and merge them into every
 # po/<lang>/glowzone.po. Run from anywhere; needs GNU gettext.
 # Translate with Lokalize or Poedit, then rebuild. Only file names (no line
-# numbers) are recorded, so code changes don't touch every catalogue.
+# numbers) are recorded and the catalogues are not wrapped, so code changes
+# don't touch every catalogue.
 
 set -eu
 cd "$(dirname "$0")/.."
@@ -25,7 +26,7 @@ xgettext --from-code=UTF-8 --language=C++ --kde --add-location=file \
 
 for po in po/*/glowzone.po; do
     [ -e "$po" ] || continue
-    msgmerge --quiet --update --backup=none --add-location=file "$po" po/glowzone.pot
+    msgmerge --quiet --update --backup=none --no-wrap --add-location=file "$po" po/glowzone.pot
     printf '%s: ' "$po"
     msgfmt --check --statistics -o /dev/null "$po"
 done

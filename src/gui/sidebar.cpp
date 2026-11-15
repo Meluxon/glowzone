@@ -238,7 +238,7 @@ Sidebar::Sidebar(Lighting *lighting, QWidget *parent)
     // Focus by Tab only, like the System Settings sidebar: a mouse click mustn't
     // leave the list focused (Breeze then draws its scrollbar in the focus colour).
     setFocusPolicy(Qt::TabFocus);
-    // The list sits on the view background (white in Breeze), like System Settings.
+    // Hover highlight (drawn by the delegate).
     setMouseTracking(true);
     viewport()->setAttribute(Qt::WA_Hover);
 
@@ -295,25 +295,28 @@ void Sidebar::fitWidth()
     const int pad = fm.height() / 3; // the delegate's spacing
     const int rowOverhead = pad * 2 + fm.height() + pad * 2 + pad * 2; // margin, dot, gap, margin
 
+    const QList<ModeInfo> modes = modesFor(model);
     QStringList fanSubtitles{i18nc("@info fan state", "Not set yet"), i18nc("@info LEDs of a double fan set one by one", "Separately")};
-    for (const ModeInfo &m : modesFor(model)) {
+    for (const ModeInfo &m : modes) {
         fanSubtitles << m.name.toString();
     }
     int text = 0;
     for (const QString &st : std::as_const(fanSubtitles)) {
         text = std::max(text, small.horizontalAdvance(i18nc("@info %1 is the mode; the BIOS doesn't see the fan", "%1 · not detected", st)));
     }
+    // LED rows of a split pair: indented, position on the left, mode on the
+    // right, both in the normal font.
     int longestMode = 0;
-    for (const ModeInfo &m : modesFor(model)) {
-        longestMode = std::max(longestMode, fm.horizontalAdvance(m.name.toString())); // LED rows use the normal font
+    for (const ModeInfo &m : modes) {
+        longestMode = std::max(longestMode, fm.horizontalAdvance(m.name.toString()));
     }
     for (const FanDef &fan : model.fans) {
         text = std::max(text, fm.horizontalAdvance(fan.name.toString()));
-        // LED rows: indented, position on the left, mode on the right
+        if (!fan.isDouble()) {
+            continue;
+        }
         for (const LedDef &led : fan.leds) {
-            if (fan.isDouble()) {
-                text = std::max(text, fm.height() + fm.horizontalAdvance(capitalised(led.name.toString())) + pad * 3 + longestMode);
-            }
+            text = std::max(text, indentation() + fm.horizontalAdvance(capitalised(led.name.toString())) + pad * 3 + longestMode);
         }
     }
     for (const EcLightDef &light : model.ecLights) {

@@ -16,12 +16,14 @@
 namespace Glowzone
 {
 
+inline constexpr const char *HwmonRoot = "/sys/class/hwmon"; // tests pass a fake tree
+
 // The CPU sensor named in the model profile, found through hwmon
 // (/sys/class/hwmon/hwmon*/name and tempN_label). Readable by any user.
 class TemperatureSensor
 {
 public:
-    explicit TemperatureSensor(const CpuTemperatureDef &def, const QString &hwmonRoot = QStringLiteral("/sys/class/hwmon"));
+    explicit TemperatureSensor(const CpuTemperatureDef &def, const QString &hwmonRoot = QLatin1String(HwmonRoot));
 
     // °C, or nullopt with a translated error. The sensor is looked up again
     // after a failure (hwmon numbers can change when a driver reloads).
@@ -36,8 +38,8 @@ private:
 };
 
 // The EC's smoothing, imitated: the average of the last readings plus the
-// offset, moving at most maxChangePerSecond towards it. The first reading is
-// taken as it is.
+// offset, moving at most maxChangePerSecond towards it. The first reading
+// counts in full, without a ramp.
 class TemperatureSmoother
 {
 public:
@@ -68,7 +70,7 @@ class CpuTemperature : public QObject
     Q_OBJECT
 
 public:
-    CpuTemperature(const CpuTemperatureDef &def, QObject *parent, const QString &hwmonRoot = QStringLiteral("/sys/class/hwmon"));
+    CpuTemperature(const CpuTemperatureDef &def, QObject *parent, const QString &hwmonRoot = QLatin1String(HwmonRoot));
 
     void start(); // reads right away
     void stop();
@@ -81,10 +83,10 @@ public:
     Ite8297::Rgb colour() const;
 
 Q_SIGNALS:
-    void updated();                          // after every reading (good or not)
-    void colourChanged(Ite8297::Rgb colour); // the step changed
-    void failed(const QString &error);       // a reading failed (after it worked, or the first time)
-    void recovered();                        // reading works again
+    void updated();                                    // after every reading (good or not)
+    void colourChanged(Glowzone::Ite8297::Rgb colour); // the step changed
+    void failed(const QString &error);                 // a reading failed (after it worked, or the first time)
+    void recovered();                                  // reading works again
 
 private:
     void read();
@@ -99,8 +101,8 @@ private:
     bool m_failing = false;
 };
 
-// One unsmoothed reading, for the command line: the colour for the CPU
-// temperature right now. nullopt with a translated error if it can't be read.
-std::optional<Ite8297::Rgb> cpuTemperatureColourNow(const CpuTemperatureDef &def, double *celsius, QString *error);
+// One unsmoothed reading plus the offset, for the command line. nullopt with a
+// translated error if it can't be read.
+std::optional<double> cpuTemperatureNow(const CpuTemperatureDef &def, QString *error);
 
 } // namespace Glowzone

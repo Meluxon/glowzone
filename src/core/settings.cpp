@@ -87,15 +87,27 @@ bool startsAtLogin()
     return QFileInfo::exists(autostartPath());
 }
 
-// Exec= quoting (Desktop Entry spec): the program path in double quotes, with
-// ", `, $ and \ escaped.
-static QString quotedForExec(const QString &path)
+// A value of type string in a desktop entry: \ and line breaks escaped.
+static QString desktopString(QString value)
+{
+    value.replace(QLatin1Char('\\'), QLatin1String("\\\\"));
+    value.replace(QLatin1Char('\n'), QLatin1String("\\n"));
+    value.replace(QLatin1Char('\r'), QLatin1String("\\r"));
+    value.replace(QLatin1Char('\t'), QLatin1String("\\t"));
+    return value;
+}
+
+// The program as the first Exec argument (Desktop Entry spec, "The Exec key"):
+// in double quotes with ", `, $ and \ escaped, % doubled (field codes), and the
+// whole thing escaped once more as a string.
+static QString execProgram(const QString &path)
 {
     QString q = path;
     for (const QChar c : {QLatin1Char('\\'), QLatin1Char('"'), QLatin1Char('`'), QLatin1Char('$')}) {
         q.replace(c, QLatin1Char('\\') + c);
     }
-    return QLatin1Char('"') + q + QLatin1Char('"');
+    q.replace(QLatin1Char('%'), QLatin1String("%%"));
+    return desktopString(QLatin1Char('"') + q + QLatin1Char('"'));
 }
 
 bool setStartAtLogin(bool on, QString *error)
@@ -112,26 +124,32 @@ bool setStartAtLogin(bool on, QString *error)
         *error = i18n("Could not create the directory for %1.", path);
         return false;
     }
-    const QString entry = QStringLiteral(
-                              "[Desktop Entry]\n"
-                              "Type=Application\n"
-                              "Name=Glowzone\n"
-                              "Comment=%1\n"
-                              "Exec=%2 --background\n"
-                              "Icon=%3\n"
-                              "Terminal=false\n"
-                              "NoDisplay=true\n"
-                              "X-GNOME-Autostart-enabled=true\n")
-                              .arg(i18nc("@info autostart entry", "Keeps the fan lighting running in the background"),
-                                   quotedForExec(QCoreApplication::applicationFilePath()),
-                                   QLatin1String(GLOWZONE_APP_ID));
-    const QByteArray data = entry.toUtf8();
+    const QByteArray data = autostartEntry(QCoreApplication::applicationFilePath()).toUtf8();
     QSaveFile f(path);
     if (!f.open(QIODevice::WriteOnly) || f.write(data) != data.size() || !f.commit()) {
         *error = i18n("Could not write %1: %2", path, f.errorString());
         return false;
     }
     return true;
+}
+
+// TryExec: once the program is uninstalled, the session skips the entry
+// instead of failing at login.
+QString autostartEntry(const QString &program)
+{
+    const QString comment = i18nc("@info autostart entry", "Keeps the fan lighting running in the background");
+    return QStringLiteral(
+               "[Desktop Entry]\n"
+               "Type=Application\n"
+               "Name=Glowzone\n"
+               "Comment=%1\n"
+               "TryExec=%2\n"
+               "Exec=%3 --background\n"
+               "Icon=%4\n"
+               "Terminal=false\n"
+               "NoDisplay=true\n"
+               "X-GNOME-Autostart-enabled=true\n")
+        .arg(desktopString(comment), desktopString(program), execProgram(program), QLatin1String(GLOWZONE_APP_ID));
 }
 
 } // namespace Glowzone::Settings

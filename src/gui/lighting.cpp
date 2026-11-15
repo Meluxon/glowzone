@@ -34,14 +34,15 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
     connect(&m_stateReload, &QTimer::timeout, this, &Lighting::stateDirChanged);
     const QString stateDir = QFileInfo(FanState::filePath()).absolutePath();
     if (QDir().mkpath(stateDir)) {
-        m_stateWatcher = new QFileSystemWatcher({stateDir}, this);
-        connect(m_stateWatcher, &QFileSystemWatcher::directoryChanged, &m_stateReload, qOverload<>(&QTimer::start));
+        auto *watcher = new QFileSystemWatcher({stateDir}, this);
+        connect(watcher, &QFileSystemWatcher::directoryChanged, &m_stateReload, qOverload<>(&QTimer::start));
     }
 
+    // Not a lasting problem: the sensor may come back. The fan page and the
+    // tray show it while it lasts.
     connect(m_fanApplier, &FanApplier::temperatureUpdated, this, &Lighting::temperatureChanged);
     connect(m_fanApplier, &FanApplier::temperatureFailed, this, [this](const QString &text) {
         m_temperatureError = text;
-        addProblem(text);
         Q_EMIT temperatureChanged();
     });
     connect(m_fanApplier, &FanApplier::temperatureRecovered, this, [this] {
@@ -148,6 +149,7 @@ void Lighting::stateDirChanged()
     const QMap<QString, bool> linksBefore = m_links;
     loadFans();
     if (m_fans != before || m_links != linksBefore) {
+        Q_EMIT stateFileChanged();
         Q_EMIT changed();
     }
 }

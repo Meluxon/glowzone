@@ -50,11 +50,11 @@ private:
     void updateTray();
     void updateTrayToolTip();
 
-    const ModelProfile &m_model;
     Lighting *m_lighting;
     QPointer<MainWindow> m_window;
     KStatusNotifierItem *m_tray = nullptr;
     QAction *m_trayShow = nullptr;
+    QString m_trayToolTip; // as last sent
     bool m_keepRunning = false;
     bool m_quitting = false;
 };
