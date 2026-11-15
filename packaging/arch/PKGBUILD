@@ -2,11 +2,12 @@
 #
 # Local PKGBUILD: builds the Glowzone source tree this file lives in.
 #   cd packaging/arch && makepkg -si      # build, test, install
-#   sudo pacman -Rns glowzone             # remove (see README for user data)
+#   sudo pacman -Rns glowzone             # remove; scripts/uninstall.sh also turns the
+#                                         # lights off and offers to delete your data
 # For an AUR release, source=() will point at a release tarball instead.
 
 pkgname=glowzone
-pkgver=0.7.1
+pkgver=0.7.2
 pkgrel=1
 pkgdesc='Lighting control for supported Lenovo desktops (fan LEDs and case lights)'
 arch=('x86_64')

@@ -21,6 +21,14 @@ Glowzone checks the model (DMI) and refuses to run on anything else – there is
 no `--force`, because the wiring differs between models. Adding one means
 capturing Vantage on Windows; see [docs/development.md](docs/development.md).
 
+## What runs as root
+
+The fan LEDs are reached as your user. The case lights need a small root
+helper, started on demand: it runs **without a password** for whoever is at the
+active local session, only on the models listed above, and only accepts the
+light settings that model allows. What it does, and how that is tested:
+[docs/security.md](docs/security.md).
+
 ## Install
 
 On Arch Linux:
