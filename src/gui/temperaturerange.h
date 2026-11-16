@@ -11,6 +11,7 @@
 
 class QFormLayout;
 class QLabel;
+class QPushButton;
 class QSlider;
 
 namespace Glowzone
@@ -22,8 +23,9 @@ namespace Glowzone::Gui
 {
 
 // The colour for every temperature as a strip, with a marker at the
-// temperature now and a few °C labels under it. Its temperature axis lines up
-// with the sliders it is shown with: same width, same handle inset.
+// temperature now, a bracket under the range and a few °C labels. It is as
+// long as the grooves of the sliders it is shown with, and its temperature
+// axis lines up with their handles.
 class TemperatureStrip : public QWidget
 {
     Q_OBJECT
@@ -40,9 +42,17 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
+    struct Axis {
+        double left;  // groove ends
+        double right;
+        double first; // handle centres at minimum and maximum
+        double last;
+    };
+    Axis axis() const;
     double xFor(double celsius) const;
     int stripTop() const;
     int stripHeight() const;
+    int bracketHeight() const;
 
     const QSlider *m_alignWith;
     const TemperatureScale *m_scale = nullptr;
@@ -51,9 +61,10 @@ private:
     std::optional<double> m_temperature;
 };
 
-// The CPU-temperature range as form rows: the strip, "Coolest" and "Hottest"
-// sliders over the same axis (darkAt to the sensor's limit), and a note that
-// the range is shared by every fan in the mode.
+// The CPU-temperature range as form rows under a heading of their own: the
+// strip, "Coolest" and "Hottest" sliders over the same axis (darkAt to the
+// sensor's limit), a note that the range is shared by every fan in the mode,
+// and a button back to the model's default range.
 class TemperatureRangeForm : public QObject
 {
     Q_OBJECT
@@ -63,7 +74,7 @@ public:
 
     void setScale(const TemperatureScale &scale);
     void setTemperature(std::optional<double> celsius);
-    void setVisible(bool visible, bool withHeading);
+    void setVisible(bool visible);
     void setEnabled(bool enabled);
 
 Q_SIGNALS:
@@ -85,6 +96,8 @@ private:
     QLabel *m_coolestValue;
     QLabel *m_hottestValue;
     QLabel *m_note;
+    QWidget *m_noteField;
+    QPushButton *m_defaults;
 };
 
 } // namespace Glowzone::Gui

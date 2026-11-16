@@ -70,7 +70,7 @@ private Q_SLOTS:
         QVERIFY(sameSettings(*loaded, sample(QStringLiteral("x"))));
     }
 
-    // Saved before 0.9.0: no range – applying it leaves the current one alone.
+    // Saved before 0.9.0, without a range: it was made with the default one.
     void withoutTemperatureRange()
     {
         Profile p = sample(QStringLiteral("Old"));
@@ -79,8 +79,7 @@ private Q_SLOTS:
         QVERIFY2(Profiles::save(legion(), p, &error), qPrintable(error));
         const auto loaded = Profiles::find(legion(), QStringLiteral("Old"));
         QVERIFY(loaded);
-        QVERIFY(!loaded->temperatureRange);
-        QVERIFY(sameSettings(*loaded, p));
+        QCOMPARE(loaded->temperatureRange, std::optional(legion().cpuTemperature->defaultRange));
     }
 
     void namesAreCaseInsensitiveAndOverwrite()

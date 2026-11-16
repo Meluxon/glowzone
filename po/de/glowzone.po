@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 15:12+0100\n"
+"POT-Creation-Date: 2026-11-16 15:36+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: German\n"
@@ -1280,6 +1280,12 @@ msgstr "Hier beginnt die erste Farbe. Darunter wird sie zunehmend dunkler."
 msgctxt "@info:tooltip"
 msgid "The last colour is reached here. Hotter than this, it fades towards white."
 msgstr "Hier ist die letzte Farbe erreicht. Darüber geht sie zunehmend in Weiß über."
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@info:tooltip %1 and %2 are temperatures"
+msgid "Sets the range back to %1–%2 °C."
+msgstr "Setzt den Bereich auf %1–%2 °C zurück."
 
 #: src/gui/temperaturerange.cpp
 #, kde-format

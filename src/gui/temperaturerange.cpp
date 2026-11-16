@@ -6,11 +6,14 @@
 #include "core/cputemperature.h"
 
 #include <KLocalizedString>
+#include <KStandardGuiItem>
 #include <QFormLayout>
+#include <QImage>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPushButton>
 #include <QSignalBlocker>
 #include <QSlider>
 #include <QStyle>
@@ -67,14 +70,20 @@ int TemperatureStrip::stripHeight() const
     return std::max(10, fontMetrics().height() * 3 / 4);
 }
 
+int TemperatureStrip::bracketHeight() const
+{
+    return 6;
+}
+
 QSize TemperatureStrip::sizeHint() const
 {
     const QFontMetrics small(smallFont(this));
-    return {m_alignWith->width(), stripTop() + stripHeight() + 2 + small.height()};
+    return {m_alignWith->width(), stripTop() + stripHeight() + bracketHeight() + small.height()};
 }
 
-// Where a slider of the same width puts its handle's centre for this value.
-double TemperatureStrip::xFor(double celsius) const
+// Where a slider of the same width has its groove, and its handle's centre at
+// the minimum and the maximum.
+TemperatureStrip::Axis TemperatureStrip::axis() const
 {
     QStyleOptionSlider opt;
     opt.initFrom(m_alignWith);
@@ -85,9 +94,14 @@ double TemperatureStrip::xFor(double celsius) const
     const QStyle *style = m_alignWith->style();
     const QRect groove = style->subControlRect(QStyle::CC_Slider, &opt, QStyle::SC_SliderGroove, m_alignWith);
     const int handle = style->subControlRect(QStyle::CC_Slider, &opt, QStyle::SC_SliderHandle, m_alignWith).width();
-    const double span = std::max(1, groove.width() - handle);
-    const double f = std::clamp((celsius - m_minimum) / double(m_maximum - m_minimum), 0.0, 1.0);
-    return groove.left() + handle / 2.0 + f * span;
+    const double first = groove.left() + handle / 2.0;
+    return {double(groove.left()), double(groove.right() + 1), first, first + std::max(1, groove.width() - handle)};
+}
+
+double TemperatureStrip::xFor(double celsius) const
+{
+    const Axis a = axis();
+    return a.first + (celsius - m_minimum) / double(m_maximum - m_minimum) * (a.last - a.first);
 }
 
 void TemperatureStrip::paintEvent(QPaintEvent *)
@@ -97,19 +111,26 @@ void TemperatureStrip::paintEvent(QPaintEvent *)
     }
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
-    const double x0 = xFor(m_minimum);
-    const double x1 = xFor(m_maximum);
-    const QRectF strip(x0, stripTop(), x1 - x0, stripHeight());
+    const Axis a = axis();
+    const QRectF strip(a.left, stripTop(), a.right - a.left, stripHeight());
 
+    // One image pixel per screen pixel, drawn in one go: rectangle by rectangle
+    // leaves seams at fractional scale factors. Past the handles' reach (the
+    // groove's ends) it shows the end colours, which hold beyond the axis too.
+    const double dpr = devicePixelRatioF();
+    const int pixels = std::max(1, int(std::lround(strip.width() * dpr)));
+    QImage colours(pixels, 1, QImage::Format_RGB32);
+    for (int i = 0; i < pixels; ++i) {
+        const double x = strip.left() + (i + 0.5) / dpr;
+        const double celsius = m_minimum + (x - a.first) / (a.last - a.first) * (m_maximum - m_minimum);
+        const Ite8297::Rgb c = m_scale->colourAt(celsius);
+        colours.setPixel(i, 0, qRgb(c.r, c.g, c.b));
+    }
     QPainterPath shape;
     shape.addRoundedRect(strip, 3, 3);
     p.save();
     p.setClipPath(shape);
-    for (int x = int(std::floor(x0)); x < int(std::ceil(x1)); ++x) {
-        const double celsius = m_minimum + (x + 0.5 - x0) / (x1 - x0) * (m_maximum - m_minimum);
-        const Ite8297::Rgb c = m_scale->colourAt(celsius);
-        p.fillRect(QRectF(x, strip.top(), 1, strip.height()), QColor(c.r, c.g, c.b));
-    }
+    p.drawImage(strip, colours);
     p.restore();
     QColor frame = palette().color(QPalette::WindowText);
     frame.setAlphaF(0.25);
@@ -117,11 +138,22 @@ void TemperatureStrip::paintEvent(QPaintEvent *)
     p.setBrush(Qt::NoBrush);
     p.drawPath(shape);
 
+    // The range: a bracket under the strip, in the selection colour like the
+    // sliders' filled grooves.
+    const QColor accent = palette().color(isEnabled() ? QPalette::Active : QPalette::Disabled, QPalette::Highlight);
+    const double from = std::round(xFor(m_scale->range().coolest)) + 0.5;
+    const double to = std::round(xFor(m_scale->range().hottest)) - 0.5;
+    const double top = strip.bottom() + 1;
+    const double bottom = strip.bottom() + bracketHeight() - 2;
+    p.setPen(QPen(accent, 1.5, Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin));
+    const QPointF bracket[] = {{from, top}, {from, bottom}, {to, bottom}, {to, top}};
+    p.drawPolyline(bracket, 4);
+
     // °C labels every 20, inside the widget.
     p.setFont(smallFont(this));
     p.setPen(palette().color(QPalette::WindowText));
     const QFontMetrics small(p.font());
-    const int baseline = int(strip.bottom()) + 2 + small.ascent();
+    const int baseline = int(strip.bottom()) + bracketHeight() + small.ascent();
     for (int t = (m_minimum + 19) / 20 * 20; t <= m_maximum; t += 20) {
         const QString text = QString::number(t);
         const int w = small.horizontalAdvance(text);
@@ -130,7 +162,7 @@ void TemperatureStrip::paintEvent(QPaintEvent *)
     }
 
     if (m_temperature) {
-        const double x = xFor(*m_temperature);
+        const double x = xFor(std::clamp(*m_temperature, double(m_minimum), double(m_maximum)));
         const QColor ink = palette().color(QPalette::WindowText);
         // The line gets a halo in the window colour, to show on dark and light colours alike.
         p.setPen(QPen(palette().color(QPalette::Window), 4, Qt::SolidLine, Qt::FlatCap));
@@ -154,6 +186,7 @@ TemperatureRangeForm::TemperatureRangeForm(const CpuTemperatureDef &def, QFormLa
     , m_coolestValue(new QLabel(parent))
     , m_hottestValue(new QLabel(parent))
     , m_note(new QLabel(i18nc("@info", "Shared by all fans in this mode."), parent))
+    , m_defaults(new QPushButton(parent))
 {
     const int width = parent->fontMetrics().averageCharWidth() * 28; // like a LevelSlider
     const int valueWidth = parent->fontMetrics().horizontalAdvance(celsiusText(188));
@@ -188,18 +221,32 @@ TemperatureRangeForm::TemperatureRangeForm(const CpuTemperatureDef &def, QFormLa
     m_hottestField = field(m_hottest, m_hottestValue);
 
     m_note->setFont(smallFont(parent));
+    KGuiItem::assign(m_defaults, KStandardGuiItem::defaults());
+    m_defaults->setToolTip(i18nc("@info:tooltip %1 and %2 are temperatures", "Sets the range back to %1–%2 °C.", def.defaultRange.coolest, def.defaultRange.hottest));
+    m_noteField = new QWidget(parent);
+    auto *noteRow = new QHBoxLayout(m_noteField);
+    noteRow->setContentsMargins(0, 0, 0, 0);
+    noteRow->addWidget(m_note);
+    noteRow->addStretch();
+    noteRow->addWidget(m_defaults);
 
+    // More space above than a split pair's section headings: these rows are
+    // one setting, apart from the LED's own.
+    m_heading->setContentsMargins(0, m_heading->fontMetrics().height(), 0, 0);
     form->addRow(m_heading);
     form->addRow(i18nc("@label colours for each CPU temperature", "Colours:"), m_stripField);
     form->addRow(i18nc("@label:slider temperature where the colours start", "Coolest:"), m_coolestField);
     form->addRow(i18nc("@label:slider temperature where the colours end", "Hottest:"), m_hottestField);
-    form->addRow(QString(), m_note);
+    form->addRow(QString(), m_noteField);
 
     connect(m_coolest, &QSlider::valueChanged, this, [this] {
         sliderMoved(m_coolest);
     });
     connect(m_hottest, &QSlider::valueChanged, this, [this] {
         sliderMoved(m_hottest);
+    });
+    connect(m_defaults, &QPushButton::clicked, this, [this] {
+        Q_EMIT edited(m_def.defaultRange);
     });
 }
 
@@ -212,6 +259,7 @@ void TemperatureRangeForm::setScale(const TemperatureScale &scale)
     m_coolest->setValue(scale.range().coolest);
     m_hottest->setValue(scale.range().hottest);
     m_strip->setScale(&scale, m_def.darkAt, scale.top());
+    m_defaults->setEnabled(scale.range() != usableRange(m_def, m_def.defaultRange, scale.top()));
     updateLabels();
 }
 
@@ -238,17 +286,16 @@ void TemperatureRangeForm::updateLabels()
     m_hottestValue->setText(celsiusText(m_hottest->value()));
 }
 
-void TemperatureRangeForm::setVisible(bool visible, bool withHeading)
+void TemperatureRangeForm::setVisible(bool visible)
 {
-    m_form->setRowVisible(m_heading, visible && withHeading);
-    for (QWidget *w : {m_stripField, m_coolestField, m_hottestField, static_cast<QWidget *>(m_note)}) {
+    for (QWidget *w : {static_cast<QWidget *>(m_heading), m_stripField, m_coolestField, m_hottestField, m_noteField}) {
         m_form->setRowVisible(w, visible);
     }
 }
 
 void TemperatureRangeForm::setEnabled(bool enabled)
 {
-    for (QWidget *w : {m_stripField, m_coolestField, m_hottestField}) {
+    for (QWidget *w : {m_stripField, m_coolestField, m_hottestField, m_noteField}) {
         w->setEnabled(enabled);
     }
 }

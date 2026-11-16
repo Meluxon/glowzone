@@ -70,8 +70,10 @@ static std::optional<Profile> fromJson(const ModelProfile &model, const QJsonObj
     const QJsonObject range = root.value(QLatin1String("cpuTemperature")).toObject();
     const QJsonValue coolest = range.value(QLatin1String("coolest"));
     const QJsonValue hottest = range.value(QLatin1String("hottest"));
-    if (model.cpuTemperature && coolest.isDouble() && hottest.isDouble()) {
-        p.temperatureRange = TemperatureRange{coolest.toInt(), hottest.toInt()};
+    if (model.cpuTemperature) {
+        // Saved before ranges existed: the colours it was made with.
+        p.temperatureRange = coolest.isDouble() && hottest.isDouble() ? TemperatureRange{coolest.toInt(), hottest.toInt()}
+                                                                      : model.cpuTemperature->defaultRange;
     }
 
     const QJsonObject lights = root.value(QLatin1String("lights")).toObject();

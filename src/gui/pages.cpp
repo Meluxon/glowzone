@@ -87,7 +87,7 @@ void FanPage::refresh()
     }
     if (m_range) {
         m_range->setScale(*m_lighting->temperatureScale());
-        m_range->setVisible(follows, m_fan.isDouble() && !linked); // after split sections: a heading of its own
+        m_range->setVisible(follows);
         m_range->setEnabled(m_lighting->fansAvailable());
     }
     refreshTemperature();
