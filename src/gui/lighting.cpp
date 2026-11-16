@@ -41,7 +41,8 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
 
     // The command line may change things while Glowzone runs – maybe only in
     // the tray, with LEDs following the CPU temperature: the fan state, the
-    // split choices and current profile (glowzone.conf), the profiles. They are
+    // split choices, temperature range and current profile (glowzone.conf),
+    // the profiles. They are
     // read again when they change. Files are replaced, not written in place, so
     // the directories are watched.
     m_savedReload.setSingleShot(true);
@@ -61,6 +62,7 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
     // Not a lasting problem: the sensor may come back. The fan page and the
     // tray show it while it lasts.
     connect(m_fanApplier, &FanApplier::temperatureUpdated, this, &Lighting::temperatureChanged);
+    connect(m_fanApplier, &FanApplier::temperatureScaleChanged, this, &Lighting::changed);
     connect(m_fanApplier, &FanApplier::temperatureFailed, this, [this](const QString &text) {
         m_temperatureError = text;
         Q_EMIT temperatureChanged();
@@ -343,15 +345,17 @@ bool Lighting::matches(const Profile &profile) const
 
 void Lighting::apply(const Profile &profile)
 {
-    if (profile.temperatureRange && m_temperatureRange) { // first: the fans below get its colour
-        m_temperatureRange = profile.temperatureRange;
-        m_fanApplier->setTemperatureRange(*profile.temperatureRange);
-        saveTemperatureRange();
-    }
     for (const HeaderSetting &s : profile.fans) {
         m_fans.insert(s.header, s);
     }
     m_fanApplier->queue(profile.fans.values());
+    // With the profile's fans queued, a new range only recolours the following
+    // LEDs it leaves alone; the queued ones go out with the new colour below.
+    if (profile.temperatureRange && m_temperatureRange) {
+        m_temperatureRange = profile.temperatureRange;
+        m_fanApplier->setTemperatureRange(*profile.temperatureRange);
+        saveTemperatureRange();
+    }
     m_fanApplier->flushNow();
 
     for (auto it = profile.links.cbegin(); it != profile.links.cend(); ++it) {
@@ -423,6 +427,9 @@ void Lighting::reloadFromDisk()
 {
     if (isBusy()) {
         return;
+    }
+    if (!m_rangeSave.isActive()) { // otherwise ours is newer
+        loadTemperatureRange();
     }
     loadFans();
     if (m_lightsLoaded) {

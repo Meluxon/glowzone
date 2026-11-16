@@ -70,8 +70,8 @@ Ite8297::Rgb unknownTemperatureColour(const CpuTemperatureDef &def);
 // - below the range, one per °C: the first colour fading out, darkest at darkAt
 //   (perceived brightness, so the fade looks even)
 // - the colour list, spread evenly over the range
-// - above the range, one per °C: the last colour fading to white at the top
-//   (the CPU's critical temperature)
+// - above the range, one per °C: the last colour fading to white, reached at
+//   the top (the CPU's critical temperature)
 class TemperatureScale
 {
 public:
@@ -118,8 +118,8 @@ public:
     Ite8297::Rgb colour() const;
 
     // The range the colours are spread over; a change takes effect at once
-    // (colourChanged() if the colour is now another). The same range again
-    // changes nothing.
+    // (colourChanged() if the colour is now another). A range that gives the
+    // same colours as the current one changes nothing.
     void setRange(TemperatureRange range);
     const TemperatureScale &scale() const { return m_scale; }
 
@@ -128,6 +128,7 @@ Q_SIGNALS:
     void colourChanged(Glowzone::Ite8297::Rgb colour); // the colour changed
     void failed(const QString &error);                 // a reading failed (after it worked, or the first time)
     void recovered();                                  // reading works again
+    void scaleChanged();                               // the sensor's limit changed the colours
 
 private:
     void read();

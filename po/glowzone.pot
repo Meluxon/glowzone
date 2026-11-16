@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 15:36+0100\n"
+"POT-Creation-Date: 2026-11-16 16:16+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1299,12 +1299,6 @@ msgstr ""
 
 #: src/gui/temperaturerange.cpp
 #, kde-format
-msgctxt "@info"
-msgid "Shared by all fans in this mode."
-msgstr ""
-
-#: src/gui/temperaturerange.cpp
-#, kde-format
 msgctxt "@info:tooltip"
 msgid "The first colour starts here. Cooler than this, it fades towards dark."
 msgstr ""
@@ -1314,6 +1308,12 @@ msgstr ""
 msgctxt "@info:tooltip"
 msgid ""
 "The last colour is reached here. Hotter than this, it fades towards white."
+msgstr ""
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@info"
+msgid "Shared by all fans in this mode."
 msgstr ""
 
 #: src/gui/temperaturerange.cpp

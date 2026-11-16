@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 15:36+0100\n"
+"POT-Creation-Date: 2026-11-16 16:16+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: German\n"
@@ -1265,12 +1265,6 @@ msgstr "Temperaturfarben"
 
 #: src/gui/temperaturerange.cpp
 #, kde-format
-msgctxt "@info"
-msgid "Shared by all fans in this mode."
-msgstr "Gilt für alle Lüfter in diesem Modus."
-
-#: src/gui/temperaturerange.cpp
-#, kde-format
 msgctxt "@info:tooltip"
 msgid "The first colour starts here. Cooler than this, it fades towards dark."
 msgstr "Hier beginnt die erste Farbe. Darunter wird sie zunehmend dunkler."
@@ -1280,6 +1274,12 @@ msgstr "Hier beginnt die erste Farbe. Darunter wird sie zunehmend dunkler."
 msgctxt "@info:tooltip"
 msgid "The last colour is reached here. Hotter than this, it fades towards white."
 msgstr "Hier ist die letzte Farbe erreicht. Darüber geht sie zunehmend in Weiß über."
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@info"
+msgid "Shared by all fans in this mode."
+msgstr "Gilt für alle Lüfter in diesem Modus."
 
 #: src/gui/temperaturerange.cpp
 #, kde-format

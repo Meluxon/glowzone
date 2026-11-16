@@ -7,8 +7,8 @@
 #include <QFile>
 
 #include <algorithm>
-#include <limits>
 #include <cmath>
+#include <limits>
 #include <ctime>
 #include <numeric>
 
@@ -194,9 +194,9 @@ TemperatureScale::TemperatureScale(const CpuTemperatureDef &def, TemperatureRang
     for (int i = 0; i < def.colours.size(); ++i) {
         add(coolest + i * width, Ite8297::rgbFromValue(def.colours.at(i)));
     }
-    // Above the range: white at the top.
-    for (int t = hottest; t < m_top; ++t) {
-        add(t, whitened(last, double(t - hottest + 1) / double(m_top - hottest)));
+    // Above the range: the last colour up to hottest, white at the top.
+    for (int t = hottest + 1; t <= m_top; ++t) {
+        add(t, whitened(last, double(t - hottest) / double(m_top - hottest)));
     }
 }
 
@@ -275,11 +275,12 @@ Ite8297::Rgb CpuTemperature::colour() const
 
 void CpuTemperature::setRange(TemperatureRange range)
 {
-    if (range == m_range) {
-        return; // a new scale would lose the hysteresis of the current step
-    }
     m_range = range;
-    m_scale = TemperatureScale(m_def, range, m_scale.top());
+    TemperatureScale scale(m_def, range, m_scale.top());
+    if (scale.range() == m_scale.range()) {
+        return; // the same colours: a new scale would only lose the hysteresis of the current step
+    }
+    m_scale = std::move(scale);
     if (m_temperature) {
         m_step = m_scale.step(*m_temperature); // steps of another scale: no hysteresis to keep
         report();
@@ -324,6 +325,7 @@ void CpuTemperature::read()
     if (const int top = m_sensor.limit().value_or(m_def.hottestLimit); top != m_scale.top()) {
         m_scale = TemperatureScale(m_def, m_range, top); // the sensor's limit, once it is found
         m_step.reset();
+        Q_EMIT scaleChanged();
     }
     m_temperature = m_smoother.add(*reading, seconds);
     m_step = m_scale.step(*m_temperature, m_step);

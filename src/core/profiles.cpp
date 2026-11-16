@@ -12,6 +12,8 @@
 #include <QStandardPaths>
 
 #include <algorithm>
+#include <cmath>
+#include <limits>
 
 namespace Glowzone
 {
@@ -36,6 +38,16 @@ struct Stored {
     Profile profile;
     QString path;
 };
+
+// An int stored as a JSON number; nullopt for fractions, huge values and other types.
+static std::optional<int> wholeNumber(const QJsonValue &v)
+{
+    const double d = v.toDouble(std::numeric_limits<double>::quiet_NaN());
+    if (!(d >= std::numeric_limits<int>::min() && d <= std::numeric_limits<int>::max()) || d != std::trunc(d)) {
+        return std::nullopt; // also NaN: not a number at all
+    }
+    return int(d);
+}
 
 static std::optional<Profile> fromJson(const ModelProfile &model, const QJsonObject &root)
 {
@@ -68,12 +80,11 @@ static std::optional<Profile> fromJson(const ModelProfile &model, const QJsonObj
     }
 
     if (model.cpuTemperature) {
-        // A file without a range was made with the default one.
+        // A file without a usable range gets the default one.
         const QJsonObject range = root.value(QLatin1String("cpuTemperature")).toObject();
-        const QJsonValue coolest = range.value(QLatin1String("coolest"));
-        const QJsonValue hottest = range.value(QLatin1String("hottest"));
-        p.temperatureRange = coolest.isDouble() && hottest.isDouble() ? TemperatureRange{coolest.toInt(), hottest.toInt()}
-                                                                      : model.cpuTemperature->defaultRange;
+        const auto coolest = wholeNumber(range.value(QLatin1String("coolest")));
+        const auto hottest = wholeNumber(range.value(QLatin1String("hottest")));
+        p.temperatureRange = coolest && hottest ? TemperatureRange{*coolest, *hottest} : model.cpuTemperature->defaultRange;
     }
 
     const QJsonObject lights = root.value(QLatin1String("lights")).toObject();

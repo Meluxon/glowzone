@@ -97,7 +97,8 @@ public:
     void turnAllOff();
 
     // Reads again what the CLI may have changed meanwhile: the fan state, the
-    // split choices and the case lights. Skipped while a change is being sent.
+    // split choices, the temperature range and the case lights. Skipped while
+    // a change is being sent.
     void reloadFromDisk();
 
     // Send anything still pending; idle() follows when done.

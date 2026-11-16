@@ -22,7 +22,7 @@ namespace Glowzone
 //
 // LEDs in the CPU-temperature mode are kept in their colour here: while any
 // LED uses the mode, the temperature is read and those LEDs get a new colour
-// whenever the step changes. The saved fan state keeps the mode itself, never
+// whenever theirs changes – with the temperature or the range. The saved fan state keeps the mode itself, never
 // the colour of the moment.
 class FanApplier : public QObject
 {
@@ -58,6 +58,7 @@ Q_SIGNALS:
     void temperatureUpdated();
     void temperatureFailed(const QString &error);
     void temperatureRecovered();
+    void temperatureScaleChanged(); // the colours for each temperature, e.g. a new sensor limit
 
 private:
     void follow(const QList<Ite8297::HeaderSetting> &settings);

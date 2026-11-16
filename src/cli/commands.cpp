@@ -152,9 +152,9 @@ bool anyFollowsTemperature(const List &settings)
 }
 
 // LEDs in the CPU-temperature mode get the colour for the temperature right
-// now. Updating it later is the window's (or the tray's) job; says so if
-// that isn't running.
-QList<HeaderSetting> resolveForNow(const ModelProfile &model, const QList<HeaderSetting> &settings)
+// now, with the given range or else the stored one. Updating it later is the
+// window's (or the tray's) job; says so if that isn't running.
+QList<HeaderSetting> resolveForNow(const ModelProfile &model, const QList<HeaderSetting> &settings, std::optional<TemperatureRange> range = std::nullopt)
 {
     if (!model.cpuTemperature || !anyFollowsTemperature(settings)) {
         return settings;
@@ -165,7 +165,7 @@ QList<HeaderSetting> resolveForNow(const ModelProfile &model, const QList<Header
     if (!now) {
         err() << error << Qt::endl;
     }
-    const Rgb colour = now ? TemperatureScale(def, Settings::temperatureRange(def), now->top).colourAt(now->celsius)
+    const Rgb colour = now ? TemperatureScale(def, range.value_or(Settings::temperatureRange(def)), now->top).colourAt(now->celsius)
                            : unknownTemperatureColour(def);
     QList<HeaderSetting> resolved;
     for (const HeaderSetting &s : settings) {
@@ -178,14 +178,19 @@ QList<HeaderSetting> resolveForNow(const ModelProfile &model, const QList<Header
     return resolved;
 }
 
-// "35-80" (or with an en dash), within the model's limits.
-std::optional<TemperatureRange> parseRange(const CpuTemperatureDef &def, const QString &text, int *exitCode)
+// The highest temperature a range may reach: the sensor's limit, or the
+// model's while the sensor can't be read.
+int temperatureTop(const CpuTemperatureDef &def)
 {
     QString ignored;
-    const int top = [&] {
-        const auto now = cpuTemperatureNow(def, &ignored);
-        return now ? now->top : def.hottestLimit;
-    }();
+    const auto now = cpuTemperatureNow(def, &ignored);
+    return now ? now->top : def.hottestLimit;
+}
+
+// "35-80" (or with an en dash), within the limits.
+std::optional<TemperatureRange> parseRange(const CpuTemperatureDef &def, const QString &text, int *exitCode)
+{
+    const int top = temperatureTop(def);
     static constexpr QChar EnDash(0x2013);
     const QStringList parts = QString(text).replace(EnDash, QLatin1Char('-')).split(QLatin1Char('-'));
     bool okCoolest = false;
@@ -381,14 +386,14 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
         }
     }
 
-    if (range) {
-        Settings::setTemperatureRange(*range); // before the colour is chosen
-    }
     FanController controller(model);
     QString error;
-    if (!controller.apply(resolveForNow(model, settings), &error)) {
+    if (!controller.apply(resolveForNow(model, settings, range), &error)) {
         err() << error << Qt::endl;
         return ExitFailed;
+    }
+    if (range) {
+        Settings::setTemperatureRange(*range); // only once the fans have it
     }
     if (!FanState::merge(lock, settings, &error)) {
         err() << i18n("The fans were changed, but the state could not be saved: %1", error) << Qt::endl;
@@ -532,20 +537,20 @@ int cmdProfileApply(const ModelProfile &model, const QString &name)
     int exitCode = ExitOk;
     QString error;
 
-    if (profile->temperatureRange) {
-        Settings::setTemperatureRange(*profile->temperatureRange); // before the colour is chosen
-    }
     if (!profile->fans.isEmpty()) {
         FanController controller(model);
         const QList<HeaderSetting> settings = profile->fans.values();
         const FanState::Lock lock;
-        if (!controller.apply(resolveForNow(model, settings), &error) || !FanState::merge(lock, settings, &error)) {
+        if (!controller.apply(resolveForNow(model, settings, profile->temperatureRange), &error) || !FanState::merge(lock, settings, &error)) {
             err() << i18n("Fans: %1", error) << Qt::endl;
             exitCode = ExitFailed;
         }
     }
     for (auto it = profile->links.cbegin(); it != profile->links.cend(); ++it) {
         Settings::setLinked(it.key(), it.value());
+    }
+    if (profile->temperatureRange && exitCode == ExitOk) {
+        Settings::setTemperatureRange(*profile->temperatureRange);
     }
     // A running Glowzone reads the fans and the current profile again a moment
     // after they change: both should be there before the slower case lights.
@@ -788,7 +793,7 @@ static QString helpText()
         values << Row{i18n("Fan speed, brightness:"), range.arg(MinLevel).arg(model->fanLevels)};
         if (const auto &t = model->cpuTemperature) {
             values << Row{i18n("Temperature range (--range):"),
-                          i18n("%1 to %2 °C, at least %3 apart (default %4-%5)", t->darkAt, t->hottestLimit, minimumRangeWidth(*t),
+                          i18n("%1 to %2 °C, at least %3 apart (default %4-%5)", t->darkAt, temperatureTop(*t), minimumRangeWidth(*t),
                                t->defaultRange.coolest, t->defaultRange.hottest)};
         }
         if (!model->ecLights.isEmpty()) {

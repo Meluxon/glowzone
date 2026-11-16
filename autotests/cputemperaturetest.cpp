@@ -93,13 +93,16 @@ private Q_SLOTS:
         QCOMPARE(s.colourAt(35.0), rgb(0x0000ff));
         QCOMPARE(s.colourAt(38.4), rgb(0x0000ff));
         QCOMPARE(s.colourAt(38.5), rgb(0x0050ff));
-        QCOMPARE(s.colourAt(62.0), rgb(0x50ff00)); // 7th colour from 59.2 °C
+        QCOMPARE(s.colourAt(62.0), rgb(0x50ff00)); // 8th colour from 59.2 °C
         QCOMPARE(s.colourAt(76.6), rgb(0xff0000));
         QCOMPARE(s.colourAt(79.9), rgb(0xff0000));
         // Above: towards white, one step per °C, white at the top.
-        QCOMPARE(s.colourAt(80.0), (Rgb{255, 13, 13}));  // 1/20 of the way
-        QCOMPARE(s.colourAt(89.5), (Rgb{255, 128, 128})); // half
-        QCOMPARE(s.colourAt(99.0), (Rgb{255, 255, 255}));
+        QCOMPARE(s.colourAt(80.0), rgb(0xff0000));
+        QCOMPARE(s.colourAt(80.9), rgb(0xff0000));
+        QCOMPARE(s.colourAt(81.0), (Rgb{255, 13, 13}));   // 1/20 of the way
+        QCOMPARE(s.colourAt(90.5), (Rgb{255, 128, 128})); // half
+        QCOMPARE(s.colourAt(99.0), (Rgb{255, 242, 242})); // 19/20
+        QCOMPARE(s.colourAt(100.0), (Rgb{255, 255, 255}));
         QCOMPARE(s.colourAt(105.0), (Rgb{255, 255, 255}));
         // Below: the first colour, dimmer per °C as the eye sees it, darkest at 20 °C.
         QCOMPARE(s.colourAt(34.0), (Rgb{0, 0, 228}));
@@ -131,6 +134,7 @@ private Q_SLOTS:
         QTest::newRow("lower top") << 50 << 100 << 90 << 50 << 90;
         QTest::newRow("too cool") << 10 << 40 << 100 << 20 << 40;
         QTest::newRow("upside down") << 80 << 40 << 100 << 27 << 40;
+        QTest::newRow("top below the narrowest range") << 35 << 80 << 30 << 20 << 33;
     }
     void usableRanges()
     {
@@ -251,7 +255,7 @@ private Q_SLOTS:
 
         CpuTemperature t(def(), nullptr, root.path());
         QSignalSpy colours(&t, &CpuTemperature::colourChanged);
-        t.setRange({35, 100});
+        t.setRange({36, 100});
         QCOMPARE(colours.size(), 0); // not running
         t.setInterval(60000);
         t.start();
@@ -260,10 +264,11 @@ private Q_SLOTS:
 
         t.setRange({35, 60}); // 61 °C is above it now
         QCOMPARE(colours.size(), 2);
-        QCOMPARE(t.colour(), (Rgb{255, 13, 13})); // 2/40 of the way to white
+        QCOMPARE(t.colour(), (Rgb{255, 6, 6})); // 1/40 of the way to white
         t.setRange({35, 61});
-        QCOMPARE(t.colour(), (Rgb{255, 7, 7})); // 1/39
-        t.setRange({34, 61}); // still the same step
+        QCOMPARE(colours.size(), 3);
+        QCOMPARE(t.colour(), rgb(0xff0000)); // the last colour, up to hottest
+        t.setRange({34, 61}); // still the same colour
         QCOMPARE(colours.size(), 3);
         QCOMPARE(t.scale().top(), 100);
     }
@@ -289,6 +294,33 @@ private Q_SLOTS:
         QCOMPARE(t.colour(), rgb(0x50ff00)); // held
         t.setRange(def().defaultRange);
         QCOMPARE(t.colour(), rgb(0x50ff00)); // still held
+        t.setRange({35, 120}); // other numbers, the same range once limited to the top
+        QCOMPARE(t.colour(), rgb(0x50ff00));
+    }
+
+    // A sensor found again with another limit changes the colours, and says so.
+    void limitChange()
+    {
+        QTemporaryDir root;
+        const QString input = root.filePath(QStringLiteral("hwmon2/temp1_input"));
+        writeFile(root.filePath(QStringLiteral("hwmon2/name")), "coretemp\n");
+        writeFile(root.filePath(QStringLiteral("hwmon2/temp1_label")), "Package id 0\n");
+        writeFile(input, "60000\n");
+
+        CpuTemperature t(def(), nullptr, root.path());
+        QSignalSpy scales(&t, &CpuTemperature::scaleChanged);
+        QSignalSpy updates(&t, &CpuTemperature::updated);
+        t.setInterval(20);
+        t.start();
+        QCOMPARE(t.scale().top(), def().hottestLimit); // no tempN_crit
+        QCOMPARE(scales.size(), 0);
+
+        writeFile(input, "x\n"); // fails: searched again on the next reading
+        writeFile(root.filePath(QStringLiteral("hwmon2/temp1_crit")), "105000\n");
+        QVERIFY(QTest::qWaitFor([&] { return updates.size() >= 3; }));
+        writeFile(input, "60000\n");
+        QVERIFY(QTest::qWaitFor([&] { return scales.size() == 1; }));
+        QCOMPARE(t.scale().top(), 105);
     }
 
     void failingSensorReportsOnce()

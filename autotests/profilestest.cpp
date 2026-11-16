@@ -82,6 +82,42 @@ private Q_SLOTS:
         QCOMPARE(loaded->temperatureRange, std::optional(legion().cpuTemperature->defaultRange));
     }
 
+    // Only whole numbers make a range; anything else gives the default one.
+    void temperatureRangeFromJson_data()
+    {
+        QTest::addColumn<QJsonValue>("range");
+        QTest::addColumn<int>("coolest");
+        QTest::addColumn<int>("hottest");
+        const TemperatureRange d = legion().cpuTemperature->defaultRange;
+        auto obj = [](QJsonValue c, QJsonValue h) {
+            return QJsonValue(QJsonObject{{QStringLiteral("coolest"), c}, {QStringLiteral("hottest"), h}});
+        };
+        QTest::newRow("whole") << obj(40, 85) << 40 << 85;
+        QTest::newRow("fraction") << obj(35, 80.5) << d.coolest << d.hottest;
+        QTest::newRow("huge") << obj(35, 1e12) << d.coolest << d.hottest;
+        QTest::newRow("string") << obj(QStringLiteral("35"), 80) << d.coolest << d.hottest;
+        QTest::newRow("one key") << QJsonValue(QJsonObject{{QStringLiteral("coolest"), 40}}) << d.coolest << d.hottest;
+        QTest::newRow("not an object") << QJsonValue(42) << d.coolest << d.hottest;
+    }
+    void temperatureRangeFromJson()
+    {
+        QFETCH(QJsonValue, range);
+        QFETCH(int, coolest);
+        QFETCH(int, hottest);
+        QDir().mkpath(Profiles::directory());
+        const QJsonObject root{{QStringLiteral("version"), 1},
+                               {QStringLiteral("name"), QStringLiteral("Hand-edited")},
+                               {QStringLiteral("model"), QLatin1String(legion().productVersion)},
+                               {QStringLiteral("cpuTemperature"), range}};
+        QFile f(Profiles::directory() + QLatin1String("/hand-edited.json"));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(QJsonDocument(root).toJson());
+        f.close();
+        const auto loaded = Profiles::find(legion(), QStringLiteral("Hand-edited"));
+        QVERIFY(loaded);
+        QCOMPARE(loaded->temperatureRange, std::optional(TemperatureRange{coolest, hottest}));
+    }
+
     void namesAreCaseInsensitiveAndOverwrite()
     {
         QString error;

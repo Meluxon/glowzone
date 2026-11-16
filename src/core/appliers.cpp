@@ -25,6 +25,7 @@ FanApplier::FanApplier(const ModelProfile &model, QObject *parent, const QString
         connect(m_temperature, &CpuTemperature::updated, this, &FanApplier::temperatureUpdated);
         connect(m_temperature, &CpuTemperature::failed, this, &FanApplier::temperatureFailed);
         connect(m_temperature, &CpuTemperature::recovered, this, &FanApplier::temperatureRecovered);
+        connect(m_temperature, &CpuTemperature::scaleChanged, this, &FanApplier::temperatureScaleChanged);
     }
 }
 
@@ -133,7 +134,7 @@ void FanApplier::flushNow()
     Q_EMIT saved();
 }
 
-// The temperature step changed: only the following LEDs get the new colour.
+// The temperature colour changed: only the following LEDs get it.
 void FanApplier::sendFollowers()
 {
     // The command line may have changed an LED a moment ago, before Glowzone

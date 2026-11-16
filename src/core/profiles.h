@@ -19,7 +19,8 @@ struct Profile {
     QString name;
     FanState::Headers fans;
     QMap<QString, bool> links;          // fan id -> linked
-    std::optional<TemperatureRange> temperatureRange; // nullopt: the model has no such mode
+    // nullopt: the model has no CPU-temperature mode
+    std::optional<TemperatureRange> temperatureRange;
     QMap<quint8, EcLightState> lights;  // light index -> state
 };
 

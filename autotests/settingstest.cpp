@@ -7,6 +7,7 @@
 #include "core/settings.h"
 
 #include <QFile>
+#include <QSettings>
 #include <QStandardPaths>
 #include <QTest>
 
@@ -67,6 +68,12 @@ private Q_SLOTS:
         QCOMPARE(Settings::temperatureRange(*m->cpuTemperature), m->cpuTemperature->defaultRange); // never set
         Settings::setTemperatureRange({40, 85});
         QCOMPARE(Settings::temperatureRange(*m->cpuTemperature), (TemperatureRange{40, 85}));
+
+        // Hand-edited nonsense, or only half of it: the default.
+        QSettings(Settings::filePath(), QSettings::IniFormat).setValue(QStringLiteral("cpuTemperature/hottest"), QStringLiteral("hot"));
+        QCOMPARE(Settings::temperatureRange(*m->cpuTemperature), m->cpuTemperature->defaultRange);
+        QSettings(Settings::filePath(), QSettings::IniFormat).remove(QStringLiteral("cpuTemperature/hottest"));
+        QCOMPARE(Settings::temperatureRange(*m->cpuTemperature), m->cpuTemperature->defaultRange);
     }
 
     void startAtLogin()

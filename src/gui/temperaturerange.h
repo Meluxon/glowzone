@@ -94,7 +94,6 @@ private:
     QWidget *m_hottestField;
     QLabel *m_coolestValue;
     QLabel *m_hottestValue;
-    QLabel *m_note;
     QWidget *m_noteField;
     QPushButton *m_defaults;
 };

@@ -89,7 +89,8 @@ QSize TemperatureStrip::sizeHint() const
 }
 
 // Where a slider of the same width has its groove, and its handle's centre at
-// the minimum and the maximum.
+// the minimum and the maximum – as the style places them (styles differ in
+// whether the handle travels within the groove or the whole slider).
 TemperatureStrip::Axis TemperatureStrip::axis() const
 {
     QStyleOptionSlider opt;
@@ -100,9 +101,14 @@ TemperatureStrip::Axis TemperatureStrip::axis() const
     opt.maximum = m_maximum;
     const QStyle *style = m_alignWith->style();
     const QRect groove = style->subControlRect(QStyle::CC_Slider, &opt, QStyle::SC_SliderGroove, m_alignWith);
-    const int handle = style->subControlRect(QStyle::CC_Slider, &opt, QStyle::SC_SliderHandle, m_alignWith).width();
-    const double first = groove.left() + handle / 2.0;
-    return {double(groove.left()), double(groove.right() + 1), first, first + std::max(1, groove.width() - handle)};
+    const auto handleCentre = [&](int value) {
+        opt.sliderPosition = value;
+        opt.sliderValue = value;
+        return QRectF(style->subControlRect(QStyle::CC_Slider, &opt, QStyle::SC_SliderHandle, m_alignWith)).center().x();
+    };
+    const double first = handleCentre(m_minimum);
+    const double last = std::max(first + 1, handleCentre(m_maximum));
+    return {double(groove.left()), double(groove.right() + 1), first, last};
 }
 
 double TemperatureStrip::xFor(double celsius) const
@@ -193,12 +199,13 @@ TemperatureRangeForm::TemperatureRangeForm(const CpuTemperatureDef &def, QFormLa
     , m_hottest(new QSlider(Qt::Horizontal, parent))
     , m_coolestValue(new QLabel(parent))
     , m_hottestValue(new QLabel(parent))
-    , m_note(new QLabel(i18nc("@info", "Shared by all fans in this mode."), parent))
     , m_defaults(new QPushButton(parent))
 {
     const int width = sliderWidth(parent);
     const int valueWidth = parent->fontMetrics().horizontalAdvance(celsiusText(WidestValue));
     for (QSlider *s : {m_coolest, m_hottest}) {
+        // Cool to hot from left to right, like the strip, whatever the language's direction.
+        s->setLayoutDirection(Qt::LeftToRight);
         s->setFixedWidth(width);
         s->setSingleStep(1);
         s->setPageStep(SliderPageStep);
@@ -228,13 +235,14 @@ TemperatureRangeForm::TemperatureRangeForm(const CpuTemperatureDef &def, QFormLa
     m_coolestField = field(m_coolest, m_coolestValue);
     m_hottestField = field(m_hottest, m_hottestValue);
 
-    m_note->setFont(smallFont(parent));
+    auto *note = new QLabel(i18nc("@info", "Shared by all fans in this mode."), parent);
+    note->setFont(smallFont(parent));
     KGuiItem::assign(m_defaults, KStandardGuiItem::defaults());
     m_defaults->setToolTip(i18nc("@info:tooltip %1 and %2 are temperatures", "Sets the range back to %1–%2 °C.", def.defaultRange.coolest, def.defaultRange.hottest));
     m_noteField = new QWidget(parent);
     auto *noteRow = new QHBoxLayout(m_noteField);
     noteRow->setContentsMargins(0, 0, 0, 0);
-    noteRow->addWidget(m_note);
+    noteRow->addWidget(note);
     noteRow->addStretch();
     noteRow->addWidget(m_defaults);
 

@@ -167,6 +167,21 @@ private Q_SLOTS:
         QCOMPARE(FanState::load(model()).value(0x13).mode, Mode::CpuTemperature);
     }
 
+    // A new range sends to the following LEDs only if their colour changes.
+    void rangeSendsOnlyANewColour()
+    {
+        FanApplier fans(model(), nullptr, m_hwmon.path());
+        QString error;
+        QVERIFY(fans.open(&error));
+        fans.queue({follows(0x13)});
+        fans.flushNow();
+        s_reports.clear();
+        fans.setTemperatureRange({34, 100}); // 60 °C keeps 00ff50
+        QCOMPARE(sent(), QStringList());
+        fans.setTemperatureRange({35, 60}); // 60 °C is the top of it: the last colour
+        QCOMPARE(sent(), (QStringList{QStringLiteral("13:ff0000"), QStringLiteral("commit")}));
+    }
+
     // A new step: only the following LEDs, nothing saved.
     void newStepSendsOnlyFollowers()
     {
