@@ -22,7 +22,7 @@ static const ModelProfile &legion()
 // Same lighting, ignoring the name.
 static bool sameSettings(const Profile &a, const Profile &b)
 {
-    return a.fans == b.fans && a.links == b.links && a.lights == b.lights;
+    return a.fans == b.fans && a.links == b.links && a.temperatureRange == b.temperatureRange && a.lights == b.lights;
 }
 
 static Profile sample(const QString &name)
@@ -36,6 +36,7 @@ static Profile sample(const QString &name)
     p.links.insert(QStringLiteral("front"), true);
     p.lights.insert(1, {1, 1, 3});
     p.lights.insert(2, {2, 5, 1});
+    p.temperatureRange = TemperatureRange{35, 80};
     return p;
 }
 
@@ -67,6 +68,19 @@ private Q_SLOTS:
         QVERIFY(loaded);
         QCOMPARE(loaded->name, QStringLiteral("Night"));
         QVERIFY(sameSettings(*loaded, sample(QStringLiteral("x"))));
+    }
+
+    // Saved before 0.9.0: no range – applying it leaves the current one alone.
+    void withoutTemperatureRange()
+    {
+        Profile p = sample(QStringLiteral("Old"));
+        p.temperatureRange.reset();
+        QString error;
+        QVERIFY2(Profiles::save(legion(), p, &error), qPrintable(error));
+        const auto loaded = Profiles::find(legion(), QStringLiteral("Old"));
+        QVERIFY(loaded);
+        QVERIFY(!loaded->temperatureRange);
+        QVERIFY(sameSettings(*loaded, p));
     }
 
     void namesAreCaseInsensitiveAndOverwrite()

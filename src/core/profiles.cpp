@@ -67,6 +67,13 @@ static std::optional<Profile> fromJson(const ModelProfile &model, const QJsonObj
         }
     }
 
+    const QJsonObject range = root.value(QLatin1String("cpuTemperature")).toObject();
+    const QJsonValue coolest = range.value(QLatin1String("coolest"));
+    const QJsonValue hottest = range.value(QLatin1String("hottest"));
+    if (model.cpuTemperature && coolest.isDouble() && hottest.isDouble()) {
+        p.temperatureRange = TemperatureRange{coolest.toInt(), hottest.toInt()};
+    }
+
     const QJsonObject lights = root.value(QLatin1String("lights")).toObject();
     for (const EcLightDef &light : model.ecLights) {
         const QJsonObject o = lights.value(QLatin1String(light.id)).toObject();
@@ -94,7 +101,7 @@ static QJsonObject toJson(const ModelProfile &model, const Profile &p)
                           QJsonObject{{QLatin1String("mode"), QLatin1String(mode->id)}, {QLatin1String("brightness"), s.brightness}});
         }
     }
-    return {
+    QJsonObject root{
         {QLatin1String("version"), FormatVersion},
         {QLatin1String("name"), p.name},
         {QLatin1String("model"), QLatin1String(model.productVersion)},
@@ -102,6 +109,11 @@ static QJsonObject toJson(const ModelProfile &model, const Profile &p)
         {QLatin1String("links"), links},
         {QLatin1String("lights"), lights},
     };
+    if (p.temperatureRange) {
+        root.insert(QLatin1String("cpuTemperature"),
+                    QJsonObject{{QLatin1String("coolest"), p.temperatureRange->coolest}, {QLatin1String("hottest"), p.temperatureRange->hottest}});
+    }
+    return root;
 }
 
 // "Profile 2" before "Profile 10"; letters compared case-insensitively and

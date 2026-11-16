@@ -58,6 +58,17 @@ private Q_SLOTS:
         QVERIFY(entry.startsWith(QLatin1String("[Desktop Entry]\n")));
     }
 
+    void temperatureRange()
+    {
+        QStandardPaths::setTestModeEnabled(true);
+        QFile::remove(Settings::filePath());
+        const ModelProfile *m = matchModel({QStringLiteral("LENOVO"), QStringLiteral("Legion T5 26IOB6"), QStringLiteral("3733")});
+        QVERIFY(m && m->cpuTemperature);
+        QCOMPARE(Settings::temperatureRange(*m->cpuTemperature), m->cpuTemperature->defaultRange); // never set
+        Settings::setTemperatureRange({40, 85});
+        QCOMPARE(Settings::temperatureRange(*m->cpuTemperature), (TemperatureRange{40, 85}));
+    }
+
     void startAtLogin()
     {
         QStandardPaths::setTestModeEnabled(true);

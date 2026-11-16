@@ -51,6 +51,7 @@ add_executable(glowzone
     gui/sidebar.cpp
     gui/pages.cpp
     gui/forms.cpp
+    gui/temperaturerange.cpp
     gui/lighting.cpp
     gui/aboutdialog.cpp
     gui/colourbutton.cpp

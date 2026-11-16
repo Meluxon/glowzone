@@ -18,9 +18,11 @@ namespace Glowzone::Gui
 class LedForm;
 class LevelSlider;
 class Lighting;
+class TemperatureRangeForm;
 
 // Settings of one fan. A double fan gets a "Set separately" checkbox; checked,
-// each LED gets its own section named by its position.
+// each LED gets its own section named by its position. While an LED follows
+// the CPU temperature, the shared temperature range comes after them.
 class FanPage : public QWidget
 {
     Q_OBJECT
@@ -38,6 +40,7 @@ private:
     QCheckBox *m_separately = nullptr;
     QList<QLabel *> m_headings;
     QList<LedForm *> m_forms;
+    TemperatureRangeForm *m_range = nullptr;
 };
 
 // Settings of one case light.

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
+#include "model/modelprofile.h"
+
 #include <QSize>
 #include <QString>
 #include <optional>
@@ -15,6 +17,11 @@ QString filePath();
 // Linked / split state of a double fan; nullopt if never chosen.
 std::optional<bool> linked(const QString &fanId);
 void setLinked(const QString &fanId, bool isLinked);
+
+// The range the CPU-temperature colours are spread over; the model's default
+// if never set. Stored as given: check it with usableRange() before use.
+TemperatureRange temperatureRange(const CpuTemperatureDef &def);
+void setTemperatureRange(TemperatureRange range);
 
 // The profile applied last (empty if none, or if it was deleted).
 QString currentProfile();

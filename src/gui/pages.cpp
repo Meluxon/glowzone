@@ -3,6 +3,7 @@
 #include "pages.h"
 #include "forms.h"
 #include "lighting.h"
+#include "temperaturerange.h"
 
 #include "core/eclights.h"
 
@@ -22,16 +23,6 @@ namespace Glowzone::Gui
 QString capitalised(const QString &s)
 {
     return s.isEmpty() ? s : s.at(0).toUpper() + s.mid(1);
-}
-
-static QLabel *sectionHeading(const QString &text, QWidget *parent)
-{
-    auto *l = new QLabel(text, parent);
-    QFont f = l->font();
-    f.setBold(true);
-    l->setFont(f);
-    l->setContentsMargins(0, l->fontMetrics().height() / 2, 0, 0);
-    return l;
 }
 
 FanPage::FanPage(const FanDef &fan, Lighting *lighting, QWidget *parent)
@@ -67,6 +58,10 @@ FanPage::FanPage(const FanDef &fan, Lighting *lighting, QWidget *parent)
         m_headings << heading;
         m_forms << ledForm;
     }
+    if (const auto &def = m_lighting->model().cpuTemperature) {
+        m_range = new TemperatureRangeForm(*def, form, this);
+        connect(m_range, &TemperatureRangeForm::edited, m_lighting, &Lighting::setTemperatureRange);
+    }
     refresh();
 }
 
@@ -78,15 +73,22 @@ void FanPage::refresh()
         m_separately->setChecked(!linked);
         m_separately->setEnabled(m_lighting->fansAvailable());
     }
+    bool follows = false;
     for (int i = 0; i < m_forms.size(); ++i) {
         const quint8 header = m_fan.leds.at(i).header;
         const bool shown = !linked || i == 0;
+        follows = follows || (shown && m_lighting->isKnown(header) && Ite8297::followsTemperature(m_lighting->led(header).mode));
         m_forms.at(i)->setValues(m_lighting->led(header), m_lighting->isKnown(header));
         m_forms.at(i)->setVisible(shown);
         m_forms.at(i)->setEnabled(m_lighting->fansAvailable());
         if (m_headings.at(i)) {
             m_headings.at(i)->setVisible(!linked);
         }
+    }
+    if (m_range) {
+        m_range->setScale(*m_lighting->temperatureScale());
+        m_range->setVisible(follows, m_fan.isDouble() && !linked); // after split sections: a heading of its own
+        m_range->setEnabled(m_lighting->fansAvailable());
     }
     refreshTemperature();
 }
@@ -95,6 +97,9 @@ void FanPage::refreshTemperature()
 {
     for (LedForm *f : std::as_const(m_forms)) {
         f->setTemperature(m_lighting->cpuTemperature(), m_lighting->cpuTemperatureError());
+    }
+    if (m_range) {
+        m_range->setTemperature(m_lighting->cpuTemperature());
     }
 }
 

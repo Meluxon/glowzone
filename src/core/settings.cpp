@@ -36,6 +36,23 @@ void setLinked(const QString &fanId, bool isLinked)
     s.setValue(QLatin1String("links/") + fanId, isLinked);
 }
 
+TemperatureRange temperatureRange(const CpuTemperatureDef &def)
+{
+    const QSettings s(filePath(), QSettings::IniFormat);
+    bool okCoolest = false;
+    bool okHottest = false;
+    const int coolest = s.value(QLatin1String("cpuTemperature/coolest")).toInt(&okCoolest);
+    const int hottest = s.value(QLatin1String("cpuTemperature/hottest")).toInt(&okHottest);
+    return okCoolest && okHottest ? TemperatureRange{coolest, hottest} : def.defaultRange;
+}
+
+void setTemperatureRange(TemperatureRange range)
+{
+    QSettings s(filePath(), QSettings::IniFormat);
+    s.setValue(QLatin1String("cpuTemperature/coolest"), range.coolest);
+    s.setValue(QLatin1String("cpuTemperature/hottest"), range.hottest);
+}
+
 QString currentProfile()
 {
     const QSettings s(filePath(), QSettings::IniFormat);

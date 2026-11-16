@@ -16,6 +16,7 @@ class QWindow;
 namespace Glowzone
 {
 class FanApplier;
+class TemperatureScale;
 class LightApplier;
 }
 
@@ -67,6 +68,11 @@ public:
     QString cpuTemperatureError() const { return m_temperatureError; }
     // The colour the following LEDs show.
     Ite8297::Rgb cpuTemperatureColour() const;
+    // The colours for every temperature, with the current range (nullptr if
+    // the model doesn't offer the mode).
+    const TemperatureScale *temperatureScale() const;
+    // Shared by all following LEDs; part of a profile. Takes effect at once.
+    void setTemperatureRange(TemperatureRange range);
 
     // --- case lights
     bool lightsAvailable() const { return m_lightsLoaded; }
@@ -110,6 +116,7 @@ Q_SIGNALS:
 private:
     void checkFanLayout();
     void loadFans();
+    void loadTemperatureRange();
     void reloadSaved();
     void setProblem(QString &problem, const QString &text);
     void setError(const QString &text, int source);
@@ -118,6 +125,8 @@ private:
     const ModelProfile &m_model;
     FanState::Headers m_fans;
     QMap<QString, bool> m_links;
+    std::optional<TemperatureRange> m_temperatureRange; // as stored (nullopt: no such mode)
+    QTimer m_rangeSave; // dragging a slider: written once it stops
     QMap<quint8, EcLightState> m_lights;
     QString m_currentProfile;
     bool m_fansAvailable = true; // until opening the controller fails

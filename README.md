@@ -63,7 +63,11 @@ Double fans can be **set separately**. Click a profile to apply it,
 
 **CPU temperature** is a mode like the others: an LED in it changes colour
 with the CPU temperature – blue when cool, through green and yellow, to red
-when hot – while other fans keep their own effects. Glowzone has to be running
+when hot – while other fans keep their own effects. *Coolest* and *Hottest*
+set the temperatures the colours are spread over (shared by all fans in the
+mode, saved in profiles); below the range the colour fades towards dark, above
+it towards white. The default range, 35–100 °C, gives Vantage's colours.
+Glowzone has to be running
 for that: turn on *Keep Running in Background* in the ☰ menu to keep it in the
 system tray when the window is closed, and *Start at Login* to start it there.
 Both are off by default.
@@ -74,7 +78,7 @@ The same from a terminal:
 glowzone status
 glowzone fan all rainbow -s 1 -b 2
 glowzone fan top static -c 0000ff --led rear   # one LED of a double fan
-glowzone fan cpu cpu-temperature -b 3          # follows the CPU temperature
+glowzone fan cpu cpu-temperature -r 35-80      # follows the CPU temperature, colours over 35–80 °C
 glowzone light logo on -b 1
 glowzone profile apply night
 glowzone reset                                 # everything off
@@ -95,8 +99,8 @@ Good to know:
   does the same on Windows), so its sliders apply when you let go.
 - The CPU-temperature colours follow the CPU's own sensor, read as your user –
   Vantage reads the embedded controller instead, which would need root. The
-  colours match Vantage's for a steady temperature; while it changes fast they
-  may be a step apart for a few seconds.
+  colours match Vantage's for a steady temperature (with the default range);
+  while it changes fast they may be a step apart for a few seconds.
 
 ## Uninstall
 

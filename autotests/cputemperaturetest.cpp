@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 // The CPU-temperature mode: colour steps against Lenovo Vantage's captured
-// behaviour, the imitated EC smoothing, and reading hwmon (a fake tree).
+// behaviour (the default range), other ranges and the fades outside them, the
+// imitated EC smoothing, and reading hwmon (a fake tree).
 
 #include "core/cputemperature.h"
 
@@ -64,21 +65,83 @@ private Q_SLOTS:
     {
         QFETCH(double, celsius);
         QFETCH(quint32, colour);
-        QCOMPARE(TemperatureColours::colour(def(), TemperatureColours::step(def(), celsius)), rgb(colour));
+        const TemperatureScale scale(def(), def().defaultRange, 100);
+        QCOMPARE(scale.colourAt(celsius), rgb(colour));
     }
 
     // Going down needs a clear drop; going up doesn't wait.
     void hysteresis()
     {
-        using TemperatureColours::step;
-        QCOMPARE(step(def(), 70.0, 6), 7);   // up at once
-        QCOMPARE(step(def(), 69.5, 7), 7);   // just below 70: stays
-        QCOMPARE(step(def(), 69.0, 7), 7);
-        QCOMPARE(step(def(), 68.9, 7), 6);   // clearly below: down
-        QCOMPARE(step(def(), 50.0, 7), 3);   // a big drop goes all the way
-        QCOMPARE(step(def(), 39.5, 1), 1);
-        QCOMPARE(step(def(), 38.5, 1), 0);
-        QCOMPARE(step(def(), 20.0, 0), 0);
+        const TemperatureScale s(def(), def().defaultRange, 100);
+        const int at65 = s.step(65.0);
+        const int at70 = s.step(70.0);
+        QCOMPARE(at70, at65 + 1);
+        QCOMPARE(s.step(70.0, at65), at70);    // up at once
+        QCOMPARE(s.step(69.5, at70), at70);    // just below 70: stays
+        QCOMPARE(s.step(69.0, at70), at70);
+        QCOMPARE(s.step(68.9, at70), at65);    // clearly below: down
+        QCOMPARE(s.step(50.0, at70), s.step(50.0)); // a big drop goes all the way
+        const int at40 = s.step(40.0);
+        QCOMPARE(s.step(39.5, at40), at40);
+        QCOMPARE(s.colour(s.step(38.5, at40)), rgb(0x0000ff));
+    }
+
+    // The colours spread evenly over another range; outside it they fade.
+    void range()
+    {
+        const TemperatureScale s(def(), {35, 80}, 100); // 45 °C / 13 colours ≈ 3.46 °C each
+        QCOMPARE(s.colourAt(35.0), rgb(0x0000ff));
+        QCOMPARE(s.colourAt(38.4), rgb(0x0000ff));
+        QCOMPARE(s.colourAt(38.5), rgb(0x0050ff));
+        QCOMPARE(s.colourAt(62.0), rgb(0x50ff00)); // 7th colour from 59.2 °C
+        QCOMPARE(s.colourAt(76.6), rgb(0xff0000));
+        QCOMPARE(s.colourAt(79.9), rgb(0xff0000));
+        // Above: towards white, one step per °C, white at the top.
+        QCOMPARE(s.colourAt(80.0), (Rgb{255, 13, 13}));  // 1/20 of the way
+        QCOMPARE(s.colourAt(89.5), (Rgb{255, 128, 128})); // half
+        QCOMPARE(s.colourAt(99.0), (Rgb{255, 255, 255}));
+        QCOMPARE(s.colourAt(105.0), (Rgb{255, 255, 255}));
+        // Below: the first colour, dimmer per °C as the eye sees it, darkest at 20 °C.
+        QCOMPARE(s.colourAt(34.0), (Rgb{0, 0, 228}));
+        QCOMPARE(s.colourAt(20.0), (Rgb{0, 0, 12}));
+        QCOMPARE(s.colourAt(5.0), (Rgb{0, 0, 12}));
+        quint8 last = 0;
+        for (int t = 20; t <= 35; ++t) {
+            const quint8 b = s.colourAt(t).b;
+            QVERIFY2(b > last || t == 20, qPrintable(QString::number(t)));
+            last = b;
+        }
+        // No fade where the range reaches the end.
+        const TemperatureScale full(def(), {20, 100}, 100);
+        QCOMPARE(full.colourAt(10.0), rgb(0x0000ff));
+        QCOMPARE(full.colourAt(120.0), rgb(0xff0000));
+    }
+
+    void usableRanges_data()
+    {
+        QTest::addColumn<int>("coolest");
+        QTest::addColumn<int>("hottest");
+        QTest::addColumn<int>("top");
+        QTest::addColumn<int>("usableCoolest");
+        QTest::addColumn<int>("usableHottest");
+        QTest::newRow("fine") << 35 << 80 << 100 << 35 << 80;
+        QTest::newRow("too narrow") << 30 << 35 << 100 << 22 << 35;
+        QTest::newRow("too narrow at the bottom") << 20 << 25 << 100 << 20 << 33;
+        QTest::newRow("over the top") << 50 << 120 << 100 << 50 << 100;
+        QTest::newRow("lower top") << 50 << 100 << 90 << 50 << 90;
+        QTest::newRow("too cool") << 10 << 40 << 100 << 20 << 40;
+        QTest::newRow("upside down") << 80 << 40 << 100 << 27 << 40;
+    }
+    void usableRanges()
+    {
+        QFETCH(int, coolest);
+        QFETCH(int, hottest);
+        QFETCH(int, top);
+        QFETCH(int, usableCoolest);
+        QFETCH(int, usableHottest);
+        QCOMPARE(usableRange(def(), {coolest, hottest}, top), (TemperatureRange{usableCoolest, usableHottest}));
+        const TemperatureScale s(def(), {coolest, hottest}, top);
+        QCOMPARE(s.range(), (TemperatureRange{usableCoolest, usableHottest}));
     }
 
     void smoothing()
@@ -117,6 +180,14 @@ private Q_SLOTS:
         TemperatureSensor sensor(def(), root.path());
         QString error;
         QCOMPARE(sensor.read(&error), std::optional<double>(52.0));
+        QCOMPARE(sensor.limit(), std::nullopt); // no tempN_crit
+
+        writeFile(root.filePath(QStringLiteral("hwmon4/temp1_crit")), "105000\n");
+        writeFile(root.filePath(QStringLiteral("hwmon4/temp1_input")), "x\n");
+        QVERIFY(!sensor.read(&error)); // searched again on the next read
+        writeFile(root.filePath(QStringLiteral("hwmon4/temp1_input")), "52000\n");
+        QVERIFY(sensor.read(&error));
+        QCOMPARE(sensor.limit(), std::optional<int>(105));
 
         writeFile(root.filePath(QStringLiteral("hwmon4/temp1_input")), "garbage\n");
         QVERIFY(!sensor.read(&error));
@@ -167,6 +238,34 @@ private Q_SLOTS:
 
         t.stop();
         QVERIFY(!t.isRunning());
+    }
+
+    // A new range recolours at once, while running; the same colour sends nothing.
+    void rangeChange()
+    {
+        QTemporaryDir root;
+        writeFile(root.filePath(QStringLiteral("hwmon2/name")), "coretemp\n");
+        writeFile(root.filePath(QStringLiteral("hwmon2/temp1_label")), "Package id 0\n");
+        writeFile(root.filePath(QStringLiteral("hwmon2/temp1_input")), "60000\n");
+        writeFile(root.filePath(QStringLiteral("hwmon2/temp1_crit")), "100000\n");
+
+        CpuTemperature t(def(), nullptr, root.path());
+        QSignalSpy colours(&t, &CpuTemperature::colourChanged);
+        t.setRange({35, 100});
+        QCOMPARE(colours.size(), 0); // not running
+        t.setInterval(60000);
+        t.start();
+        QCOMPARE(colours.size(), 1);
+        QCOMPARE(t.colour(), rgb(0x00ff50)); // 61 °C
+
+        t.setRange({35, 60}); // 61 °C is above it now
+        QCOMPARE(colours.size(), 2);
+        QCOMPARE(t.colour(), (Rgb{255, 13, 13})); // 2/40 of the way to white
+        t.setRange({35, 61});
+        QCOMPARE(t.colour(), (Rgb{255, 7, 7})); // 1/39
+        t.setRange({34, 61}); // still the same step
+        QCOMPARE(colours.size(), 3);
+        QCOMPARE(t.scale().top(), 100);
     }
 
     void failingSensorReportsOnce()

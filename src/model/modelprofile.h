@@ -50,6 +50,16 @@ struct FanLayoutDef {
     QList<const char *> undetectedFans; // fan ids; empty = all detected
 };
 
+// The temperatures the colour list is spread over (whole °C): the first colour
+// from coolest, the last one up to hottest. Below it the first colour fades
+// towards dark, above it the last one towards white. One per profile, shared
+// by every LED that follows the temperature.
+struct TemperatureRange {
+    int coolest;
+    int hottest;
+    bool operator==(const TemperatureRange &) const = default;
+};
+
 // Fan LEDs that follow the CPU temperature, like Lenovo Vantage's "CPU
 // temperature" lighting – but as a mode of its own for each fan LED.
 //
@@ -66,12 +76,13 @@ struct CpuTemperatureDef {
     int averageSamples;          // readings averaged
     double maxChangePerSecond;   // °C the shown temperature may move per second
     int intervalMs;              // how often the sensor is read
-    double firstStep;            // °C at which the second colour starts
-    double stepSize;             // °C per colour
     double hysteresis;           // °C below a step's start before going back down (Glowzone's own)
     QList<quint32> colours;      // 0xRRGGBB, coolest first
+    TemperatureRange defaultRange;
+    int darkAt;                  // °C where the fade below the range is darkest (the room, roughly)
+    double darkest;              // brightness there, as seen (0–1)
+    int hottestLimit;            // °C where the fade above the range is white, if the sensor gives no limit
 };
-
 // Mode value Glowzone uses for "follows the CPU temperature". It is not a value
 // of the fan controller and is never sent to it: on the wire the LED is set
 // to static with the colour for the current temperature.

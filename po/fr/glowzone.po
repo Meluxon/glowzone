@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 21:46+0100\n"
+"POT-Creation-Date: 2026-11-16 15:12+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: French\n"
@@ -37,6 +37,11 @@ msgstr "Luminosité des ventilateurs ou de l’éclairage du boîtier (niveaux 
 #, kde-format
 msgid "Set only one LED of a double fan (positions: see below)."
 msgstr "Ne régler qu’une LED d’un ventilateur double (positions : voir ci-dessous)."
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "With cpu-temperature: the temperatures the colours are spread over, e.g. 35-80. Shared by all fans in that mode."
+msgstr "Avec cpu-temperature : la plage de températures sur laquelle les couleurs sont réparties, p. ex. 35-80. Commune à tous les ventilateurs dans ce mode."
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -84,6 +89,11 @@ msgstr "Remarque : les LED qui suivent la température du processeur ne changen
 
 #: src/cli/commands.cpp
 #, kde-format
+msgid "“%1” is not a usable range. Give two whole numbers of °C from %2 to %3, at least %4 apart, e.g. 35-80."
+msgstr "« %1 » n’est pas une plage utilisable. Indiquez deux nombres entiers de °C entre %2 et %3, écartés d’au moins %4, p. ex. 35-80."
+
+#: src/cli/commands.cpp
+#, kde-format
 msgid "Computer: %1"
 msgstr "Ordinateur : %1"
 
@@ -115,8 +125,8 @@ msgstr "non suivie – Glowzone n’est pas lancé"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "CPU temperature: %1 °C (%2)"
-msgstr "Température du processeur : %1 °C (%2)"
+msgid "CPU temperature: %1 °C, colours over %2–%3 °C (%4)"
+msgstr "Température du processeur : %1 °C, couleurs sur %2–%3 °C (%4)"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -141,8 +151,8 @@ msgstr "Détection des ventilateurs (BIOS) : %1"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "Usage: glowzone fan <fan> <mode> [-c RRGGBB] [-s speed] [-b brightness] [-l position]"
-msgstr "Utilisation : glowzone fan <ventilateur> <mode> [-c RRGGBB] [-s vitesse] [-b luminosité] [-l position]"
+msgid "Usage: glowzone fan <fan> <mode> [-c RRGGBB] [-s speed] [-b brightness] [-l position] [-r coolest-hottest]"
+msgstr "Utilisation : glowzone fan <ventilateur> <mode> [-c RRGGBB] [-s vitesse] [-b luminosité] [-l position] [-r min-max]"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -158,6 +168,11 @@ msgstr "Mode de ventilateur « %1 » inconnu. Choisissez parmi : %2"
 #, kde-format
 msgid "“%1” is not a colour. Use six hex digits, e.g. ff3d9c."
 msgstr "« %1 » n’est pas une couleur. Indiquez six chiffres hexadécimaux, par ex. ff3d9c."
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "--range only works with the mode %1."
+msgstr "--range ne fonctionne qu’avec le mode %1."
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -379,6 +394,16 @@ msgstr "Modes des ventilateurs :"
 #, kde-format
 msgid "Fan speed, brightness:"
 msgstr "Vitesse, luminosité des ventilateurs :"
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "Temperature range (--range):"
+msgstr "Plage de températures (--range) :"
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "%1 to %2 °C, at least %3 apart (default %4-%5)"
+msgstr "%1 à %2 °C, écart d’au moins %3 (par défaut %4-%5)"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -1220,6 +1245,60 @@ msgstr "Renommer…"
 msgctxt "@action:inmenu"
 msgid "Delete…"
 msgstr "Supprimer…"
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@item temperature in degrees Celsius"
+msgid "%1 °C"
+msgstr "%1 °C"
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "The colour for each CPU temperature. The marker shows the temperature now."
+msgstr "La couleur pour chaque température du processeur. Le repère indique la température actuelle."
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@title"
+msgid "Temperature colours"
+msgstr "Couleurs de température"
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@info"
+msgid "Shared by all fans in this mode."
+msgstr "Commun à tous les ventilateurs dans ce mode."
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "The first colour starts here. Cooler than this, it fades towards dark."
+msgstr "La première couleur commence ici. En dessous, elle s’assombrit progressivement."
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "The last colour is reached here. Hotter than this, it fades towards white."
+msgstr "La dernière couleur est atteinte ici. Au-delà, elle passe progressivement au blanc."
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@label colours for each CPU temperature"
+msgid "Colours:"
+msgstr "Couleurs :"
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@label:slider temperature where the colours start"
+msgid "Coolest:"
+msgstr "Minimum :"
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@label:slider temperature where the colours end"
+msgid "Hottest:"
+msgstr "Maximum :"
 
 #: src/model/modelprofile.cpp
 msgctxt "@item fan"

@@ -12,13 +12,14 @@
 namespace Glowzone
 {
 
-// A complete lighting setup: every fan LED, the link state of double fans and
-// the case lights. LEDs or lights that weren't known when it was saved are
+// A complete lighting setup: every fan LED, the link state of double fans, the
+// CPU-temperature range and the case lights. LEDs or lights that weren't known when it was saved are
 // simply absent and left alone when it is applied.
 struct Profile {
     QString name;
     FanState::Headers fans;
     QMap<QString, bool> links;          // fan id -> linked
+    std::optional<TemperatureRange> temperatureRange; // nullopt: saved before it existed, or no such mode
     QMap<quint8, EcLightState> lights;  // light index -> state
 };
 

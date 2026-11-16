@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 21:46+0100\n"
+"POT-Creation-Date: 2026-11-16 15:12+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: Japanese\n"
@@ -37,6 +37,11 @@ msgstr "ファンまたはケースライトの明るさ（レベルは下記を
 #, kde-format
 msgid "Set only one LED of a double fan (positions: see below)."
 msgstr "ダブルファンの LED を 1 つだけ設定します（位置は下記を参照）。"
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "With cpu-temperature: the temperatures the colours are spread over, e.g. 35-80. Shared by all fans in that mode."
+msgstr "cpu-temperature の場合：色を割り当てる温度範囲（例：35-80）。このモードのすべてのファンで共通です。"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -84,6 +89,11 @@ msgstr "注意：CPU 温度に連動する LED の色が変わるのは、Glowzo
 
 #: src/cli/commands.cpp
 #, kde-format
+msgid "“%1” is not a usable range. Give two whole numbers of °C from %2 to %3, at least %4 apart, e.g. 35-80."
+msgstr "「%1」は使用できる範囲ではありません。%2〜%3 °C の整数を 2 つ、%4 以上離して指定してください（例：35-80）。"
+
+#: src/cli/commands.cpp
+#, kde-format
 msgid "Computer: %1"
 msgstr "コンピューター：%1"
 
@@ -115,8 +125,8 @@ msgstr "連動していません – Glowzone が実行されていません"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "CPU temperature: %1 °C (%2)"
-msgstr "CPU 温度：%1 °C（%2）"
+msgid "CPU temperature: %1 °C, colours over %2–%3 °C (%4)"
+msgstr "CPU 温度：%1 °C、色の範囲 %2–%3 °C（%4）"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -141,8 +151,8 @@ msgstr "ファン検出（BIOS）：%1"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "Usage: glowzone fan <fan> <mode> [-c RRGGBB] [-s speed] [-b brightness] [-l position]"
-msgstr "使い方：glowzone fan <ファン> <モード> [-c RRGGBB] [-s 速度] [-b 明るさ] [-l 位置]"
+msgid "Usage: glowzone fan <fan> <mode> [-c RRGGBB] [-s speed] [-b brightness] [-l position] [-r coolest-hottest]"
+msgstr "使い方：glowzone fan <ファン> <モード> [-c RRGGBB] [-s 速度] [-b 明るさ] [-l 位置] [-r 最低-最高]"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -158,6 +168,11 @@ msgstr "不明なファンモード「%1」です。次から選んでくださ�
 #, kde-format
 msgid "“%1” is not a colour. Use six hex digits, e.g. ff3d9c."
 msgstr "「%1」は色ではありません。ff3d9c のように 16 進数 6 桁で指定してください。"
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "--range only works with the mode %1."
+msgstr "--range はモード %1 でのみ使用できます。"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -379,6 +394,16 @@ msgstr "ファンモード："
 #, kde-format
 msgid "Fan speed, brightness:"
 msgstr "ファンの速度・明るさ："
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "Temperature range (--range):"
+msgstr "温度範囲（--range）："
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "%1 to %2 °C, at least %3 apart (default %4-%5)"
+msgstr "%1〜%2 °C、幅は %3 以上（既定値 %4-%5）"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -1220,6 +1245,60 @@ msgstr "名前を変更…"
 msgctxt "@action:inmenu"
 msgid "Delete…"
 msgstr "削除…"
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@item temperature in degrees Celsius"
+msgid "%1 °C"
+msgstr "%1 °C"
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "The colour for each CPU temperature. The marker shows the temperature now."
+msgstr "CPU 温度ごとの色です。マーカーは現在の温度を示します。"
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@title"
+msgid "Temperature colours"
+msgstr "温度の色"
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@info"
+msgid "Shared by all fans in this mode."
+msgstr "このモードのすべてのファンで共通です。"
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "The first colour starts here. Cooler than this, it fades towards dark."
+msgstr "ここから最初の色が始まります。これより低いと、徐々に暗くなります。"
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "The last colour is reached here. Hotter than this, it fades towards white."
+msgstr "ここで最後の色に達します。これより高いと、徐々に白に近づきます。"
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@label colours for each CPU temperature"
+msgid "Colours:"
+msgstr "色："
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@label:slider temperature where the colours start"
+msgid "Coolest:"
+msgstr "最低："
+
+#: src/gui/temperaturerange.cpp
+#, kde-format
+msgctxt "@label:slider temperature where the colours end"
+msgid "Hottest:"
+msgstr "最高："
 
 #: src/model/modelprofile.cpp
 msgctxt "@item fan"

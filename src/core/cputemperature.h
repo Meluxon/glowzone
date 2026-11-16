@@ -27,6 +27,9 @@ public:
     // °C, or nullopt with a translated error. The sensor is looked up again
     // after a failure (hwmon numbers can change when a driver reloads).
     std::optional<double> read(QString *error);
+    // The sensor's critical temperature (tempN_crit: the CPU's Tjmax), once
+    // found; nullopt if it gives none.
+    std::optional<int> limit() const { return m_limit; }
 
 private:
     bool find(QString *error);
@@ -34,6 +37,7 @@ private:
     const CpuTemperatureDef &m_def;
     QString m_root;
     QString m_input; // .../tempN_input
+    std::optional<int> m_limit;
 };
 
 // The EC's smoothing, imitated: the average of the last readings plus the
@@ -53,14 +57,43 @@ private:
     std::optional<double> m_value;
 };
 
-namespace TemperatureColours
+// The fewest °C a range may span: one per colour.
+int minimumRangeWidth(const CpuTemperatureDef &def);
+// The range as it can be used: between darkAt and the top, and at least
+// minimumRangeWidth() wide. Moves hottest first, then coolest.
+TemperatureRange usableRange(const CpuTemperatureDef &def, TemperatureRange range, int top);
+
+// The colour for every temperature, for one range. Steps, coolest first:
+// - below the range, one per °C: the first colour fading out, darkest at darkAt
+//   (perceived brightness, so the fade looks even)
+// - the colour list, spread evenly over the range
+// - above the range, one per °C: the last colour fading to white at the top
+//   (the CPU's critical temperature)
+class TemperatureScale
 {
-// The colour step for a temperature. Going down needs the temperature to drop
-// the hysteresis below the current step's start, so a reading wobbling on a
-// boundary doesn't make the fans flicker.
-int step(const CpuTemperatureDef &def, double celsius, std::optional<int> current = std::nullopt);
-Ite8297::Rgb colour(const CpuTemperatureDef &def, int step);
-} // namespace TemperatureColours
+public:
+    TemperatureScale(const CpuTemperatureDef &def, TemperatureRange range, int top);
+
+    TemperatureRange range() const { return m_range; } // usable, see usableRange()
+    int top() const { return m_top; }
+    int stepCount() const { return int(m_colours.size()); }
+
+    // Going down needs the temperature to drop the hysteresis below the current
+    // step's start, so a reading wobbling on a boundary doesn't make the fans
+    // flicker.
+    int step(double celsius, std::optional<int> current = std::nullopt) const;
+    Ite8297::Rgb colour(int step) const;
+    Ite8297::Rgb colourAt(double celsius) const { return colour(step(celsius)); }
+
+private:
+    int plainStep(double celsius) const;
+
+    double m_hysteresis;
+    TemperatureRange m_range;
+    int m_top;
+    QList<double> m_starts; // where each step starts (the first: everything below)
+    QList<Ite8297::Rgb> m_colours;
+};
 
 // Reads the sensor periodically while running and reports the colour for the
 // smoothed temperature. Only runs while something needs it.
@@ -78,30 +111,44 @@ public:
 
     // The smoothed temperature (nullopt before the first good reading).
     std::optional<double> temperature() const { return m_temperature; }
-    // The colour for it; the coolest colour while nothing could be read.
+    // The colour for it; the first colour while nothing could be read.
     Ite8297::Rgb colour() const;
+
+    // The range the colours are spread over; a change takes effect at once
+    // (colourChanged() if the colour is now another).
+    void setRange(TemperatureRange range);
+    const TemperatureScale &scale() const { return m_scale; }
 
 Q_SIGNALS:
     void updated();                                    // after every reading (good or not)
-    void colourChanged(Glowzone::Ite8297::Rgb colour); // the step changed
+    void colourChanged(Glowzone::Ite8297::Rgb colour); // the colour changed
     void failed(const QString &error);                 // a reading failed (after it worked, or the first time)
     void recovered();                                  // reading works again
 
 private:
     void read();
+    void report();
 
     const CpuTemperatureDef &m_def;
     TemperatureSensor m_sensor;
     TemperatureSmoother m_smoother;
+    TemperatureRange m_range; // as asked for; the scale holds the usable one
+    TemperatureScale m_scale;
     QTimer m_timer;
     qint64 m_lastReadingMs = -1; // boot time of the last good reading
     std::optional<double> m_temperature;
     std::optional<int> m_step;
+    std::optional<Ite8297::Rgb> m_reported; // the colour colourChanged() gave last
     bool m_failing = false;
 };
 
-// One unsmoothed reading plus the offset, for the command line. nullopt with a
-// translated error if it can't be read.
-std::optional<double> cpuTemperatureNow(const CpuTemperatureDef &def, QString *error);
+// One unsmoothed reading plus the offset, for the command line, and the
+// sensor's limit (the model's if it gives none). nullopt with a translated
+// error if it can't be read.
+struct CpuTemperatureReading {
+    double celsius;
+    int top;
+};
+std::optional<CpuTemperatureReading> cpuTemperatureNow(const CpuTemperatureDef &def, QString *error);
 
 } // namespace Glowzone

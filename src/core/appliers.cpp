@@ -61,6 +61,13 @@ void FanApplier::setCurrent(const FanState::Headers &headers)
     updateTemperatureReading();
 }
 
+void FanApplier::setTemperatureRange(TemperatureRange range)
+{
+    if (m_temperature) {
+        m_temperature->setRange(range); // colourChanged() -> sendFollowers()
+    }
+}
+
 void FanApplier::follow(const QList<Ite8297::HeaderSetting> &settings)
 {
     for (const Ite8297::HeaderSetting &s : settings) {

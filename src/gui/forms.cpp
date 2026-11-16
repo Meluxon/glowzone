@@ -144,6 +144,16 @@ void LedForm::emitEdited()
     }
 }
 
+QLabel *sectionHeading(const QString &text, QWidget *parent)
+{
+    auto *l = new QLabel(text, parent);
+    QFont f = l->font();
+    f.setBold(true);
+    l->setFont(f);
+    l->setContentsMargins(0, l->fontMetrics().height() / 2, 0, 0);
+    return l;
+}
+
 QWidget *centredForm(QFormLayout **form, QWidget *parent)
 {
     auto *page = new QWidget(parent);

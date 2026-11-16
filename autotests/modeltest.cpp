@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Meluxon
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "core/cputemperature.h"
 #include "core/eclights.h"
 #include "core/ite8297.h"
 #include "model/modelprofile.h"
@@ -76,8 +77,12 @@ private Q_SLOTS:
                 const CpuTemperatureDef &t = *m.cpuTemperature;
                 QVERIFY2(t.hwmonName && *t.hwmonName && t.sensorLabel && *t.sensorLabel, name.constData());
                 QVERIFY2(t.averageSamples >= 1 && t.maxChangePerSecond > 0 && t.intervalMs >= 500, name.constData());
-                QVERIFY2(t.stepSize > 0 && t.hysteresis >= 0 && t.hysteresis < t.stepSize, name.constData());
+                // A few °C at most: with 1 °C steps (the fades, the narrowest range) the colour
+                // going down trails by that much.
+                QVERIFY2(t.hysteresis >= 0 && t.hysteresis <= 2.0, name.constData());
                 QVERIFY2(t.colours.size() >= 2, name.constData());
+                QVERIFY2(t.darkest > 0 && t.darkest <= 1 && t.darkAt > 0, name.constData());
+                QVERIFY2(usableRange(t, t.defaultRange, t.hottestLimit) == t.defaultRange, name.constData());
             }
             QVERIFY2(m.fanLevels >= Ite8297::MinLevel, name.constData());
             for (const FanDef &f : m.fans) {

@@ -60,6 +60,8 @@ const QList<ModelProfile> &supportedModels()
             // reddest colours (85, 90, ≥ 95 °C) continue the same hue steps; the
             // test machine never got that hot. The EC value is the package
             // temperature plus 0–1 °C, moving at about 4 °C/s.
+            // The default range gives exactly Vantage's steps: 13 colours over
+            // 35–100 °C are 5 °C each, the second one starting at 40 °C.
             .cpuTemperature = CpuTemperatureDef{
                 .hwmonName = "coretemp",
                 .sensorLabel = "Package id 0",
@@ -67,11 +69,13 @@ const QList<ModelProfile> &supportedModels()
                 .averageSamples = 3,
                 .maxChangePerSecond = 4.0,
                 .intervalMs = 2000,
-                .firstStep = 40.0,
-                .stepSize = 5.0,
                 .hysteresis = 1.0,
                 .colours = {0x0000ff, 0x0050ff, 0x00a0ff, 0x00ffff, 0x00ffa0, 0x00ff50, 0x00ff00,
                             0x50ff00, 0xa0ff00, 0xffff00, 0xffa000, 0xff5000, 0xff0000},
+                .defaultRange = {35, 100},
+                .darkAt = 20,
+                .darkest = 0.25,
+                .hottestLimit = 100, // Tjmax of the CPUs this model ships with
             },
         },
     };

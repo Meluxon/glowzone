@@ -73,6 +73,14 @@ const QCommandLineOption &ledOption()
     return o;
 }
 
+const QCommandLineOption &rangeOption()
+{
+    static const QCommandLineOption o({QStringLiteral("r"), QStringLiteral("range")},
+                                      i18n("With cpu-temperature: the temperatures the colours are spread over, e.g. 35-80. Shared by all fans in that mode."),
+                                      QStringLiteral("coolest-hottest"));
+    return o;
+}
+
 const QCommandLineOption &purgeOption()
 {
     static const QCommandLineOption o(QStringLiteral("purge-user-data"),
@@ -153,11 +161,12 @@ QList<HeaderSetting> resolveForNow(const ModelProfile &model, const QList<Header
     }
     const CpuTemperatureDef &def = *model.cpuTemperature;
     QString error;
-    const auto celsius = cpuTemperatureNow(def, &error);
-    if (!celsius) {
-        err() << error << Qt::endl; // the coolest colour, then
+    const auto now = cpuTemperatureNow(def, &error);
+    if (!now) {
+        err() << error << Qt::endl; // the first colour, then
     }
-    const Rgb colour = TemperatureColours::colour(def, celsius ? TemperatureColours::step(def, *celsius) : 0);
+    const Rgb colour = now ? TemperatureScale(def, Settings::temperatureRange(def), now->top).colourAt(now->celsius)
+                           : TemperatureScale(def, def.defaultRange, def.hottestLimit).colour(0);
     QList<HeaderSetting> resolved;
     for (const HeaderSetting &s : settings) {
         resolved << resolve(s, colour);
@@ -167,6 +176,26 @@ QList<HeaderSetting> resolveForNow(const ModelProfile &model, const QList<Header
               << Qt::endl;
     }
     return resolved;
+}
+
+// "35-80" (or with an en dash), within the model's limits.
+std::optional<TemperatureRange> parseRange(const CpuTemperatureDef &def, const QString &text, int *exitCode)
+{
+    QString ignored;
+    const int top = [&] {
+        const auto now = cpuTemperatureNow(def, &ignored);
+        return now ? now->top : def.hottestLimit;
+    }();
+    const QStringList parts = QString(text).replace(QChar(0x2013), QLatin1Char('-')).split(QLatin1Char('-'));
+    bool okCoolest = false;
+    bool okHottest = false;
+    const TemperatureRange range{parts.value(0).trimmed().toInt(&okCoolest), parts.value(1).trimmed().toInt(&okHottest)};
+    if (parts.size() != 2 || !okCoolest || !okHottest || usableRange(def, range, top) != range) {
+        *exitCode = usageError(i18n("“%1” is not a usable range. Give two whole numbers of °C from %2 to %3, at least %4 apart, e.g. 35-80.",
+                                    text, def.darkAt, top, minimumRangeWidth(def)));
+        return std::nullopt;
+    }
+    return range;
 }
 
 int nameWidth(const ModelProfile &model)
@@ -225,10 +254,14 @@ int cmdStatus(const ModelProfile &model)
     }
     if (model.cpuTemperature && anyFollowsTemperature(saved)) {
         QString error;
-        if (const auto celsius = cpuTemperatureNow(*model.cpuTemperature, &error)) {
+        const CpuTemperatureDef &def = *model.cpuTemperature;
+        if (const auto now = cpuTemperatureNow(def, &error)) {
+            const TemperatureRange range = usableRange(def, Settings::temperatureRange(def), now->top);
             out() << QLatin1String("  ")
-                  << i18n("CPU temperature: %1 °C (%2)",
-                          QString::number(*celsius, 'f', 0),
+                  << i18n("CPU temperature: %1 °C, colours over %2–%3 °C (%4)",
+                          QString::number(now->celsius, 'f', 0),
+                          range.coolest,
+                          range.hottest,
                           Instance::isRunning() ? i18n("the colours follow it") : i18n("not followed – Glowzone isn’t running"))
                   << Qt::endl;
         } else {
@@ -258,7 +291,7 @@ int cmdStatus(const ModelProfile &model)
 int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLineParser &p)
 {
     if (args.size() != 2) {
-        return usageError(i18n("Usage: glowzone fan <fan> <mode> [-c RRGGBB] [-s speed] [-b brightness] [-l position]"));
+        return usageError(i18n("Usage: glowzone fan <fan> <mode> [-c RRGGBB] [-s speed] [-b brightness] [-l position] [-r coolest-hottest]"));
     }
 
     QList<const FanDef *> fans;
@@ -288,6 +321,17 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
         colour = parseRgb(p.value(colourOption()));
         if (!colour) {
             return usageError(i18n("“%1” is not a colour. Use six hex digits, e.g. ff3d9c.", p.value(colourOption())));
+        }
+    }
+
+    std::optional<TemperatureRange> range;
+    if (p.isSet(rangeOption())) {
+        if (!followsTemperature(mode->mode)) {
+            return usageError(i18n("--range only works with the mode %1.", QLatin1String(modeInfo(Mode::CpuTemperature)->id)));
+        }
+        range = parseRange(*model.cpuTemperature, p.value(rangeOption()), &exitCode);
+        if (!range) {
+            return exitCode;
         }
     }
 
@@ -336,6 +380,9 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
         }
     }
 
+    if (range) {
+        Settings::setTemperatureRange(*range); // before the colour is chosen
+    }
     FanController controller(model);
     QString error;
     if (!controller.apply(resolveForNow(model, settings), &error)) {
@@ -484,6 +531,9 @@ int cmdProfileApply(const ModelProfile &model, const QString &name)
     int exitCode = ExitOk;
     QString error;
 
+    if (profile->temperatureRange) {
+        Settings::setTemperatureRange(*profile->temperatureRange); // before the colour is chosen
+    }
     if (!profile->fans.isEmpty()) {
         FanController controller(model);
         const QList<HeaderSetting> settings = profile->fans.values();
@@ -539,6 +589,9 @@ int cmdProfileSave(const ModelProfile &model, const QString &rawName)
         if (fan.isDouble()) {
             p.links.insert(QLatin1String(fan.id), Settings::linked(QLatin1String(fan.id)).value_or(FanState::defaultLinked(fan, saved)));
         }
+    }
+    if (model.cpuTemperature) {
+        p.temperatureRange = Settings::temperatureRange(*model.cpuTemperature);
     }
     if (p.fans.isEmpty()) {
         err() << i18n("Note: Glowzone hasn’t set any fan yet, so the profile contains no fan settings.") << Qt::endl;
@@ -732,6 +785,11 @@ static QString helpText()
         const QString range = QStringLiteral("%1–%2");
         values << Row{i18n("Fan modes:"), idList(modesFor(*model))};
         values << Row{i18n("Fan speed, brightness:"), range.arg(MinLevel).arg(model->fanLevels)};
+        if (const auto &t = model->cpuTemperature) {
+            values << Row{i18n("Temperature range (--range):"),
+                          i18n("%1 to %2 °C, at least %3 apart (default %4-%5)", t->darkAt, t->hottestLimit, minimumRangeWidth(*t),
+                               t->defaultRange.coolest, t->defaultRange.hottest)};
+        }
         if (!model->ecLights.isEmpty()) {
             values << Row{i18n("Lights:"), QLatin1String("all, ") + idList(model->ecLights)};
             values << Row{i18n("Light modes:"), idList(EcLights::modesFor(*model))};
@@ -750,7 +808,7 @@ static QString helpText()
 void addOptions(QCommandLineParser &parser)
 {
     parser.setApplicationDescription(helpText());
-    parser.addOptions({colourOption(), speedOption(), brightnessOption(), ledOption(), purgeOption()});
+    parser.addOptions({colourOption(), speedOption(), brightnessOption(), ledOption(), rangeOption(), purgeOption()});
     parser.addPositionalArgument(QStringLiteral("command"), i18n("status, fan, light, reset or profile"), QStringLiteral("<command>"));
     parser.addPositionalArgument(QStringLiteral("arguments"), i18n("Arguments of the command"), QStringLiteral("[arguments...]"));
 }

@@ -27,8 +27,16 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
     , m_fanApplier(new FanApplier(model, this))
     , m_lightApplier(new LightApplier(*m_helper, this))
 {
+    loadTemperatureRange();
     loadFans();
     m_currentProfile = Settings::currentProfile();
+    m_rangeSave.setSingleShot(true);
+    m_rangeSave.setInterval(500);
+    connect(&m_rangeSave, &QTimer::timeout, this, [this] {
+        if (m_temperatureRange) {
+            Settings::setTemperatureRange(*m_temperatureRange);
+        }
+    });
 
     // The command line may change things while Glowzone runs – maybe only in
     // the tray, with LEDs following the CPU temperature: the fan state, the
@@ -152,6 +160,31 @@ Ite8297::Rgb Lighting::cpuTemperatureColour() const
     return t ? t->colour() : Ite8297::Rgb{};
 }
 
+const TemperatureScale *Lighting::temperatureScale() const
+{
+    const CpuTemperature *t = m_fanApplier->temperature();
+    return t ? &t->scale() : nullptr;
+}
+
+void Lighting::setTemperatureRange(TemperatureRange range)
+{
+    if (!m_temperatureRange || *m_temperatureRange == range) {
+        return;
+    }
+    m_temperatureRange = range;
+    m_fanApplier->setTemperatureRange(range);
+    m_rangeSave.start();
+    Q_EMIT changed();
+}
+
+void Lighting::loadTemperatureRange()
+{
+    if (m_model.cpuTemperature) {
+        m_temperatureRange = Settings::temperatureRange(*m_model.cpuTemperature);
+        m_fanApplier->setTemperatureRange(*m_temperatureRange);
+    }
+}
+
 // Something in the state directory changed – the command line, most likely.
 // Our own saves land here as well; they read back what we already show.
 void Lighting::reloadSaved()
@@ -176,9 +209,13 @@ void Lighting::reloadSaved()
     }
     const FanState::Headers before = m_fans;
     const QMap<QString, bool> linksBefore = m_links;
+    const auto rangeBefore = m_temperatureRange;
+    if (!m_rangeSave.isActive()) { // otherwise ours is newer
+        loadTemperatureRange();
+    }
     loadFans(); // also the split choices, from the settings
     Q_EMIT savedChanged();
-    if (m_fans != before || m_links != linksBefore) {
+    if (m_fans != before || m_links != linksBefore || m_temperatureRange != rangeBefore) {
         Q_EMIT changed();
     }
 }
@@ -257,6 +294,7 @@ Profile Lighting::current() const
     Profile p;
     p.fans = m_fans;
     p.links = m_links;
+    p.temperatureRange = m_temperatureRange;
     if (m_lightsLoaded) {
         p.lights = m_lights;
     }
@@ -277,6 +315,13 @@ bool Lighting::matches(const Profile &profile) const
             return false;
         }
     }
+    if (profile.temperatureRange && m_temperatureRange) {
+        const TemperatureScale *scale = temperatureScale(); // compared as used: out-of-range values count as their limit
+        const CpuTemperatureDef &def = *m_model.cpuTemperature;
+        if (usableRange(def, *profile.temperatureRange, scale->top()) != usableRange(def, *m_temperatureRange, scale->top())) {
+            return false;
+        }
+    }
     if (m_lightsLoaded && !m_lightsStale) { // otherwise unknown: they don't count
         for (const EcLightState &l : profile.lights) {
             if (m_lights.value(l.index) != l) {
@@ -289,6 +334,12 @@ bool Lighting::matches(const Profile &profile) const
 
 void Lighting::apply(const Profile &profile)
 {
+    if (profile.temperatureRange && m_temperatureRange) { // first: the fans below get its colour
+        m_temperatureRange = profile.temperatureRange;
+        m_fanApplier->setTemperatureRange(*m_temperatureRange);
+        m_rangeSave.stop();
+        Settings::setTemperatureRange(*m_temperatureRange);
+    }
     for (const HeaderSetting &s : profile.fans) {
         m_fans.insert(s.header, s);
     }
@@ -388,6 +439,10 @@ void Lighting::clearError(int source)
 
 void Lighting::finish()
 {
+    if (m_rangeSave.isActive()) {
+        m_rangeSave.stop();
+        Settings::setTemperatureRange(*m_temperatureRange);
+    }
     m_fanApplier->flushNow();
     m_lightApplier->finish();
 }

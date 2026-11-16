@@ -46,6 +46,9 @@ public:
     bool followsTemperature() const { return !m_followers.isEmpty(); }
     // nullptr if the model doesn't offer the mode.
     const CpuTemperature *temperature() const { return m_temperature; }
+    // The range the colours are spread over; following LEDs get a new colour
+    // at once if it changes theirs.
+    void setTemperatureRange(TemperatureRange range);
     void setTemperatureInterval(int ms) { m_temperature->setInterval(ms); } // for tests
 
 Q_SIGNALS:
