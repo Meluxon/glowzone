@@ -20,6 +20,11 @@ using namespace Ite8297;
 
 enum ErrorSource { FanErrors = 1, LightErrors = 2 };
 
+// Dragging a range slider: the setting is written once it stops for this long.
+static constexpr int RangeSaveDelayMs = 500;
+// A command writes several files: read them once it is done.
+static constexpr int SavedReloadDelayMs = 300;
+
 Lighting::Lighting(const ModelProfile &model, QObject *parent)
     : QObject(parent)
     , m_model(model)
@@ -31,12 +36,8 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
     loadFans();
     m_currentProfile = Settings::currentProfile();
     m_rangeSave.setSingleShot(true);
-    m_rangeSave.setInterval(500);
-    connect(&m_rangeSave, &QTimer::timeout, this, [this] {
-        if (m_temperatureRange) {
-            Settings::setTemperatureRange(*m_temperatureRange);
-        }
-    });
+    m_rangeSave.setInterval(RangeSaveDelayMs);
+    connect(&m_rangeSave, &QTimer::timeout, this, &Lighting::saveTemperatureRange);
 
     // The command line may change things while Glowzone runs – maybe only in
     // the tray, with LEDs following the CPU temperature: the fan state, the
@@ -44,7 +45,7 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
     // read again when they change. Files are replaced, not written in place, so
     // the directories are watched.
     m_savedReload.setSingleShot(true);
-    m_savedReload.setInterval(300); // a command writes several files
+    m_savedReload.setInterval(SavedReloadDelayMs);
     connect(&m_savedReload, &QTimer::timeout, this, &Lighting::reloadSaved);
     const QString stateDir = QFileInfo(FanState::filePath()).absolutePath();
     QStringList dirs{stateDir, QFileInfo(Settings::filePath()).absolutePath(), Profiles::directory()};
@@ -185,6 +186,14 @@ void Lighting::loadTemperatureRange()
     }
 }
 
+void Lighting::saveTemperatureRange()
+{
+    m_rangeSave.stop();
+    if (m_temperatureRange) {
+        Settings::setTemperatureRange(*m_temperatureRange);
+    }
+}
+
 // Something in the state directory changed – the command line, most likely.
 // Our own saves land here as well; they read back what we already show.
 void Lighting::reloadSaved()
@@ -315,10 +324,10 @@ bool Lighting::matches(const Profile &profile) const
             return false;
         }
     }
-    if (profile.temperatureRange && m_temperatureRange) {
-        const TemperatureScale *scale = temperatureScale(); // compared as used: out-of-range values count as their limit
-        const CpuTemperatureDef &def = *m_model.cpuTemperature;
-        if (usableRange(def, *profile.temperatureRange, scale->top()) != usableRange(def, *m_temperatureRange, scale->top())) {
+    // Compared as used: values past a limit count as the limit.
+    const TemperatureScale *scale = temperatureScale();
+    if (const auto &def = m_model.cpuTemperature; def && scale && profile.temperatureRange && m_temperatureRange) {
+        if (usableRange(*def, *profile.temperatureRange, scale->top()) != usableRange(*def, *m_temperatureRange, scale->top())) {
             return false;
         }
     }
@@ -336,9 +345,8 @@ void Lighting::apply(const Profile &profile)
 {
     if (profile.temperatureRange && m_temperatureRange) { // first: the fans below get its colour
         m_temperatureRange = profile.temperatureRange;
-        m_fanApplier->setTemperatureRange(*m_temperatureRange);
-        m_rangeSave.stop();
-        Settings::setTemperatureRange(*m_temperatureRange);
+        m_fanApplier->setTemperatureRange(*profile.temperatureRange);
+        saveTemperatureRange();
     }
     for (const HeaderSetting &s : profile.fans) {
         m_fans.insert(s.header, s);
@@ -440,8 +448,7 @@ void Lighting::clearError(int source)
 void Lighting::finish()
 {
     if (m_rangeSave.isActive()) {
-        m_rangeSave.stop();
-        Settings::setTemperatureRange(*m_temperatureRange);
+        saveTemperatureRange();
     }
     m_fanApplier->flushNow();
     m_lightApplier->finish();

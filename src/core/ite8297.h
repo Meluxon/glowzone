@@ -73,6 +73,7 @@ struct Rgb {
 
 // "#rrggbb" or "rrggbb"
 std::optional<Rgb> parseRgb(const QString &text);
+Rgb rgbFromValue(quint32 rrggbb); // 0xRRGGBB
 QString rgbToString(Rgb c); // "#rrggbb"
 
 struct HeaderSetting {

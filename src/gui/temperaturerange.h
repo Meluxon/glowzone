@@ -52,7 +52,6 @@ private:
     double xFor(double celsius) const;
     int stripTop() const;
     int stripHeight() const;
-    int bracketHeight() const;
 
     const QSlider *m_alignWith;
     const TemperatureScale *m_scale = nullptr;

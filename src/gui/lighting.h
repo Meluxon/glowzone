@@ -117,6 +117,7 @@ private:
     void checkFanLayout();
     void loadFans();
     void loadTemperatureRange();
+    void saveTemperatureRange(); // now, instead of when m_rangeSave runs out
     void reloadSaved();
     void setProblem(QString &problem, const QString &text);
     void setError(const QString &text, int source);
@@ -126,7 +127,7 @@ private:
     FanState::Headers m_fans;
     QMap<QString, bool> m_links;
     std::optional<TemperatureRange> m_temperatureRange; // as stored (nullopt: no such mode)
-    QTimer m_rangeSave; // dragging a slider: written once it stops
+    QTimer m_rangeSave;
     QMap<quint8, EcLightState> m_lights;
     QString m_currentProfile;
     bool m_fansAvailable = true; // until opening the controller fails

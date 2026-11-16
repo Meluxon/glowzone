@@ -163,10 +163,10 @@ QList<HeaderSetting> resolveForNow(const ModelProfile &model, const QList<Header
     QString error;
     const auto now = cpuTemperatureNow(def, &error);
     if (!now) {
-        err() << error << Qt::endl; // the first colour, then
+        err() << error << Qt::endl;
     }
     const Rgb colour = now ? TemperatureScale(def, Settings::temperatureRange(def), now->top).colourAt(now->celsius)
-                           : TemperatureScale(def, def.defaultRange, def.hottestLimit).colour(0);
+                           : unknownTemperatureColour(def);
     QList<HeaderSetting> resolved;
     for (const HeaderSetting &s : settings) {
         resolved << resolve(s, colour);
@@ -186,7 +186,8 @@ std::optional<TemperatureRange> parseRange(const CpuTemperatureDef &def, const Q
         const auto now = cpuTemperatureNow(def, &ignored);
         return now ? now->top : def.hottestLimit;
     }();
-    const QStringList parts = QString(text).replace(QChar(0x2013), QLatin1Char('-')).split(QLatin1Char('-'));
+    static constexpr QChar EnDash(0x2013);
+    const QStringList parts = QString(text).replace(EnDash, QLatin1Char('-')).split(QLatin1Char('-'));
     bool okCoolest = false;
     bool okHottest = false;
     const TemperatureRange range{parts.value(0).trimmed().toInt(&okCoolest), parts.value(1).trimmed().toInt(&okHottest)};
@@ -326,7 +327,7 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
 
     std::optional<TemperatureRange> range;
     if (p.isSet(rangeOption())) {
-        if (!followsTemperature(mode->mode)) {
+        if (!followsTemperature(mode->mode) || !model.cpuTemperature) {
             return usageError(i18n("--range only works with the mode %1.", QLatin1String(modeInfo(Mode::CpuTemperature)->id)));
         }
         range = parseRange(*model.cpuTemperature, p.value(rangeOption()), &exitCode);

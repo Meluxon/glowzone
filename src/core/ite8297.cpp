@@ -72,8 +72,14 @@ std::optional<Rgb> parseRgb(const QString &text)
     if (t.size() != 6 || !hex) {
         return std::nullopt;
     }
-    const uint v = t.toUInt(nullptr, 16);
-    return Rgb{quint8(v >> 16), quint8(v >> 8), quint8(v)};
+    return rgbFromValue(t.toUInt(nullptr, 16));
+}
+
+Rgb rgbFromValue(quint32 rrggbb)
+{
+    constexpr int RedShift = 16;
+    constexpr int GreenShift = 8;
+    return Rgb{quint8(rrggbb >> RedShift), quint8(rrggbb >> GreenShift), quint8(rrggbb)};
 }
 
 QString rgbToString(Rgb c)

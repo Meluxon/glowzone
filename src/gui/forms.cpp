@@ -17,6 +17,21 @@ namespace Glowzone::Gui
 
 using namespace Ite8297;
 
+static constexpr double SmallFontScale = 0.9;
+static constexpr int SliderWidthInChars = 28;
+
+QFont smallFont(const QWidget *widget)
+{
+    QFont f = widget->font();
+    f.setPointSizeF(f.pointSizeF() * SmallFontScale);
+    return f;
+}
+
+int sliderWidth(const QWidget *widget)
+{
+    return widget->fontMetrics().averageCharWidth() * SliderWidthInChars;
+}
+
 LevelSlider::LevelSlider(int min, int max, const QString &minText, const QString &maxText, QWidget *parent)
     : QWidget(parent)
     , m_slider(new QSlider(Qt::Horizontal, this))
@@ -34,15 +49,13 @@ LevelSlider::LevelSlider(int min, int max, const QString &minText, const QString
     auto *minLabel = new QLabel(minText, this);
     auto *maxLabel = new QLabel(maxText, this);
     for (QLabel *l : {minLabel, maxLabel}) {
-        QFont f = l->font();
-        f.setPointSizeF(f.pointSizeF() * 0.9);
-        l->setFont(f);
+        l->setFont(smallFont(l));
     }
     ends->addWidget(minLabel);
     ends->addStretch();
     ends->addWidget(maxLabel);
     layout->addLayout(ends);
-    setFixedWidth(fontMetrics().averageCharWidth() * 28);
+    setFixedWidth(sliderWidth(this));
 }
 
 LedForm::LedForm(const ModelProfile &model, QFormLayout *form, QWidget *parent)

@@ -8,8 +8,8 @@
 #include <KLocalizedString>
 #include <KStandardGuiItem>
 #include <QFormLayout>
-#include <QImage>
 #include <QHBoxLayout>
+#include <QImage>
 #include <QLabel>
 #include <QPainter>
 #include <QPainterPath>
@@ -21,16 +21,28 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 
 namespace Glowzone::Gui
 {
 
-static QFont smallFont(const QWidget *w)
-{
-    QFont f = w->font();
-    f.setPointSizeF(f.pointSizeF() * 0.9); // like the words under a LevelSlider
-    return f;
-}
+// The strip, top to bottom: the marker's tip, the colours, the range bracket,
+// the °C labels.
+static constexpr int MarkerHeight = 7;
+static constexpr double MarkerHalfWidth = 4.5;
+static constexpr int BracketHeight = 6;
+static constexpr int MinStripHeight = 10;
+static constexpr double StripHeightPerLine = 0.75; // of the text's line height
+static constexpr double BracketPenWidth = 1.5;
+static constexpr double MarkerLineWidth = 2;
+static constexpr double MarkerHaloWidth = 4; // the line plus 1 px on each side
+static constexpr double StripCornerRadius = 3;
+static constexpr double FrameOpacity = 0.25;
+static constexpr int LabelEvery = 20; // °C
+
+// The sliders. Room for the widest value next to them: three digits.
+static constexpr int WidestValue = 888;
+static constexpr int SliderPageStep = 5; // °C per Page Up/Down
 
 static QString celsiusText(int celsius)
 {
@@ -62,23 +74,18 @@ void TemperatureStrip::setTemperature(std::optional<double> celsius)
 
 int TemperatureStrip::stripTop() const
 {
-    return 7; // room for the marker's tip
+    return MarkerHeight;
 }
 
 int TemperatureStrip::stripHeight() const
 {
-    return std::max(10, fontMetrics().height() * 3 / 4);
-}
-
-int TemperatureStrip::bracketHeight() const
-{
-    return 6;
+    return std::max(MinStripHeight, int(fontMetrics().height() * StripHeightPerLine));
 }
 
 QSize TemperatureStrip::sizeHint() const
 {
     const QFontMetrics small(smallFont(this));
-    return {m_alignWith->width(), stripTop() + stripHeight() + bracketHeight() + small.height()};
+    return {m_alignWith->width(), stripTop() + stripHeight() + BracketHeight + small.height()};
 }
 
 // Where a slider of the same width has its groove, and its handle's centre at
@@ -127,13 +134,13 @@ void TemperatureStrip::paintEvent(QPaintEvent *)
         colours.setPixel(i, 0, qRgb(c.r, c.g, c.b));
     }
     QPainterPath shape;
-    shape.addRoundedRect(strip, 3, 3);
+    shape.addRoundedRect(strip, StripCornerRadius, StripCornerRadius);
     p.save();
     p.setClipPath(shape);
     p.drawImage(strip, colours);
     p.restore();
     QColor frame = palette().color(QPalette::WindowText);
-    frame.setAlphaF(0.25);
+    frame.setAlphaF(FrameOpacity);
     p.setPen(QPen(frame, 1));
     p.setBrush(Qt::NoBrush);
     p.drawPath(shape);
@@ -144,17 +151,18 @@ void TemperatureStrip::paintEvent(QPaintEvent *)
     const double from = std::round(xFor(m_scale->range().coolest)) + 0.5;
     const double to = std::round(xFor(m_scale->range().hottest)) - 0.5;
     const double top = strip.bottom() + 1;
-    const double bottom = strip.bottom() + bracketHeight() - 2;
-    p.setPen(QPen(accent, 1.5, Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin));
+    const double bottom = strip.bottom() + BracketHeight - 2; // 1 px apart from the labels
+    p.setPen(QPen(accent, BracketPenWidth, Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin));
     const QPointF bracket[] = {{from, top}, {from, bottom}, {to, bottom}, {to, top}};
-    p.drawPolyline(bracket, 4);
+    p.drawPolyline(bracket, int(std::size(bracket)));
 
-    // °C labels every 20, inside the widget.
+    // °C labels, inside the widget.
     p.setFont(smallFont(this));
     p.setPen(palette().color(QPalette::WindowText));
     const QFontMetrics small(p.font());
-    const int baseline = int(strip.bottom()) + bracketHeight() + small.ascent();
-    for (int t = (m_minimum + 19) / 20 * 20; t <= m_maximum; t += 20) {
+    const int baseline = int(strip.bottom()) + BracketHeight + small.ascent();
+    const int firstLabel = (m_minimum + LabelEvery - 1) / LabelEvery * LabelEvery;
+    for (int t = firstLabel; t <= m_maximum; t += LabelEvery) {
         const QString text = QString::number(t);
         const int w = small.horizontalAdvance(text);
         const int left = std::clamp(int(std::lround(xFor(t) - w / 2.0)), 0, width() - w);
@@ -165,14 +173,14 @@ void TemperatureStrip::paintEvent(QPaintEvent *)
         const double x = xFor(std::clamp(*m_temperature, double(m_minimum), double(m_maximum)));
         const QColor ink = palette().color(QPalette::WindowText);
         // The line gets a halo in the window colour, to show on dark and light colours alike.
-        p.setPen(QPen(palette().color(QPalette::Window), 4, Qt::SolidLine, Qt::FlatCap));
+        p.setPen(QPen(palette().color(QPalette::Window), MarkerHaloWidth, Qt::SolidLine, Qt::FlatCap));
         p.drawLine(QPointF(x, strip.top() + 1), QPointF(x, strip.bottom() - 1));
-        p.setPen(QPen(ink, 2, Qt::SolidLine, Qt::FlatCap));
+        p.setPen(QPen(ink, MarkerLineWidth, Qt::SolidLine, Qt::FlatCap));
         p.drawLine(QPointF(x, strip.top()), QPointF(x, strip.bottom()));
         p.setPen(Qt::NoPen);
         p.setBrush(ink);
-        const QPointF tip[] = {{x - 4.5, 0}, {x + 4.5, 0}, {x, stripTop() - 1.0}};
-        p.drawPolygon(tip, 3);
+        const QPointF tip[] = {{x - MarkerHalfWidth, 0}, {x + MarkerHalfWidth, 0}, {x, stripTop() - 1.0}};
+        p.drawPolygon(tip, int(std::size(tip)));
     }
 }
 
@@ -188,12 +196,12 @@ TemperatureRangeForm::TemperatureRangeForm(const CpuTemperatureDef &def, QFormLa
     , m_note(new QLabel(i18nc("@info", "Shared by all fans in this mode."), parent))
     , m_defaults(new QPushButton(parent))
 {
-    const int width = parent->fontMetrics().averageCharWidth() * 28; // like a LevelSlider
-    const int valueWidth = parent->fontMetrics().horizontalAdvance(celsiusText(188));
+    const int width = sliderWidth(parent);
+    const int valueWidth = parent->fontMetrics().horizontalAdvance(celsiusText(WidestValue));
     for (QSlider *s : {m_coolest, m_hottest}) {
         s->setFixedWidth(width);
         s->setSingleStep(1);
-        s->setPageStep(5);
+        s->setPageStep(SliderPageStep);
     }
     m_coolest->setToolTip(i18nc("@info:tooltip", "The first colour starts here. Cooler than this, it fades towards dark."));
     m_hottest->setToolTip(i18nc("@info:tooltip", "The last colour is reached here. Hotter than this, it fades towards white."));

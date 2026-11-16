@@ -268,6 +268,29 @@ private Q_SLOTS:
         QCOMPARE(t.scale().top(), 100);
     }
 
+    // Setting the same range again keeps the step that the hysteresis holds.
+    void sameRangeKeepsHysteresis()
+    {
+        QTemporaryDir root;
+        const QString input = root.filePath(QStringLiteral("hwmon2/temp1_input"));
+        writeFile(root.filePath(QStringLiteral("hwmon2/name")), "coretemp\n");
+        writeFile(root.filePath(QStringLiteral("hwmon2/temp1_label")), "Package id 0\n");
+        writeFile(input, "69000\n"); // 70 °C with the offset: the step from 70
+
+        CpuTemperature t(def(), nullptr, root.path());
+        t.setRange(def().defaultRange);
+        QSignalSpy updates(&t, &CpuTemperature::updated);
+        t.setInterval(20);
+        t.start();
+        QCOMPARE(t.colour(), rgb(0x50ff00));
+        writeFile(input, "68800\n"); // a little below 70, within the hysteresis
+        QVERIFY(QTest::qWaitFor([&] { return updates.size() >= 4; }));
+        QVERIFY(*t.temperature() < 70.0);
+        QCOMPARE(t.colour(), rgb(0x50ff00)); // held
+        t.setRange(def().defaultRange);
+        QCOMPARE(t.colour(), rgb(0x50ff00)); // still held
+    }
+
     void failingSensorReportsOnce()
     {
         QTemporaryDir root;

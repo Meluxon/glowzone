@@ -63,6 +63,9 @@ int minimumRangeWidth(const CpuTemperatureDef &def);
 // minimumRangeWidth() wide. Moves hottest first, then coolest.
 TemperatureRange usableRange(const CpuTemperatureDef &def, TemperatureRange range, int top);
 
+// The colour while the temperature is unknown: the first colour.
+Ite8297::Rgb unknownTemperatureColour(const CpuTemperatureDef &def);
+
 // The colour for every temperature, for one range. Steps, coolest first:
 // - below the range, one per °C: the first colour fading out, darkest at darkAt
 //   (perceived brightness, so the fade looks even)
@@ -111,11 +114,12 @@ public:
 
     // The smoothed temperature (nullopt before the first good reading).
     std::optional<double> temperature() const { return m_temperature; }
-    // The colour for it; the first colour while nothing could be read.
+    // The colour for it; unknownTemperatureColour() while nothing could be read.
     Ite8297::Rgb colour() const;
 
     // The range the colours are spread over; a change takes effect at once
-    // (colourChanged() if the colour is now another).
+    // (colourChanged() if the colour is now another). The same range again
+    // changes nothing.
     void setRange(TemperatureRange range);
     const TemperatureScale &scale() const { return m_scale; }
 
@@ -142,13 +146,12 @@ private:
     bool m_failing = false;
 };
 
-// One unsmoothed reading plus the offset, for the command line, and the
-// sensor's limit (the model's if it gives none). nullopt with a translated
-// error if it can't be read.
 struct CpuTemperatureReading {
-    double celsius;
-    int top;
+    double celsius; // unsmoothed, plus the offset
+    int top;        // the sensor's limit, or the model's if it gives none
 };
+// One reading, for the command line. nullopt with a translated error if it
+// can't be read.
 std::optional<CpuTemperatureReading> cpuTemperatureNow(const CpuTemperatureDef &def, QString *error);
 
 } // namespace Glowzone

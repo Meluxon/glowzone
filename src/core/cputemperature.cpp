@@ -7,6 +7,7 @@
 #include <QFile>
 
 #include <algorithm>
+#include <limits>
 #include <cmath>
 #include <ctime>
 #include <numeric>
@@ -14,13 +15,26 @@
 namespace Glowzone
 {
 
+// hwmon gives millidegrees Celsius.
+static constexpr int MilliPerDegree = 1000;
+// A plausible CPU temperature reading at most; a broken sensor reads 0 or nonsense.
+static constexpr int MaxPlausibleMilli = 150 * MilliPerDegree;
+// A critical temperature below this can't be a CPU's Tjmax: ignored.
+static constexpr int MinPlausibleLimitMilli = 60 * MilliPerDegree;
+// The eye sees brightness roughly as the light raised to 1/2.2 (the sRGB curve).
+static constexpr double PerceivedGamma = 2.2;
+// Longer than any line a sensor file holds.
+static constexpr qint64 MaxLineLength = 64;
+static constexpr qint64 MsPerSecond = 1000;
+static constexpr qint64 NsPerMs = 1000000;
+
 static QString readLine(const QString &path)
 {
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly)) {
         return {};
     }
-    return QString::fromLatin1(f.readLine(64)).trimmed();
+    return QString::fromLatin1(f.readLine(MaxLineLength)).trimmed();
 }
 
 TemperatureSensor::TemperatureSensor(const CpuTemperatureDef &def, const QString &hwmonRoot)
@@ -50,8 +64,8 @@ bool TemperatureSensor::find(QString *error)
                 crit.replace(QLatin1String("_label"), QLatin1String("_crit"));
                 bool ok = false;
                 const int milli = readLine(dir.filePath(crit)).toInt(&ok);
-                // Only a plausible limit: well above any range, at most what the sensor can read.
-                m_limit = ok && milli >= 60000 && milli <= 150000 ? std::optional(milli / 1000) : std::nullopt;
+                const bool plausible = ok && milli >= MinPlausibleLimitMilli && milli <= MaxPlausibleMilli;
+                m_limit = plausible ? std::optional(milli / MilliPerDegree) : std::nullopt;
                 return true;
             }
         }
@@ -71,10 +85,9 @@ std::optional<double> TemperatureSensor::read(QString *error)
             return std::nullopt;
         }
         bool ok = false;
-        const int milli = readLine(m_input).toInt(&ok); // millidegrees Celsius
-        // A plausible CPU temperature only: a broken sensor reads 0 or nonsense.
-        if (ok && milli > 0 && milli <= 150000) {
-            return milli / 1000.0;
+        const int milli = readLine(m_input).toInt(&ok);
+        if (ok && milli > 0 && milli <= MaxPlausibleMilli) {
+            return milli / double(MilliPerDegree);
         }
         *error = i18n("The CPU temperature could not be read from %1.", m_input);
         m_input.clear();
@@ -124,16 +137,16 @@ TemperatureRange usableRange(const CpuTemperatureDef &def, TemperatureRange rang
     return {coolest, hottest};
 }
 
-static Ite8297::Rgb rgb(quint32 c)
+Ite8297::Rgb unknownTemperatureColour(const CpuTemperatureDef &def)
 {
-    return {quint8(c >> 16), quint8(c >> 8), quint8(c)};
+    return Ite8297::rgbFromValue(def.colours.value(0));
 }
 
 // At a perceived brightness (0–1). LEDs give light in proportion to the value,
-// but the eye sees brightness roughly as its cube root – the same curve as sRGB.
+// the eye doesn't: see PerceivedGamma.
 static Ite8297::Rgb dimmed(Ite8297::Rgb c, double brightness)
 {
-    const double k = std::pow(std::clamp(brightness, 0.0, 1.0), 2.2);
+    const double k = std::pow(std::clamp(brightness, 0.0, 1.0), PerceivedGamma);
     auto scale = [k](quint8 v) {
         return quint8(std::lround(v * k));
     };
@@ -145,7 +158,7 @@ static Ite8297::Rgb whitened(Ite8297::Rgb c, double amount)
 {
     const double a = std::clamp(amount, 0.0, 1.0);
     auto mix = [a](quint8 v) {
-        return quint8(std::lround(v + (255 - v) * a));
+        return quint8(std::lround(v + (std::numeric_limits<quint8>::max() - v) * a));
     };
     return {mix(c.r), mix(c.g), mix(c.b)};
 }
@@ -167,8 +180,8 @@ TemperatureScale::TemperatureScale(const CpuTemperatureDef &def, TemperatureRang
         m_starts << start;
         m_colours << colour;
     };
-    const Ite8297::Rgb first = rgb(def.colours.constFirst());
-    const Ite8297::Rgb last = rgb(def.colours.constLast());
+    const Ite8297::Rgb first = Ite8297::rgbFromValue(def.colours.constFirst());
+    const Ite8297::Rgb last = Ite8297::rgbFromValue(def.colours.constLast());
     const int coolest = m_range.coolest;
     const int hottest = m_range.hottest;
 
@@ -179,7 +192,7 @@ TemperatureScale::TemperatureScale(const CpuTemperatureDef &def, TemperatureRang
     // The colours, spread evenly.
     const double width = double(hottest - coolest) / double(def.colours.size());
     for (int i = 0; i < def.colours.size(); ++i) {
-        add(coolest + i * width, rgb(def.colours.at(i)));
+        add(coolest + i * width, Ite8297::rgbFromValue(def.colours.at(i)));
     }
     // Above the range: white at the top.
     for (int t = hottest; t < m_top; ++t) {
@@ -212,14 +225,13 @@ Ite8297::Rgb TemperatureScale::colour(int step) const
     return m_colours.at(std::clamp(step, 0, stepCount() - 1));
 }
 
-
 // Unlike the monotonic clock behind QElapsedTimer, this one goes on during
 // suspend, so a pause in the readings shows as one.
 static qint64 bootTimeMs()
 {
     timespec ts{};
     clock_gettime(CLOCK_BOOTTIME, &ts);
-    return qint64(ts.tv_sec) * 1000 + ts.tv_nsec / 1000000;
+    return qint64(ts.tv_sec) * MsPerSecond + ts.tv_nsec / NsPerMs;
 }
 
 // Well past the readings averaged: after a suspend or a sensor failure.
@@ -258,11 +270,14 @@ void CpuTemperature::stop()
 
 Ite8297::Rgb CpuTemperature::colour() const
 {
-    return m_step ? m_scale.colour(*m_step) : rgb(m_def.colours.value(0));
+    return m_step ? m_scale.colour(*m_step) : unknownTemperatureColour(m_def);
 }
 
 void CpuTemperature::setRange(TemperatureRange range)
 {
+    if (range == m_range) {
+        return; // a new scale would lose the hysteresis of the current step
+    }
     m_range = range;
     m_scale = TemperatureScale(m_def, range, m_scale.top());
     if (m_temperature) {
@@ -271,6 +286,7 @@ void CpuTemperature::setRange(TemperatureRange range)
     }
 }
 
+// colourChanged() while running, when the colour isn't the one reported last.
 void CpuTemperature::report()
 {
     const Ite8297::Rgb c = colour();
@@ -302,11 +318,11 @@ void CpuTemperature::read()
         if (now - m_lastReadingMs > LongPauseMs) {
             m_smoother.reset(); // the readings it holds are stale: start over
         }
-        seconds = double(now - m_lastReadingMs) / 1000.0;
+        seconds = double(now - m_lastReadingMs) / double(MsPerSecond);
     }
     m_lastReadingMs = now;
     if (const int top = m_sensor.limit().value_or(m_def.hottestLimit); top != m_scale.top()) {
-        m_scale = TemperatureScale(m_def, m_range, top);
+        m_scale = TemperatureScale(m_def, m_range, top); // the sensor's limit, once it is found
         m_step.reset();
     }
     m_temperature = m_smoother.add(*reading, seconds);

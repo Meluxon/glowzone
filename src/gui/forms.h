@@ -16,6 +16,11 @@ namespace Glowzone::Gui
 
 class ColourButton;
 
+// The words under a slider's ends and other notes: a little smaller than the text.
+QFont smallFont(const QWidget *widget);
+// Sliders in forms have a fixed width, so they don't grow with the window.
+int sliderWidth(const QWidget *widget);
+
 // A short slider with words under its ends, like System Settings'
 // "Slow … Instant". Fixed size: it doesn't grow with the window.
 class LevelSlider : public QWidget

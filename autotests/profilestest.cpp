@@ -70,7 +70,7 @@ private Q_SLOTS:
         QVERIFY(sameSettings(*loaded, sample(QStringLiteral("x"))));
     }
 
-    // Saved before 0.9.0, without a range: it was made with the default one.
+    // A file without a range counts as made with the default one.
     void withoutTemperatureRange()
     {
         Profile p = sample(QStringLiteral("Old"));
