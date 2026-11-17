@@ -14,6 +14,7 @@
 #include <QThread>
 
 #include <cerrno>
+#include <cstdio>
 #include <fcntl.h>
 #include <sys/file.h>
 #include <unistd.h>
@@ -140,12 +141,15 @@ bool merge(const Lock &, const QList<Ite8297::HeaderSetting> &changed, QString *
         QJsonParseError parseError;
         const QJsonDocument doc = QJsonDocument::fromJson(current.readAll(), &parseError);
         current.close();
-        const int version = doc.object().value(QLatin1String("version")).toInt();
-        if (parseError.error != QJsonParseError::NoError || !doc.isObject() || version < FormatVersion) {
-            // Not a state file: keep a copy for inspection, start afresh.
+        const QJsonObject root = doc.object();
+        const int version = root.value(QLatin1String("version")).toInt();
+        const bool stateFile = parseError.error == QJsonParseError::NoError && doc.isObject() && version >= FormatVersion
+            && (version > FormatVersion || root.value(QLatin1String("headers")).isObject());
+        if (!stateFile) {
+            // Keep a copy for inspection and start afresh. rename() replaces an
+            // older copy only once this one is in its place.
             const QString broken = path + QLatin1String(".broken");
-            QFile::remove(broken);
-            if (!QFile::rename(path, broken)) {
+            if (::rename(QFile::encodeName(path).constData(), QFile::encodeName(broken).constData()) != 0) {
                 *error = i18n("%1 is damaged and could not be moved aside to %2.", path, broken);
                 return false;
             }
@@ -153,7 +157,7 @@ bool merge(const Lock &, const QList<Ite8297::HeaderSetting> &changed, QString *
             *error = i18n("%1 was saved by a newer version of Glowzone and is left as it is.", path);
             return false;
         } else {
-            headers = doc.object().value(QLatin1String("headers")).toObject();
+            headers = root.value(QLatin1String("headers")).toObject();
         }
     } else if (current.exists()) {
         *error = i18n("Could not read %1: %2", path, current.errorString());

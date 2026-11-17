@@ -183,6 +183,69 @@ private Q_SLOTS:
         QFile::remove(FanState::filePath() + QStringLiteral(".broken"));
     }
 
+    // A current version without a "headers" object isn't a state file either.
+    void mergeKeepsACopyOfAFileWithoutHeaders_data()
+    {
+        QTest::addColumn<QByteArray>("content");
+        QTest::newRow("missing") << QByteArray(R"({"version": 1})");
+        QTest::newRow("string") << QByteArray(R"({"version": 1, "headers": "0x11"})");
+        QTest::newRow("array") << QByteArray(R"({"version": 1, "headers": [{"mode": "static"}]})");
+    }
+
+    void mergeKeepsACopyOfAFileWithoutHeaders()
+    {
+        QFETCH(QByteArray, content);
+        const QString broken = FanState::filePath() + QStringLiteral(".broken");
+        {
+            QFile f(FanState::filePath());
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write(content);
+        }
+        QString error;
+        QVERIFY2(FanState::merge(FanState::Lock(), {{0x13, Mode::Off, 1, 2, Rgb{}}}, &error), qPrintable(error));
+        QFile copy(broken);
+        QVERIFY(copy.open(QIODevice::ReadOnly));
+        QCOMPARE(copy.readAll(), content);
+        copy.close();
+        QCOMPARE(FanState::load(model()).keys(), QList<quint8>{0x13});
+        QFile::remove(broken);
+    }
+
+    // An older copy is replaced by the new one, and kept if moving fails
+    // (here the directory refuses both, so this covers the error path).
+    void mergeReplacesAnOlderCopyOnlyWhenMoving()
+    {
+        if (::geteuid() == 0) {
+            QSKIP("root can move the file anyway");
+        }
+        const QString path = FanState::filePath();
+        const QString broken = path + QStringLiteral(".broken");
+        const auto write = [](const QString &name, const QByteArray &data) {
+            QFile f(name);
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write(data);
+        };
+        write(broken, "old copy");
+        write(path, "{ not json");
+        const QString dir = QFileInfo(path).absolutePath();
+        QVERIFY(QFile::setPermissions(dir, QFileDevice::ReadOwner | QFileDevice::ExeOwner)); // no renames in it
+        QString error;
+        const bool merged = FanState::merge(FanState::Lock(), {{0x13, Mode::Off, 1, 2, Rgb{}}}, &error);
+        QVERIFY(QFile::setPermissions(dir, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner));
+        QVERIFY(!merged);
+        QVERIFY(!error.isEmpty());
+        QFile copy(broken);
+        QVERIFY(copy.open(QIODevice::ReadOnly));
+        QCOMPARE(copy.readAll(), QByteArray("old copy"));
+        copy.close();
+
+        QVERIFY2(FanState::merge(FanState::Lock(), {{0x13, Mode::Off, 1, 2, Rgb{}}}, &error), qPrintable(error));
+        QVERIFY(copy.open(QIODevice::ReadOnly));
+        QCOMPARE(copy.readAll(), QByteArray("{ not json"));
+        copy.close();
+        QFile::remove(broken);
+    }
+
     // A file that exists but can't be read isn't treated as missing:
     // replacing it would lose every entry not being changed. (Write-only, as
     // QSaveFile itself refuses to replace a file it can't write.)
