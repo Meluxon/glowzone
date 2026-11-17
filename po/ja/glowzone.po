@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 16:16+0100\n"
+"POT-Creation-Date: 2026-11-18 00:19+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: Japanese\n"
@@ -542,8 +542,18 @@ msgstr "%1 用のディレクトリを作成できませんでした。"
 
 #: src/core/fanstate.cpp
 #, kde-format
+msgid "%1 is damaged and could not be moved aside to %2."
+msgstr "%1 は破損しており、%2 に退避できませんでした。"
+
+#: src/core/fanstate.cpp
+#, kde-format
 msgid "%1 was saved by a newer version of Glowzone and is left as it is."
 msgstr "%1 は新しいバージョンの Glowzone で保存されたため、変更しません。"
+
+#: src/core/fanstate.cpp
+#, kde-format
+msgid "Could not read %1: %2"
+msgstr "%1 を読み込めませんでした：%2"
 
 #: src/core/fanstate.cpp
 #, kde-format

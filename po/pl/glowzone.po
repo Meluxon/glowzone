@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 16:16+0100\n"
+"POT-Creation-Date: 2026-11-18 00:19+0100\n"
 "PO-Revision-Date: 2026-11-15 01:03+0100\n"
 "Last-Translator: Claude (vibecoded draft – please review)\n"
 "Language-Team: Polish\n"
@@ -541,8 +541,18 @@ msgstr "Nie udało się utworzyć katalogu dla %1."
 
 #: src/core/fanstate.cpp
 #, kde-format
+msgid "%1 is damaged and could not be moved aside to %2."
+msgstr "Plik %1 jest uszkodzony i nie udało się go odłożyć jako %2."
+
+#: src/core/fanstate.cpp
+#, kde-format
 msgid "%1 was saved by a newer version of Glowzone and is left as it is."
 msgstr "%1 został zapisany przez nowszą wersję Glowzone i pozostaje bez zmian."
+
+#: src/core/fanstate.cpp
+#, kde-format
+msgid "Could not read %1: %2"
+msgstr "Nie udało się odczytać %1: %2"
 
 #: src/core/fanstate.cpp
 #, kde-format

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 16:16+0100\n"
+"POT-Creation-Date: 2026-11-18 00:19+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: French\n"
@@ -542,8 +542,18 @@ msgstr "Impossible de créer le répertoire pour %1."
 
 #: src/core/fanstate.cpp
 #, kde-format
+msgid "%1 is damaged and could not be moved aside to %2."
+msgstr "%1 est endommagé et n’a pas pu être mis de côté sous %2."
+
+#: src/core/fanstate.cpp
+#, kde-format
 msgid "%1 was saved by a newer version of Glowzone and is left as it is."
 msgstr "%1 a été enregistré par une version plus récente de Glowzone et reste tel quel."
+
+#: src/core/fanstate.cpp
+#, kde-format
+msgid "Could not read %1: %2"
+msgstr "Impossible de lire %1 : %2"
 
 #: src/core/fanstate.cpp
 #, kde-format

@@ -132,6 +132,8 @@ bool merge(const Lock &, const QList<Ite8297::HeaderSetting> &changed, QString *
         return false;
     }
 
+    // No file: start empty. A file that can't be opened (permissions, I/O
+    // error) is left alone, as replacing it would lose the other entries.
     QJsonObject headers;
     QFile current(path);
     if (current.open(QIODevice::ReadOnly)) {
@@ -139,16 +141,23 @@ bool merge(const Lock &, const QList<Ite8297::HeaderSetting> &changed, QString *
         const QJsonDocument doc = QJsonDocument::fromJson(current.readAll(), &parseError);
         current.close();
         const int version = doc.object().value(QLatin1String("version")).toInt();
-        if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
-            // Unreadable: keep a copy for inspection, start afresh.
-            QFile::remove(path + QLatin1String(".broken"));
-            QFile::rename(path, path + QLatin1String(".broken"));
+        if (parseError.error != QJsonParseError::NoError || !doc.isObject() || version < FormatVersion) {
+            // Not a state file: keep a copy for inspection, start afresh.
+            const QString broken = path + QLatin1String(".broken");
+            QFile::remove(broken);
+            if (!QFile::rename(path, broken)) {
+                *error = i18n("%1 is damaged and could not be moved aside to %2.", path, broken);
+                return false;
+            }
         } else if (version > FormatVersion) {
             *error = i18n("%1 was saved by a newer version of Glowzone and is left as it is.", path);
             return false;
-        } else if (version == FormatVersion) {
+        } else {
             headers = doc.object().value(QLatin1String("headers")).toObject();
         }
+    } else if (current.exists()) {
+        *error = i18n("Could not read %1: %2", path, current.errorString());
+        return false;
     }
     for (const Ite8297::HeaderSetting &s : changed) {
         headers.insert(headerKey(s.header), settingToJson(s));

@@ -14,6 +14,8 @@
 #include <QStandardPaths>
 #include <QTest>
 
+#include <unistd.h>
+
 using namespace Glowzone;
 using namespace Glowzone::Ite8297;
 
@@ -165,6 +167,43 @@ private Q_SLOTS:
         QVERIFY(QFile::exists(FanState::filePath() + QStringLiteral(".broken")));
         QCOMPARE(FanState::load(model()).size(), 1);
         QFile::remove(FanState::filePath() + QStringLiteral(".broken"));
+    }
+
+    void mergeKeepsACopyOfAFileWithoutAVersion()
+    {
+        {
+            QFile f(FanState::filePath());
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write(R"({"headers": {"0x11": {"mode": "static"}}})");
+        }
+        QString error;
+        QVERIFY2(FanState::merge(FanState::Lock(), {{0x13, Mode::Off, 1, 2, Rgb{}}}, &error), qPrintable(error));
+        QVERIFY(QFile::exists(FanState::filePath() + QStringLiteral(".broken")));
+        QCOMPARE(FanState::load(model()).keys(), QList<quint8>{0x13});
+        QFile::remove(FanState::filePath() + QStringLiteral(".broken"));
+    }
+
+    // A file that exists but can't be read isn't treated as missing:
+    // replacing it would lose every entry not being changed. (Write-only, as
+    // QSaveFile itself refuses to replace a file it can't write.)
+    void mergeLeavesAFileItCannotReadAlone()
+    {
+        if (::geteuid() == 0) {
+            QSKIP("root can open the file anyway");
+        }
+        writeState(1, {{QStringLiteral("0x11"), entry("static", 1)}});
+        QFile f(FanState::filePath());
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        const QByteArray before = f.readAll();
+        f.close();
+        QVERIFY(f.setPermissions(QFileDevice::WriteOwner));
+        QString error;
+        const bool merged = FanState::merge(FanState::Lock(), {{0x13, Mode::Off, 1, 2, Rgb{}}}, &error);
+        QVERIFY(f.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner));
+        QVERIFY(!merged);
+        QVERIFY(!error.isEmpty());
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        QCOMPARE(f.readAll(), before);
     }
 
     void ignoresOtherVersions()
