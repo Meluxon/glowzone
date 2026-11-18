@@ -14,6 +14,8 @@
 #include <QPainterPath>
 #include <QStyledItemDelegate>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone::Gui
 {
 
@@ -418,13 +420,13 @@ void Sidebar::setProfiles(const QList<Profile> &profiles, const QString &current
         item->setData(0, KindRole, ProfileItem);
         item->setData(0, NameRole, p.name);
         item->setData(0, CurrentRole, isCurrent);
-        item->setData(0, Qt::DecorationRole, isCurrent ? QIcon::fromTheme(QStringLiteral("object-select-symbolic")) : QIcon());
+        item->setData(0, Qt::DecorationRole, isCurrent ? QIcon::fromTheme(u"object-select-symbolic"_s) : QIcon());
         item->setFlags(Qt::ItemIsEnabled);
         item->setToolTip(0, isCurrent ? i18nc("@info:tooltip", "Applied last. Click to apply it again.") : i18nc("@info:tooltip", "Click to apply"));
     }
     auto *add = new QTreeWidgetItem(this, {i18nc("@action", "Save Current Lighting…")});
     add->setData(0, KindRole, NewProfile);
-    add->setData(0, Qt::DecorationRole, QIcon::fromTheme(QStringLiteral("list-add")));
+    add->setData(0, Qt::DecorationRole, QIcon::fromTheme(u"list-add"_s));
     add->setFlags(Qt::ItemIsEnabled);
 }
 
@@ -505,14 +507,14 @@ void Sidebar::contextMenu(QPoint pos)
     }
     const QString name = item->data(0, NameRole).toString();
     QMenu menu(this);
-    menu.addAction(QIcon::fromTheme(QStringLiteral("dialog-ok-apply")), i18nc("@action:inmenu", "Apply"), this, [this, name] {
+    menu.addAction(QIcon::fromTheme(u"dialog-ok-apply"_s), i18nc("@action:inmenu", "Apply"), this, [this, name] {
         Q_EMIT profileActivated(name);
     });
-    menu.addAction(QIcon::fromTheme(QStringLiteral("edit-rename")), i18nc("@action:inmenu", "Rename…"), this, [this, name] {
+    menu.addAction(QIcon::fromTheme(u"edit-rename"_s), i18nc("@action:inmenu", "Rename…"), this, [this, name] {
         Q_EMIT renameRequested(name);
     });
     menu.addSeparator();
-    menu.addAction(QIcon::fromTheme(QStringLiteral("edit-delete")), i18nc("@action:inmenu", "Delete…"), this, [this, name] {
+    menu.addAction(QIcon::fromTheme(u"edit-delete"_s), i18nc("@action:inmenu", "Delete…"), this, [this, name] {
         Q_EMIT deleteRequested(name);
     });
     menu.exec(viewport()->mapToGlobal(pos));

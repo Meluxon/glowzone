@@ -18,6 +18,8 @@
 
 #include <unistd.h>
 
+using namespace Qt::StringLiterals;
+
 using namespace Glowzone;
 using namespace Glowzone::Ite8297;
 
@@ -34,8 +36,8 @@ class LightingTest : public QObject
     Q_OBJECT
 
     const ModelProfile &m_model = legionModel();
-    const FanDef &m_cpu = *m_model.fan(QStringLiteral("cpu"));
-    const FanDef &m_rear = *m_model.fan(QStringLiteral("rear"));
+    const FanDef &m_cpu = *m_model.fan(u"cpu"_s);
+    const FanDef &m_rear = *m_model.fan(u"rear"_s);
 
     static QString stateDir()
     {
@@ -106,7 +108,7 @@ private Q_SLOTS:
         lighting.setLed(m_rear, 0x11, staticColour(0x11, Green));
         QTRY_COMPARE(errors.size(), 1);
         cleanup();
-        QCOMPARE(FakeHid::sent(), (QStringList{QStringLiteral("11:00ff00"), QStringLiteral("commit")}));
+        QCOMPARE(FakeHid::sent(), (QStringList{u"11:00ff00"_s, u"commit"_s}));
         QCOMPARE(lighting.led(0x11), staticColour(0x11, Green));
 
         lighting.setLed(m_cpu, 0x13, staticColour(0x13, Red));

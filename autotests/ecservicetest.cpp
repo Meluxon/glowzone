@@ -10,6 +10,8 @@
 #include <QTest>
 #include <functional>
 
+using namespace Qt::StringLiterals;
+
 using namespace Glowzone;
 namespace HP = Glowzone::HelperProtocol;
 
@@ -26,7 +28,7 @@ public:
     bool ensureReady(QString *detail) override
     {
         if (!ready) {
-            *detail = QStringLiteral("no module");
+            *detail = u"no module"_s;
         }
         return ready;
     }
@@ -57,7 +59,7 @@ public:
     }
 };
 
-static const DmiInfo legion{QStringLiteral("LENOVO"), QStringLiteral("Legion T5 26IOB6"), QStringLiteral("3733")};
+static const DmiInfo legion{u"LENOVO"_s, u"Legion T5 26IOB6"_s, u"3733"_s};
 
 static QVariantMap request(const QVariantList &lights)
 {
@@ -77,7 +79,7 @@ private Q_SLOTS:
     void unsupportedModelMakesNoCalls()
     {
         FakeAcpi acpi;
-        const DmiInfo other{QStringLiteral("LENOVO"), QStringLiteral("Legion T5 26AMR5"), QStringLiteral("3733")};
+        const DmiInfo other{u"LENOVO"_s, u"Legion T5 26AMR5"_s, u"3733"_s};
         EcService service(other, acpi);
         QCOMPARE(service.status().error, int(HP::UnsupportedModel));
         QCOMPARE(service.set(request({light(1, 2, 1)})).error, int(HP::UnsupportedModel));
@@ -139,12 +141,12 @@ private Q_SLOTS:
         QTest::newRow("nothing to change") << request({light(1, 0, 0)});
         QTest::newRow("duplicate") << request({light(1, 2, 1), light(1, 1, 1)});
         QTest::newRow("too many") << request({light(1, 2, 1), light(2, 2, 1), light(1, 1, 1)});
-        QTest::newRow("not a map") << request({QStringLiteral("b01020300")});
+        QTest::newRow("not a map") << request({u"b01020300"_s});
         auto typed = [](const QVariant &mode) {
             return request({QVariantMap{{QLatin1String(HP::KeyIndex), 1u}, {QLatin1String(HP::KeyMode), mode}, {QLatin1String(HP::KeyBrightness), 1u}}});
         };
-        QTest::newRow("text mode") << typed(QStringLiteral("0x10"));
-        QTest::newRow("numeric text") << typed(QStringLiteral("2"));
+        QTest::newRow("text mode") << typed(u"0x10"_s);
+        QTest::newRow("numeric text") << typed(u"2"_s);
         QTest::newRow("fraction") << typed(2.0);
         QTest::newRow("boolean") << typed(true);
         QTest::newRow("negative") << typed(-1);

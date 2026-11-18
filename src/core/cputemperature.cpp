@@ -12,6 +12,8 @@
 #include <ctime>
 #include <numeric>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone
 {
 
@@ -46,22 +48,22 @@ TemperatureSensor::TemperatureSensor(const CpuTemperatureDef &def, const QString
 bool TemperatureSensor::find(QString *error)
 {
     const QDir root(m_root);
-    const QStringList devices = root.entryList({QStringLiteral("hwmon*")}, QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+    const QStringList devices = root.entryList({u"hwmon*"_s}, QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
     bool driverFound = false;
     for (const QString &device : devices) {
         const QDir dir(root.filePath(device));
-        if (readLine(dir.filePath(QStringLiteral("name"))) != QLatin1String(m_def.hwmonName)) {
+        if (readLine(dir.filePath(u"name"_s)) != QLatin1String(m_def.hwmonName)) {
             continue;
         }
         driverFound = true;
-        const QStringList labels = dir.entryList({QStringLiteral("temp*_label")}, QDir::Files | QDir::System);
+        const QStringList labels = dir.entryList({u"temp*_label"_s}, QDir::Files | QDir::System);
         for (const QString &label : labels) {
             if (readLine(dir.filePath(label)) == QLatin1String(m_def.sensorLabel)) {
                 QString input = label;
-                input.replace(QLatin1String("_label"), QLatin1String("_input"));
+                input.replace("_label"_L1, "_input"_L1);
                 m_input = dir.filePath(input);
                 QString crit = label;
-                crit.replace(QLatin1String("_label"), QLatin1String("_crit"));
+                crit.replace("_label"_L1, "_crit"_L1);
                 bool ok = false;
                 const int milli = readLine(dir.filePath(crit)).toInt(&ok);
                 const bool plausible = ok && milli >= MinPlausibleLimitMilli && milli <= MaxPlausibleMilli;

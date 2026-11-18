@@ -4,6 +4,8 @@
 
 #include <algorithm>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone::Ite8297
 {
 
@@ -60,7 +62,7 @@ const ModeInfo *modeInfo(const QString &id)
 std::optional<Rgb> parseRgb(const QString &text)
 {
     QString t = text.trimmed();
-    if (t.startsWith(QLatin1Char('#'))) {
+    if (t.startsWith(u'#')) {
         t.remove(0, 1);
     }
     // Exactly six ASCII hex digits – no "0x", sign, spaces or other scripts'
@@ -84,10 +86,10 @@ Rgb rgbFromValue(quint32 rrggbb)
 
 QString rgbToString(Rgb c)
 {
-    return QStringLiteral("#%1%2%3")
-        .arg(c.r, 2, 16, QLatin1Char('0'))
-        .arg(c.g, 2, 16, QLatin1Char('0'))
-        .arg(c.b, 2, 16, QLatin1Char('0'));
+    return u"#%1%2%3"_s
+        .arg(c.r, 2, 16, u'0')
+        .arg(c.g, 2, 16, u'0')
+        .arg(c.b, 2, 16, u'0');
 }
 
 HeaderSetting resolve(HeaderSetting setting, Rgb temperatureColour)

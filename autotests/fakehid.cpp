@@ -8,6 +8,8 @@
 #include <cstring>
 #include <hidapi.h>
 
+using namespace Qt::StringLiterals;
+
 namespace FakeHid
 {
 QList<QByteArray> reports;
@@ -26,9 +28,9 @@ QStringList sent()
     QStringList out;
     for (const QByteArray &r : std::as_const(reports)) {
         if (r.at(1) == char(0x28) || r.at(1) == char(0x2D)) {
-            out << QStringLiteral("commit");
+            out << u"commit"_s;
         } else {
-            out << QStringLiteral("%1:%2").arg(quint8(r.at(1)), 2, 16, QLatin1Char('0')).arg(QString::fromLatin1(r.mid(5, 3).toHex()));
+            out << u"%1:%2"_s.arg(quint8(r.at(1)), 2, 16, u'0').arg(QString::fromLatin1(r.mid(5, 3).toHex()));
         }
     }
     reports.clear();

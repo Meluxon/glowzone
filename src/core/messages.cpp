@@ -5,6 +5,8 @@
 
 #include <KLocalizedString>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone
 {
 
@@ -21,7 +23,7 @@ QString unsupportedModelMessage(const DmiInfo &dmi)
                 orUnknown(dmi.vendor),
                 orUnknown(dmi.productVersion),
                 orUnknown(dmi.boardName),
-                supported.join(QLatin1String(", ")));
+                supported.join(", "_L1));
 }
 
 } // namespace Glowzone

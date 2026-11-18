@@ -16,15 +16,17 @@
 
 #include <unistd.h>
 
+using namespace Qt::StringLiterals;
+
 using namespace Glowzone;
 using namespace Glowzone::Ite8297;
 
 static QJsonObject entry(const char *mode, int speed)
 {
-    return {{QStringLiteral("mode"), QLatin1String(mode)},
-            {QStringLiteral("speed"), speed},
-            {QStringLiteral("brightness"), 2},
-            {QStringLiteral("colour"), QStringLiteral("#ff0000")}};
+    return {{u"mode"_s, QLatin1String(mode)},
+            {u"speed"_s, speed},
+            {u"brightness"_s, 2},
+            {u"colour"_s, u"#ff0000"_s}};
 }
 
 static const ModelProfile &model()
@@ -36,7 +38,7 @@ static void writeState(int version, const QJsonObject &headers)
 {
     QFile f(FanState::filePath());
     QVERIFY(f.open(QIODevice::WriteOnly));
-    f.write(QJsonDocument(QJsonObject{{QStringLiteral("version"), version}, {QStringLiteral("headers"), headers}}).toJson());
+    f.write(QJsonDocument(QJsonObject{{u"version"_s, version}, {u"headers"_s, headers}}).toJson());
 }
 
 class FanStateTest : public QObject
@@ -78,8 +80,8 @@ private Q_SLOTS:
         const HeaderSetting cpu{0x13, Mode::CpuTemperature, 1, 3, Rgb{0x15, 0x8d, 0xdd}};
         QVERIFY2(FanState::merge(FanState::Lock(), {cpu}, &error), qPrintable(error));
         QCOMPARE(FanState::load(model()).value(0x13), cpu);
-        QCOMPARE(FanState::headersToJson({{0x13, cpu}}).value(QLatin1String("0x13")).toObject().value(QLatin1String("mode")).toString(),
-                 QStringLiteral("cpu-temperature"));
+        QCOMPARE(FanState::headersToJson({{0x13, cpu}}).value("0x13"_L1).toObject().value("mode"_L1).toString(),
+                 u"cpu-temperature"_s);
         QVERIFY(FanState::fitsModel(model(), cpu));
     }
 
@@ -94,10 +96,10 @@ private Q_SLOTS:
     void ignoresJunk()
     {
         writeState(1,
-                   {{QStringLiteral("0x13"), entry("static", 1)},   // fine
-                    {QStringLiteral("0x20"), entry("static", 1)},   // unknown header
-                    {QStringLiteral("0x11"), entry("laser", 1)},    // unknown mode
-                    {QStringLiteral("0x12"), entry("static", 9)}}); // speed out of range
+                   {{u"0x13"_s, entry("static", 1)},   // fine
+                    {u"0x20"_s, entry("static", 1)},   // unknown header
+                    {u"0x11"_s, entry("laser", 1)},    // unknown mode
+                    {u"0x12"_s, entry("static", 9)}}); // speed out of range
         const FanState::Headers loaded = FanState::load(model());
         QCOMPARE(loaded.size(), 1);
         QVERIFY(loaded.contains(0x13));
@@ -112,13 +114,13 @@ private Q_SLOTS:
         small.fanModes = {0x00, 0x01, 0x09};    // off, static, rainbow
         small.fanLevels = 2;
         writeState(1,
-                   {{QStringLiteral("0x13"), entry("static", 2)},   // fine
-                    {QStringLiteral("0x11"), entry("static", 1)}}); // not this model's fan
+                   {{u"0x13"_s, entry("static", 2)},   // fine
+                    {u"0x11"_s, entry("static", 1)}}); // not this model's fan
         QCOMPARE(FanState::load(small).size(), 1);
 
-        writeState(1, {{QStringLiteral("0x13"), entry("random", 1)}}); // mode not offered
+        writeState(1, {{u"0x13"_s, entry("random", 1)}}); // mode not offered
         QVERIFY(FanState::load(small).isEmpty());
-        writeState(1, {{QStringLiteral("0x13"), entry("static", 3)}}); // level not offered
+        writeState(1, {{u"0x13"_s, entry("static", 3)}}); // level not offered
         QVERIFY(FanState::load(small).isEmpty());
         QCOMPARE(FanState::load(model()).size(), 1);                   // fine for the full model
 
@@ -131,19 +133,19 @@ private Q_SLOTS:
     // Entries this version doesn't understand stay in the file untouched.
     void mergeKeepsEntriesItCannotRead()
     {
-        writeState(1, {{QStringLiteral("0x11"), entry("laser", 1)}});
+        writeState(1, {{u"0x11"_s, entry("laser", 1)}});
         QString error;
         QVERIFY(FanState::merge(FanState::Lock(), {{0x13, Mode::Static, 1, 2, Rgb{}}}, &error));
         QFile f(FanState::filePath());
         QVERIFY(f.open(QIODevice::ReadOnly));
-        const QJsonObject headers = QJsonDocument::fromJson(f.readAll()).object().value(QStringLiteral("headers")).toObject();
-        QCOMPARE(headers.value(QStringLiteral("0x11")).toObject().value(QStringLiteral("mode")).toString(), QStringLiteral("laser"));
-        QVERIFY(headers.contains(QStringLiteral("0x13")));
+        const QJsonObject headers = QJsonDocument::fromJson(f.readAll()).object().value(u"headers"_s).toObject();
+        QCOMPARE(headers.value(u"0x11"_s).toObject().value(u"mode"_s).toString(), u"laser"_s);
+        QVERIFY(headers.contains(u"0x13"_s));
     }
 
     void mergeLeavesANewerFormatAlone()
     {
-        writeState(2, {{QStringLiteral("0x13"), entry("static", 1)}});
+        writeState(2, {{u"0x13"_s, entry("static", 1)}});
         QFile f(FanState::filePath());
         QVERIFY(f.open(QIODevice::ReadOnly));
         const QByteArray before = f.readAll();
@@ -164,9 +166,9 @@ private Q_SLOTS:
         }
         QString error;
         QVERIFY(FanState::merge(FanState::Lock(), {{0x13, Mode::Off, 1, 2, Rgb{}}}, &error));
-        QVERIFY(QFile::exists(FanState::filePath() + QStringLiteral(".broken")));
+        QVERIFY(QFile::exists(FanState::filePath() + u".broken"_s));
         QCOMPARE(FanState::load(model()).size(), 1);
-        QFile::remove(FanState::filePath() + QStringLiteral(".broken"));
+        QFile::remove(FanState::filePath() + u".broken"_s);
     }
 
     void mergeKeepsACopyOfAFileWithoutAVersion()
@@ -178,9 +180,9 @@ private Q_SLOTS:
         }
         QString error;
         QVERIFY2(FanState::merge(FanState::Lock(), {{0x13, Mode::Off, 1, 2, Rgb{}}}, &error), qPrintable(error));
-        QVERIFY(QFile::exists(FanState::filePath() + QStringLiteral(".broken")));
+        QVERIFY(QFile::exists(FanState::filePath() + u".broken"_s));
         QCOMPARE(FanState::load(model()).keys(), QList<quint8>{0x13});
-        QFile::remove(FanState::filePath() + QStringLiteral(".broken"));
+        QFile::remove(FanState::filePath() + u".broken"_s);
     }
 
     // A current version without a "headers" object isn't a state file either.
@@ -195,7 +197,7 @@ private Q_SLOTS:
     void mergeKeepsACopyOfAFileWithoutHeaders()
     {
         QFETCH(QByteArray, content);
-        const QString broken = FanState::filePath() + QStringLiteral(".broken");
+        const QString broken = FanState::filePath() + u".broken"_s;
         {
             QFile f(FanState::filePath());
             QVERIFY(f.open(QIODevice::WriteOnly));
@@ -219,7 +221,7 @@ private Q_SLOTS:
             QSKIP("root can move the file anyway");
         }
         const QString path = FanState::filePath();
-        const QString broken = path + QStringLiteral(".broken");
+        const QString broken = path + u".broken"_s;
         const auto write = [](const QString &name, const QByteArray &data) {
             QFile f(name);
             QVERIFY(f.open(QIODevice::WriteOnly));
@@ -254,7 +256,7 @@ private Q_SLOTS:
         if (::geteuid() == 0) {
             QSKIP("root can open the file anyway");
         }
-        writeState(1, {{QStringLiteral("0x11"), entry("static", 1)}});
+        writeState(1, {{u"0x11"_s, entry("static", 1)}});
         QFile f(FanState::filePath());
         QVERIFY(f.open(QIODevice::ReadOnly));
         const QByteArray before = f.readAll();
@@ -271,7 +273,7 @@ private Q_SLOTS:
 
     void ignoresOtherVersions()
     {
-        writeState(2, {{QStringLiteral("0x13"), entry("static", 1)}});
+        writeState(2, {{u"0x13"_s, entry("static", 1)}});
         QVERIFY(FanState::load(model()).isEmpty());
     }
 
@@ -279,7 +281,7 @@ private Q_SLOTS:
     // lock file stays as it is: taking the lock writes nothing.
     void lockTakesTurns()
     {
-        const QString path = QFileInfo(FanState::filePath()).absolutePath() + QLatin1String("/fans.lock");
+        const QString path = QFileInfo(FanState::filePath()).absolutePath() + "/fans.lock"_L1;
         QDateTime stamp;
         QElapsedTimer waited;
         {

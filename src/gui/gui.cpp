@@ -14,6 +14,8 @@
 #include <QMessageBox>
 #include <QSessionManager>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone::Gui
 {
 
@@ -21,7 +23,7 @@ int run(bool background)
 {
     // Installed icon first (themes may override it); the built-in copy covers
     // running from the build directory.
-    QApplication::setWindowIcon(QIcon::fromTheme(QStringLiteral(GLOWZONE_APP_ID), QIcon(QStringLiteral(":/icons/glowzone.svg"))));
+    QApplication::setWindowIcon(QIcon::fromTheme(QStringLiteral(GLOWZONE_APP_ID), QIcon(u":/icons/glowzone.svg"_s)));
 
     // Started at login, but running in the background was switched off since.
     if (background && !Settings::keepRunning()) {
@@ -53,7 +55,7 @@ int run(bool background)
 
     App app(*model);
     QObject::connect(&service, &KDBusService::activateRequested, &app, [&app](const QStringList &arguments) {
-        if (!arguments.contains(QLatin1String("--background"))) {
+        if (!arguments.contains("--background"_L1)) {
             app.showWindow();
         }
     });

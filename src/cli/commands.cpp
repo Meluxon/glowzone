@@ -21,6 +21,8 @@
 
 #include <algorithm>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone::Cli
 {
 
@@ -43,47 +45,47 @@ QTextStream &err()
 
 const QCommandLineOption &colourOption()
 {
-    static const QCommandLineOption o({QStringLiteral("c"), QStringLiteral("colour"), QStringLiteral("color")},
+    static const QCommandLineOption o({u"c"_s, u"colour"_s, u"color"_s},
                                       i18n("Fan colour as RRGGBB, for modes that use a colour."),
-                                      QStringLiteral("RRGGBB"));
+                                      u"RRGGBB"_s);
     return o;
 }
 
 const QCommandLineOption &speedOption()
 {
-    static const QCommandLineOption o({QStringLiteral("s"), QStringLiteral("speed")},
+    static const QCommandLineOption o({u"s"_s, u"speed"_s},
                                       i18n("Fan effect speed (levels: see below)."),
-                                      QStringLiteral("level"));
+                                      u"level"_s);
     return o;
 }
 
 const QCommandLineOption &brightnessOption()
 {
-    static const QCommandLineOption o({QStringLiteral("b"), QStringLiteral("brightness")},
+    static const QCommandLineOption o({u"b"_s, u"brightness"_s},
                                       i18n("Brightness of fans or case lights (levels: see below)."),
-                                      QStringLiteral("level"));
+                                      u"level"_s);
     return o;
 }
 
 const QCommandLineOption &ledOption()
 {
-    static const QCommandLineOption o({QStringLiteral("l"), QStringLiteral("led")},
+    static const QCommandLineOption o({u"l"_s, u"led"_s},
                                       i18n("Set only one LED of a double fan (positions: see below)."),
-                                      QStringLiteral("position"));
+                                      u"position"_s);
     return o;
 }
 
 const QCommandLineOption &rangeOption()
 {
-    static const QCommandLineOption o({QStringLiteral("r"), QStringLiteral("range")},
+    static const QCommandLineOption o({u"r"_s, u"range"_s},
                                       i18n("With cpu-temperature: the temperatures the colours are spread over, e.g. 35-80. Shared by all fans in that mode."),
-                                      QStringLiteral("coolest-hottest"));
+                                      u"coolest-hottest"_s);
     return o;
 }
 
 const QCommandLineOption &purgeOption()
 {
-    static const QCommandLineOption o(QStringLiteral("purge-user-data"),
+    static const QCommandLineOption o(u"purge-user-data"_s,
                                       i18n("Delete Glowzone's settings, profiles and saved state for this user, then exit."));
     return o;
 }
@@ -96,7 +98,7 @@ QString idList(const List &list)
     for (const auto &item : list) {
         ids << QLatin1String(item.id);
     }
-    return ids.join(QLatin1String(", "));
+    return ids.join(", "_L1);
 }
 
 int usageError(const QString &message)
@@ -133,7 +135,7 @@ QString describe(HeaderSetting s)
         parts << i18nc("@info fan effect speed", "speed %1", s.speed);
     }
     parts << i18nc("@info", "brightness %1", s.brightness);
-    return parts.join(QLatin1String(", "));
+    return parts.join(", "_L1);
 }
 
 QString describe(EcLightState s)
@@ -192,7 +194,7 @@ std::optional<TemperatureRange> parseRange(const CpuTemperatureDef &def, const Q
 {
     const int top = temperatureTop(def);
     static constexpr QChar EnDash(0x2013);
-    const QStringList parts = QString(text).replace(EnDash, QLatin1Char('-')).split(QLatin1Char('-'));
+    const QStringList parts = QString(text).replace(EnDash, u'-').split(u'-');
     bool okCoolest = false;
     bool okHottest = false;
     const TemperatureRange range{parts.value(0).trimmed().toInt(&okCoolest), parts.value(1).trimmed().toInt(&okHottest)};
@@ -233,7 +235,7 @@ QString describeFan(const FanDef &fan, const FanState::Headers &headers)
     for (int i = 0; i < perLed.size(); ++i) {
         named << i18nc("@info fan position: description", "%1: %2", fan.leds.at(i).name.toString(), perLed.at(i));
     }
-    return named.join(QLatin1String("; "));
+    return named.join("; "_L1);
 }
 
 void printLights(const ModelProfile &model, const QList<EcLightState> &lights, int width)
@@ -241,7 +243,7 @@ void printLights(const ModelProfile &model, const QList<EcLightState> &lights, i
     for (const EcLightState &s : lights) {
         const EcLightDef *def = model.ecLightByIndex(s.index);
         const QString name = def ? def->name.toString() : QString::number(s.index);
-        out() << QLatin1String("  ") << name.leftJustified(width) << describe(s) << Qt::endl;
+        out() << "  "_L1 << name.leftJustified(width) << describe(s) << Qt::endl;
     }
 }
 
@@ -255,14 +257,14 @@ int cmdStatus(const ModelProfile &model)
     out() << i18n("Fans (as last set by Glowzone – the controller can’t be read back):") << Qt::endl;
     const FanState::Headers saved = FanState::load(model);
     for (const FanDef &fan : model.fans) {
-        out() << QLatin1String("  ") << fan.name.toString().leftJustified(width) << describeFan(fan, saved) << Qt::endl;
+        out() << "  "_L1 << fan.name.toString().leftJustified(width) << describeFan(fan, saved) << Qt::endl;
     }
     if (model.cpuTemperature && anyFollowsTemperature(saved)) {
         QString error;
         const CpuTemperatureDef &def = *model.cpuTemperature;
         if (const auto now = cpuTemperatureNow(def, &error)) {
             const TemperatureRange range = usableRange(def, Settings::temperatureRange(def), now->top);
-            out() << QLatin1String("  ")
+            out() << "  "_L1
                   << i18n("CPU temperature: %1 °C, colours over %2–%3 °C (%4)",
                           QString::number(now->celsius, 'f', 0),
                           range.coolest,
@@ -270,7 +272,7 @@ int cmdStatus(const ModelProfile &model)
                           Instance::isRunning() ? i18n("the colours follow it") : i18n("not followed – Glowzone isn’t running"))
                   << Qt::endl;
         } else {
-            out() << QLatin1String("  ") << error << Qt::endl;
+            out() << "  "_L1 << error << Qt::endl;
         }
     }
 
@@ -278,7 +280,7 @@ int cmdStatus(const ModelProfile &model)
     QString error;
     const auto lights = EcLights::status(&error);
     if (!lights) {
-        out() << QLatin1String("  ") << i18n("not available: %1", error) << Qt::endl;
+        out() << "  "_L1 << i18n("not available: %1", error) << Qt::endl;
         return ExitFailed;
     }
     printLights(model, *lights, width);
@@ -300,14 +302,14 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
     }
 
     QList<const FanDef *> fans;
-    if (args.at(0) == QLatin1String("all")) {
+    if (args.at(0) == "all"_L1) {
         for (const FanDef &f : model.fans) {
             fans << &f;
         }
     } else if (const FanDef *f = model.fan(args.at(0))) {
         fans << f;
     } else {
-        return usageError(i18n("Unknown fan “%1”. Choose one of: %2", args.at(0), QLatin1String("all, ") + idList(model.fans)));
+        return usageError(i18n("Unknown fan “%1”. Choose one of: %2", args.at(0), "all, "_L1 + idList(model.fans)));
     }
 
     const ModeInfo *mode = modeInfo(args.at(1));
@@ -401,12 +403,12 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
 
     if (onlyLed) {
         const QString label = i18nc("@item fan (position)", "%1 (%2)", fans.constFirst()->name.toString(), onlyLed->name.toString());
-        out() << QLatin1String("  ") << label << QLatin1String("  ") << describe(settings.constFirst()) << Qt::endl;
+        out() << "  "_L1 << label << "  "_L1 << describe(settings.constFirst()) << Qt::endl;
         return ExitOk;
     }
     const int width = nameWidth(model);
     for (const FanDef *fan : std::as_const(fans)) {
-        out() << QLatin1String("  ") << fan->name.toString().leftJustified(width) << describeFan(*fan, state) << Qt::endl;
+        out() << "  "_L1 << fan->name.toString().leftJustified(width) << describeFan(*fan, state) << Qt::endl;
     }
     return ExitOk;
 }
@@ -418,14 +420,14 @@ int cmdLight(const ModelProfile &model, const QStringList &args, const QCommandL
     }
 
     QList<const EcLightDef *> lights;
-    if (args.at(0) == QLatin1String("all")) {
+    if (args.at(0) == "all"_L1) {
         for (const EcLightDef &l : model.ecLights) {
             lights << &l;
         }
     } else if (const EcLightDef *l = model.ecLight(args.at(0))) {
         lights << l;
     } else {
-        return usageError(i18n("Unknown light “%1”. Choose one of: %2", args.at(0), QLatin1String("all, ") + idList(model.ecLights)));
+        return usageError(i18n("Unknown light “%1”. Choose one of: %2", args.at(0), "all, "_L1 + idList(model.ecLights)));
     }
 
     quint8 modeValue = 0; // 0 = leave unchanged
@@ -517,7 +519,7 @@ int cmdProfileList(const ModelProfile &model)
     const QString current = Settings::currentProfile();
     for (const Profile &p : profiles) {
         const bool isCurrent = p.name.compare(current, Qt::CaseInsensitive) == 0;
-        out() << (isCurrent ? QLatin1String("* ") : QLatin1String("  ")) << p.name << Qt::endl;
+        out() << (isCurrent ? "* "_L1 : "  "_L1) << p.name << Qt::endl;
     }
     return ExitOk;
 }
@@ -654,22 +656,22 @@ int cmdProfile(const ModelProfile &model, const QStringList &args)
         return profileUsage();
     }
     const QString &sub = args.constFirst();
-    if (sub == QLatin1String("list") && args.size() == 1) {
+    if (sub == "list"_L1 && args.size() == 1) {
         return cmdProfileList(model);
     }
-    if (sub == QLatin1String("rename") && args.size() == 3) {
+    if (sub == "rename"_L1 && args.size() == 3) {
         return cmdProfileRename(model, args.at(1), args.at(2));
     }
     if (args.size() != 2) {
         return profileUsage();
     }
-    if (sub == QLatin1String("apply")) {
+    if (sub == "apply"_L1) {
         return cmdProfileApply(model, args.at(1));
     }
-    if (sub == QLatin1String("save")) {
+    if (sub == "save"_L1) {
         return cmdProfileSave(model, args.at(1));
     }
-    if (sub == QLatin1String("delete")) {
+    if (sub == "delete"_L1) {
         return cmdProfileDelete(model, args.at(1));
     }
     return profileUsage();
@@ -700,7 +702,7 @@ int purgeUserData()
         if (info.isSymLink()) {
             // Remove the link itself – never what it points to.
             ok = QFile::remove(path);
-        } else if (info.fileName() != QLatin1String("glowzone")) {
+        } else if (info.fileName() != "glowzone"_L1) {
             // Never delete a directory that isn't Glowzone's own.
             err() << i18n("Skipping %1: not a Glowzone directory.", path) << Qt::endl;
             exitCode = ExitFailed;
@@ -748,41 +750,41 @@ static QString helpText()
         }
         QStringList lines;
         for (const Row &r : rows) {
-            lines << QLatin1String("  ") + r.first.leftJustified(width + 3) + r.second;
+            lines << "  "_L1 + r.first.leftJustified(width + 3) + r.second;
         }
-        return lines.join(QLatin1Char('\n'));
+        return lines.join(u'\n');
     };
 
-    QString text = i18n("Lighting control for supported Lenovo desktops: fan LEDs and case lights.") + QLatin1String("\n\n")
-        + i18n("Commands:") + QLatin1Char('\n')
+    QString text = i18n("Lighting control for supported Lenovo desktops: fan LEDs and case lights.") + "\n\n"_L1
+        + i18n("Commands:") + u'\n'
         + table({
-            {QStringLiteral("status"), i18n("Show the current lighting")},
-            {QStringLiteral("fan <fan> <mode>"), i18n("Set fan LEDs")},
-            {QStringLiteral("light <light> [mode]"), i18n("Set a case light")},
-            {QStringLiteral("reset"), i18n("Turn all lighting off")},
-            {QStringLiteral("profile list"), i18n("List saved profiles (* = applied last)")},
-            {QStringLiteral("profile apply <name>"), i18n("Apply a profile")},
-            {QStringLiteral("profile save <name>"), i18n("Save the current lighting as a profile")},
-            {QStringLiteral("profile rename <old> <new>"), i18n("Rename a profile")},
-            {QStringLiteral("profile delete <name>"), i18n("Delete a profile")},
+            {u"status"_s, i18n("Show the current lighting")},
+            {u"fan <fan> <mode>"_s, i18n("Set fan LEDs")},
+            {u"light <light> [mode]"_s, i18n("Set a case light")},
+            {u"reset"_s, i18n("Turn all lighting off")},
+            {u"profile list"_s, i18n("List saved profiles (* = applied last)")},
+            {u"profile apply <name>"_s, i18n("Apply a profile")},
+            {u"profile save <name>"_s, i18n("Save the current lighting as a profile")},
+            {u"profile rename <old> <new>"_s, i18n("Rename a profile")},
+            {u"profile delete <name>"_s, i18n("Delete a profile")},
         })
-        + QLatin1Char('\n') + i18n("Run glowzone without arguments to open the window, or with --background to start in the system tray.")
-        + QLatin1String("\n\n");
+        + u'\n' + i18n("Run glowzone without arguments to open the window, or with --background to start in the system tray.")
+        + "\n\n"_L1;
 
     QList<Row> values;
     if (const ModelProfile *model = matchModel(DmiInfo::readSystem())) {
-        text += i18n("This computer (%1):", model->displayName()) + QLatin1Char('\n');
-        values << Row{i18n("Fans:"), QLatin1String("all, ") + idList(model->fans)};
+        text += i18n("This computer (%1):", model->displayName()) + u'\n';
+        values << Row{i18n("Fans:"), "all, "_L1 + idList(model->fans)};
         QStringList positions;
         for (const FanDef &f : model->fans) {
             if (f.isDouble()) {
-                positions << QLatin1String(f.id) + QLatin1String(": ") + idList(f.leds);
+                positions << QLatin1String(f.id) + ": "_L1 + idList(f.leds);
             }
         }
         if (!positions.isEmpty()) {
-            values << Row{i18n("LEDs (--led):"), positions.join(QLatin1String("; "))};
+            values << Row{i18n("LEDs (--led):"), positions.join("; "_L1)};
         }
-        const QString range = QStringLiteral("%1–%2");
+        const QString range = u"%1–%2"_s;
         values << Row{i18n("Fan modes:"), idList(modesFor(*model))};
         values << Row{i18n("Fan speed, brightness:"), range.arg(MinLevel).arg(model->fanLevels)};
         if (const auto &t = model->cpuTemperature) {
@@ -791,7 +793,7 @@ static QString helpText()
                                t->defaultRange.coolest, t->defaultRange.hottest)};
         }
         if (!model->ecLights.isEmpty()) {
-            values << Row{i18n("Lights:"), QLatin1String("all, ") + idList(model->ecLights)};
+            values << Row{i18n("Lights:"), "all, "_L1 + idList(model->ecLights)};
             values << Row{i18n("Light modes:"), idList(EcLights::modesFor(*model))};
             values << Row{i18n("Light brightness:"), range.arg(EcLights::MinBrightness).arg(model->ecBrightnessLevels)};
         }
@@ -800,7 +802,7 @@ static QString helpText()
         for (const ModelProfile &m : supportedModels()) {
             supported << m.displayName();
         }
-        text += i18n("This computer is not supported. Supported models: %1", supported.join(QLatin1String(", "))) + QLatin1Char('\n');
+        text += i18n("This computer is not supported. Supported models: %1", supported.join(", "_L1)) + u'\n';
     }
     return text + table(values);
 }
@@ -808,11 +810,11 @@ static QString helpText()
 void addOptions(QCommandLineParser &parser, const QStringList &arguments)
 {
     parser.addOptions({colourOption(), speedOption(), brightnessOption(), ledOption(), rangeOption(), purgeOption()});
-    parser.addPositionalArgument(QStringLiteral("command"), i18n("status, fan, light, reset or profile"), QStringLiteral("<command>"));
-    parser.addPositionalArgument(QStringLiteral("arguments"), i18n("Arguments of the command"), QStringLiteral("[arguments...]"));
+    parser.addPositionalArgument(u"command"_s, i18n("status, fan, light, reset or profile"), u"<command>"_s);
+    parser.addPositionalArgument(u"arguments"_s, i18n("Arguments of the command"), u"[arguments...]"_s);
     // The help text reads the hardware: only when it is shown.
     parser.parse(arguments);
-    if (parser.isSet(QStringLiteral("help")) || parser.isSet(QStringLiteral("help-all")) || parser.positionalArguments().isEmpty()) {
+    if (parser.isSet(u"help"_s) || parser.isSet(u"help-all"_s) || parser.positionalArguments().isEmpty()) {
         parser.setApplicationDescription(helpText());
     }
 }
@@ -828,11 +830,11 @@ int run(QCommandLineParser &parser)
         parser.showHelp(ExitOk); // doesn't return (main() starts the window when there are no arguments)
     }
     const QString command = args.takeFirst();
-    static const QStringList commands{QStringLiteral("status"),
-                                      QStringLiteral("fan"),
-                                      QStringLiteral("light"),
-                                      QStringLiteral("reset"),
-                                      QStringLiteral("profile")};
+    static const QStringList commands{u"status"_s,
+                                      u"fan"_s,
+                                      u"light"_s,
+                                      u"reset"_s,
+                                      u"profile"_s};
     if (!commands.contains(command)) {
         return usageError(i18n("Unknown command “%1”.", command));
     }
@@ -845,16 +847,16 @@ int run(QCommandLineParser &parser)
         return ExitUnsupported;
     }
 
-    if (command == QLatin1String("status")) {
+    if (command == "status"_L1) {
         return args.isEmpty() ? cmdStatus(*model) : usageError(i18n("“status” takes no arguments."));
     }
-    if (command == QLatin1String("fan")) {
+    if (command == "fan"_L1) {
         return cmdFan(*model, args, parser);
     }
-    if (command == QLatin1String("light")) {
+    if (command == "light"_L1) {
         return cmdLight(*model, args, parser);
     }
-    if (command == QLatin1String("profile")) {
+    if (command == "profile"_L1) {
         return cmdProfile(*model, args);
     }
     return args.isEmpty() ? cmdReset(*model) : usageError(i18n("“reset” takes no arguments."));

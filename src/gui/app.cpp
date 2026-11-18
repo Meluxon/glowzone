@@ -17,6 +17,8 @@
 
 #include <utility>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone::Gui
 {
 
@@ -142,20 +144,20 @@ void App::updateTray()
         return;
     }
     if (!m_tray) {
-        m_tray = new KStatusNotifierItem(QStringLiteral("glowzone"), this);
+        m_tray = new KStatusNotifierItem(u"glowzone"_s, this);
         m_tray->setCategory(KStatusNotifierItem::Hardware);
         m_tray->setStatus(KStatusNotifierItem::Active);
         m_tray->setIconByName(QStringLiteral(GLOWZONE_APP_ID));
         m_tray->setTitle(i18n("Glowzone"));
         m_tray->setStandardActionsEnabled(false); // our own Quit, which finishes pending changes
         auto *menu = new QMenu;
-        m_trayShow = menu->addAction(QIcon::fromTheme(QStringLiteral("window")), QString(), this, &App::toggleWindow);
+        m_trayShow = menu->addAction(QIcon::fromTheme(u"window"_s), QString(), this, &App::toggleWindow);
         connect(menu, &QMenu::aboutToShow, this, [this] {
             m_trayShow->setText(m_window && m_window->isVisible() ? i18nc("@action:inmenu", "Hide Glowzone")
                                                                    : i18nc("@action:inmenu", "Show Glowzone"));
         });
         menu->addSeparator();
-        menu->addAction(QIcon::fromTheme(QStringLiteral("application-exit")), i18nc("@action:inmenu", "Quit"), this, &App::quit);
+        menu->addAction(QIcon::fromTheme(u"application-exit"_s), i18nc("@action:inmenu", "Quit"), this, &App::quit);
         m_tray->setContextMenu(menu); // takes ownership
         connect(m_tray, &KStatusNotifierItem::activateRequested, this, &App::toggleWindow);
     }

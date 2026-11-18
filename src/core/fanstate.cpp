@@ -19,6 +19,8 @@
 #include <sys/file.h>
 #include <unistd.h>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone::FanState
 {
 
@@ -28,21 +30,21 @@ static constexpr int FormatVersion = 1;
 
 QString filePath()
 {
-    return QStandardPaths::writableLocation(QStandardPaths::StateLocation) + QLatin1String("/fans.json");
+    return QStandardPaths::writableLocation(QStandardPaths::StateLocation) + "/fans.json"_L1;
 }
 
 static QString headerKey(quint8 header)
 {
-    return QStringLiteral("0x%1").arg(header, 2, 16, QLatin1Char('0'));
+    return u"0x%1"_s.arg(header, 2, 16, u'0');
 }
 
 static QJsonObject settingToJson(Ite8297::HeaderSetting s)
 {
     return {
-        {QLatin1String("mode"), QLatin1String(Ite8297::modeInfo(s.mode)->id)},
-        {QLatin1String("speed"), s.speed},
-        {QLatin1String("brightness"), s.brightness},
-        {QLatin1String("colour"), Ite8297::rgbToString(s.colour)},
+        {"mode"_L1, QLatin1String(Ite8297::modeInfo(s.mode)->id)},
+        {"speed"_L1, s.speed},
+        {"brightness"_L1, s.brightness},
+        {"colour"_L1, Ite8297::rgbToString(s.colour)},
     };
 }
 
@@ -66,10 +68,10 @@ static Headers parseHeaders(const QJsonObject &headers)
             continue;
         }
         const QJsonObject o = it.value().toObject();
-        const Ite8297::ModeInfo *mode = Ite8297::modeInfo(o.value(QLatin1String("mode")).toString());
-        const auto colour = Ite8297::parseRgb(o.value(QLatin1String("colour")).toString());
-        const int speed = o.value(QLatin1String("speed")).toInt();
-        const int brightness = o.value(QLatin1String("brightness")).toInt();
+        const Ite8297::ModeInfo *mode = Ite8297::modeInfo(o.value("mode"_L1).toString());
+        const auto colour = Ite8297::parseRgb(o.value("colour"_L1).toString());
+        const int speed = o.value("speed"_L1).toInt();
+        const int brightness = o.value("brightness"_L1).toInt();
         if (!mode || !colour || speed < Ite8297::MinLevel || speed > 0xff || brightness < Ite8297::MinLevel || brightness > 0xff) {
             continue;
         }
@@ -117,10 +119,10 @@ Headers load(const ModelProfile &model)
         return {};
     }
     const QJsonObject root = QJsonDocument::fromJson(f.readAll()).object();
-    if (root.value(QLatin1String("version")).toInt() != FormatVersion) {
+    if (root.value("version"_L1).toInt() != FormatVersion) {
         return {};
     }
-    return headersFromJson(root.value(QLatin1String("headers")).toObject(), model);
+    return headersFromJson(root.value("headers"_L1).toObject(), model);
 }
 
 // Only the changed headers are replaced; every other entry stays exactly as it
@@ -142,13 +144,13 @@ bool merge(const Lock &, const QList<Ite8297::HeaderSetting> &changed, QString *
         const QJsonDocument doc = QJsonDocument::fromJson(current.readAll(), &parseError);
         current.close();
         const QJsonObject root = doc.object();
-        const int version = root.value(QLatin1String("version")).toInt();
+        const int version = root.value("version"_L1).toInt();
         const bool stateFile = parseError.error == QJsonParseError::NoError && doc.isObject() && version >= FormatVersion
-            && (version > FormatVersion || root.value(QLatin1String("headers")).isObject());
+            && (version > FormatVersion || root.value("headers"_L1).isObject());
         if (!stateFile) {
             // Keep a copy for inspection and start afresh. rename() replaces an
             // older copy only once this one is in its place.
-            const QString broken = path + QLatin1String(".broken");
+            const QString broken = path + ".broken"_L1;
             if (::rename(QFile::encodeName(path).constData(), QFile::encodeName(broken).constData()) != 0) {
                 *error = i18n("%1 is damaged and could not be moved aside to %2.", path, broken);
                 return false;
@@ -157,7 +159,7 @@ bool merge(const Lock &, const QList<Ite8297::HeaderSetting> &changed, QString *
             *error = i18n("%1 was saved by a newer version of Glowzone and is left as it is.", path);
             return false;
         } else {
-            headers = root.value(QLatin1String("headers")).toObject();
+            headers = root.value("headers"_L1).toObject();
         }
     } else if (current.exists()) {
         *error = i18n("Could not read %1: %2", path, current.errorString());
@@ -167,7 +169,7 @@ bool merge(const Lock &, const QList<Ite8297::HeaderSetting> &changed, QString *
         headers.insert(headerKey(s.header), settingToJson(s));
     }
 
-    const QByteArray data = QJsonDocument(QJsonObject{{QLatin1String("version"), FormatVersion}, {QLatin1String("headers"), headers}}).toJson();
+    const QByteArray data = QJsonDocument(QJsonObject{{"version"_L1, FormatVersion}, {"headers"_L1, headers}}).toJson();
     QSaveFile f(path);
     if (!f.open(QIODevice::WriteOnly) || f.write(data) != data.size() || !f.commit()) {
         *error = i18n("Could not save the fan state to %1: %2", path, f.errorString());
@@ -178,7 +180,7 @@ bool merge(const Lock &, const QList<Ite8297::HeaderSetting> &changed, QString *
 
 Lock::Lock()
 {
-    const QString path = QFileInfo(filePath()).absolutePath() + QLatin1String("/fans.lock");
+    const QString path = QFileInfo(filePath()).absolutePath() + "/fans.lock"_L1;
     const QByteArray name = QFile::encodeName(path);
     m_fd = ::open(name.constData(), O_RDWR | O_CREAT | O_CLOEXEC, 0600);
     if (m_fd < 0 && errno == ENOENT && QDir().mkpath(QFileInfo(path).absolutePath())) {

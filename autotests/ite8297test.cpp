@@ -7,6 +7,8 @@
 
 #include <QTest>
 
+using namespace Qt::StringLiterals;
+
 using namespace Glowzone::Ite8297;
 
 static QByteArray report(const QByteArray &hexPrefix)
@@ -75,7 +77,7 @@ private Q_SLOTS:
         // Other modes pass through unchanged.
         const HeaderSetting rainbow{0x11, Mode::Rainbow, 2, 3, Rgb{1, 2, 3}};
         QCOMPARE(resolve(rainbow, Rgb{0, 0, 0xff}), rainbow);
-        QCOMPARE(modeInfo(QStringLiteral("cpu-temperature"))->mode, Mode::CpuTemperature);
+        QCOMPARE(modeInfo(u"cpu-temperature"_s)->mode, Mode::CpuTemperature);
         QVERIFY(followsTemperature(Mode::CpuTemperature));
         QVERIFY(!followsTemperature(Mode::Static));
         QVERIFY(!modeInfo(Mode::CpuTemperature)->usesColour);
@@ -89,15 +91,15 @@ private Q_SLOTS:
 
     void colours()
     {
-        QCOMPARE(parseRgb(QStringLiteral("ff3d9c")), std::optional<Rgb>(Rgb{0xff, 0x3d, 0x9c}));
-        QCOMPARE(parseRgb(QStringLiteral("#158DDD")), std::optional<Rgb>(Rgb{0x15, 0x8d, 0xdd}));
-        QVERIFY(!parseRgb(QStringLiteral("fff")));
-        QVERIFY(!parseRgb(QStringLiteral("gg0000")));
-        QVERIFY(!parseRgb(QStringLiteral("0x1234")));
-        QVERIFY(!parseRgb(QStringLiteral("+12345")));
-        QVERIFY(!parseRgb(QStringLiteral("12 345")));
+        QCOMPARE(parseRgb(u"ff3d9c"_s), std::optional<Rgb>(Rgb{0xff, 0x3d, 0x9c}));
+        QCOMPARE(parseRgb(u"#158DDD"_s), std::optional<Rgb>(Rgb{0x15, 0x8d, 0xdd}));
+        QVERIFY(!parseRgb(u"fff"_s));
+        QVERIFY(!parseRgb(u"gg0000"_s));
+        QVERIFY(!parseRgb(u"0x1234"_s));
+        QVERIFY(!parseRgb(u"+12345"_s));
+        QVERIFY(!parseRgb(u"12 345"_s));
         QVERIFY(!parseRgb(QString::fromUtf16(u"\u0661\u0662\u0663\u0664\u0665\u0666"))); // Arabic-Indic digits
-        QCOMPARE(rgbToString(Rgb{0x15, 0x8d, 0xdd}), QStringLiteral("#158ddd"));
+        QCOMPARE(rgbToString(Rgb{0x15, 0x8d, 0xdd}), u"#158ddd"_s);
     }
 };
 

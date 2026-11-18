@@ -13,12 +13,14 @@
 #include <QTemporaryDir>
 #include <QTest>
 
+using namespace Qt::StringLiterals;
+
 using namespace Glowzone;
 using Ite8297::Rgb;
 
 static const CpuTemperatureDef &def()
 {
-    const ModelProfile *m = matchModel({QStringLiteral("LENOVO"), QStringLiteral("Legion T5 26IOB6"), QStringLiteral("3733")});
+    const ModelProfile *m = matchModel({u"LENOVO"_s, u"Legion T5 26IOB6"_s, u"3733"_s});
     Q_ASSERT(m && m->cpuTemperature);
     return *m->cpuTemperature;
 }
@@ -173,55 +175,55 @@ private Q_SLOTS:
     void sensor()
     {
         QTemporaryDir root;
-        writeFile(root.filePath(QStringLiteral("hwmon0/name")), "acpitz\n");
-        writeFile(root.filePath(QStringLiteral("hwmon0/temp1_input")), "27800\n");
-        writeFile(root.filePath(QStringLiteral("hwmon4/name")), "coretemp\n");
-        writeFile(root.filePath(QStringLiteral("hwmon4/temp2_label")), "Core 0\n");
-        writeFile(root.filePath(QStringLiteral("hwmon4/temp2_input")), "61000\n");
-        writeFile(root.filePath(QStringLiteral("hwmon4/temp1_label")), "Package id 0\n");
-        writeFile(root.filePath(QStringLiteral("hwmon4/temp1_input")), "52000\n");
+        writeFile(root.filePath(u"hwmon0/name"_s), "acpitz\n");
+        writeFile(root.filePath(u"hwmon0/temp1_input"_s), "27800\n");
+        writeFile(root.filePath(u"hwmon4/name"_s), "coretemp\n");
+        writeFile(root.filePath(u"hwmon4/temp2_label"_s), "Core 0\n");
+        writeFile(root.filePath(u"hwmon4/temp2_input"_s), "61000\n");
+        writeFile(root.filePath(u"hwmon4/temp1_label"_s), "Package id 0\n");
+        writeFile(root.filePath(u"hwmon4/temp1_input"_s), "52000\n");
 
         TemperatureSensor sensor(def(), root.path());
         QString error;
         QCOMPARE(sensor.read(&error), std::optional<double>(52.0));
         QCOMPARE(sensor.limit(), std::nullopt); // no tempN_crit
 
-        writeFile(root.filePath(QStringLiteral("hwmon4/temp1_crit")), "105000\n");
-        writeFile(root.filePath(QStringLiteral("hwmon4/temp1_input")), "x\n");
+        writeFile(root.filePath(u"hwmon4/temp1_crit"_s), "105000\n");
+        writeFile(root.filePath(u"hwmon4/temp1_input"_s), "x\n");
         QVERIFY(!sensor.read(&error)); // searched again on the next read
-        writeFile(root.filePath(QStringLiteral("hwmon4/temp1_input")), "52000\n");
+        writeFile(root.filePath(u"hwmon4/temp1_input"_s), "52000\n");
         QVERIFY(sensor.read(&error));
         QCOMPARE(sensor.limit(), std::optional<int>(105));
 
-        writeFile(root.filePath(QStringLiteral("hwmon4/temp1_input")), "garbage\n");
+        writeFile(root.filePath(u"hwmon4/temp1_input"_s), "garbage\n");
         QVERIFY(!sensor.read(&error));
         QVERIFY(!error.isEmpty());
-        writeFile(root.filePath(QStringLiteral("hwmon4/temp1_input")), "48500\n");
+        writeFile(root.filePath(u"hwmon4/temp1_input"_s), "48500\n");
         QCOMPARE(sensor.read(&error), std::optional<double>(48.5)); // found again
     }
 
     void sensorMissing()
     {
         QTemporaryDir root;
-        writeFile(root.filePath(QStringLiteral("hwmon0/name")), "acpitz\n");
+        writeFile(root.filePath(u"hwmon0/name"_s), "acpitz\n");
         TemperatureSensor sensor(def(), root.path());
         QString error;
         QVERIFY(!sensor.read(&error));
-        QVERIFY(error.contains(QLatin1String("coretemp")));
+        QVERIFY(error.contains("coretemp"_L1));
 
-        writeFile(root.filePath(QStringLiteral("hwmon1/name")), "coretemp\n");
-        writeFile(root.filePath(QStringLiteral("hwmon1/temp2_label")), "Core 0\n");
+        writeFile(root.filePath(u"hwmon1/name"_s), "coretemp\n");
+        writeFile(root.filePath(u"hwmon1/temp2_label"_s), "Core 0\n");
         QVERIFY(!sensor.read(&error));
-        QVERIFY(error.contains(QLatin1String("Package id 0")));
+        QVERIFY(error.contains("Package id 0"_L1));
     }
 
     // Reading right away on start, then a colour only when the step changes.
     void following()
     {
         QTemporaryDir root;
-        const QString input = root.filePath(QStringLiteral("hwmon2/temp1_input"));
-        writeFile(root.filePath(QStringLiteral("hwmon2/name")), "coretemp\n");
-        writeFile(root.filePath(QStringLiteral("hwmon2/temp1_label")), "Package id 0\n");
+        const QString input = root.filePath(u"hwmon2/temp1_input"_s);
+        writeFile(root.filePath(u"hwmon2/name"_s), "coretemp\n");
+        writeFile(root.filePath(u"hwmon2/temp1_label"_s), "Package id 0\n");
         writeFile(input, "60000\n");
 
         CpuTemperature t(def(), nullptr, root.path());
@@ -248,10 +250,10 @@ private Q_SLOTS:
     void rangeChange()
     {
         QTemporaryDir root;
-        writeFile(root.filePath(QStringLiteral("hwmon2/name")), "coretemp\n");
-        writeFile(root.filePath(QStringLiteral("hwmon2/temp1_label")), "Package id 0\n");
-        writeFile(root.filePath(QStringLiteral("hwmon2/temp1_input")), "60000\n");
-        writeFile(root.filePath(QStringLiteral("hwmon2/temp1_crit")), "100000\n");
+        writeFile(root.filePath(u"hwmon2/name"_s), "coretemp\n");
+        writeFile(root.filePath(u"hwmon2/temp1_label"_s), "Package id 0\n");
+        writeFile(root.filePath(u"hwmon2/temp1_input"_s), "60000\n");
+        writeFile(root.filePath(u"hwmon2/temp1_crit"_s), "100000\n");
 
         CpuTemperature t(def(), nullptr, root.path());
         QSignalSpy colours(&t, &CpuTemperature::colourChanged);
@@ -277,9 +279,9 @@ private Q_SLOTS:
     void sameRangeKeepsHysteresis()
     {
         QTemporaryDir root;
-        const QString input = root.filePath(QStringLiteral("hwmon2/temp1_input"));
-        writeFile(root.filePath(QStringLiteral("hwmon2/name")), "coretemp\n");
-        writeFile(root.filePath(QStringLiteral("hwmon2/temp1_label")), "Package id 0\n");
+        const QString input = root.filePath(u"hwmon2/temp1_input"_s);
+        writeFile(root.filePath(u"hwmon2/name"_s), "coretemp\n");
+        writeFile(root.filePath(u"hwmon2/temp1_label"_s), "Package id 0\n");
         writeFile(input, "69000\n"); // 70 °C with the offset: the step from 70
 
         CpuTemperature t(def(), nullptr, root.path());
@@ -302,9 +304,9 @@ private Q_SLOTS:
     void limitChange()
     {
         QTemporaryDir root;
-        const QString input = root.filePath(QStringLiteral("hwmon2/temp1_input"));
-        writeFile(root.filePath(QStringLiteral("hwmon2/name")), "coretemp\n");
-        writeFile(root.filePath(QStringLiteral("hwmon2/temp1_label")), "Package id 0\n");
+        const QString input = root.filePath(u"hwmon2/temp1_input"_s);
+        writeFile(root.filePath(u"hwmon2/name"_s), "coretemp\n");
+        writeFile(root.filePath(u"hwmon2/temp1_label"_s), "Package id 0\n");
         writeFile(input, "60000\n");
 
         CpuTemperature t(def(), nullptr, root.path());
@@ -316,7 +318,7 @@ private Q_SLOTS:
         QCOMPARE(scales.size(), 0);
 
         writeFile(input, "x\n"); // fails: searched again on the next reading
-        writeFile(root.filePath(QStringLiteral("hwmon2/temp1_crit")), "105000\n");
+        writeFile(root.filePath(u"hwmon2/temp1_crit"_s), "105000\n");
         QVERIFY(QTest::qWaitFor([&] { return updates.size() >= 3; }));
         writeFile(input, "60000\n");
         QVERIFY(QTest::qWaitFor([&] { return scales.size() == 1; }));

@@ -7,12 +7,14 @@
 #include <QProcess>
 #include <QThread>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone
 {
 
 static QString procPath()
 {
-    return QStringLiteral("/proc/acpi/call");
+    return u"/proc/acpi/call"_s;
 }
 
 bool ProcAcpiCall::ensureReady(QString *detail)
@@ -30,15 +32,15 @@ bool ProcAcpiCall::ensureReady(QString *detail)
         }
     }
     if (modprobe.isEmpty()) {
-        *detail = QStringLiteral("modprobe not found");
+        *detail = u"modprobe not found"_s;
         return false;
     }
 
     QProcess p;
     p.setProcessEnvironment(QProcessEnvironment()); // empty environment
-    p.start(modprobe, {QStringLiteral("acpi_call")});
+    p.start(modprobe, {u"acpi_call"_s});
     if (!p.waitForFinished(10000) || p.exitStatus() != QProcess::NormalExit || p.exitCode() != 0) {
-        *detail = QStringLiteral("modprobe acpi_call failed: ") + QString::fromLocal8Bit(p.readAllStandardError()).trimmed();
+        *detail = u"modprobe acpi_call failed: "_s + QString::fromLocal8Bit(p.readAllStandardError()).trimmed();
         return false;
     }
 
@@ -46,7 +48,7 @@ bool ProcAcpiCall::ensureReady(QString *detail)
         QThread::msleep(50);
     }
     if (!QFileInfo::exists(procPath())) {
-        *detail = QStringLiteral("acpi_call loaded but %1 did not appear").arg(procPath());
+        *detail = u"acpi_call loaded but %1 did not appear"_s.arg(procPath());
         return false;
     }
     return true;

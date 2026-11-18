@@ -18,6 +18,8 @@
 #include <QSysInfo>
 #include <QVBoxLayout>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone::Gui
 {
 
@@ -56,26 +58,26 @@ AboutDialog::AboutDialog(const Lighting *lighting, QWidget *parent)
         QString shown;
         QString report;
     };
-    const State fans = lighting->fansAvailable() ? State{i18nc("@info hardware state", "Connected"), QStringLiteral("connected")}
-                                                 : State{i18nc("@info hardware state", "Not found"), QStringLiteral("not found")};
-    State lights{i18nc("@info hardware state", "Not read yet"), QStringLiteral("not read yet")};
+    const State fans = lighting->fansAvailable() ? State{i18nc("@info hardware state", "Connected"), u"connected"_s}
+                                                 : State{i18nc("@info hardware state", "Not found"), u"not found"_s};
+    State lights{i18nc("@info hardware state", "Not read yet"), u"not read yet"_s};
     if (lighting->lightsAvailable()) {
-        lights = {i18nc("@info hardware state", "Available"), QStringLiteral("available")};
+        lights = {i18nc("@info hardware state", "Available"), u"available"_s};
     } else if (lighting->lightsFailed()) {
-        lights = {i18nc("@info hardware state", "Not available"), QStringLiteral("not available")};
+        lights = {i18nc("@info hardware state", "Not available"), u"not available"_s};
     }
     const int layoutCode = lighting->fanLayout();
-    State detection{i18nc("@info hardware state", "Not read yet"), QStringLiteral("unknown")};
+    State detection{i18nc("@info hardware state", "Not read yet"), u"unknown"_s};
     if (layoutCode == model.normalFanLayout) {
         detection = {i18nc("@info BIOS fan detection, %1 layout code", "All fans detected (layout %1)", EcLights::layoutCode(layoutCode)),
                      EcLights::layoutCode(layoutCode)};
     } else if (layoutCode >= 0) {
         detection = {i18nc("@info BIOS fan detection, %1 layout code", "Unusual layout %1 – see the message in the window", EcLights::layoutCode(layoutCode)),
-                     EcLights::layoutCode(layoutCode) + QLatin1String(", normally ") + EcLights::layoutCode(model.normalFanLayout)};
+                     EcLights::layoutCode(layoutCode) + ", normally "_L1 + EcLights::layoutCode(model.normalFanLayout)};
     }
-    const QString usbId = QStringLiteral("%1:%2")
-                              .arg(model.usbVendorId, 4, 16, QLatin1Char('0'))
-                              .arg(model.usbProductId, 4, 16, QLatin1Char('0'))
+    const QString usbId = u"%1:%2"_s
+                              .arg(model.usbVendorId, 4, 16, u'0')
+                              .arg(model.usbProductId, 4, 16, u'0')
                               .toUpper();
 
     auto *form = new QFormLayout;
@@ -92,23 +94,23 @@ AboutDialog::AboutDialog(const Lighting *lighting, QWidget *parent)
         addRow(i18nc("@label", "Case lights:"), lights.shown);
     }
     addRow(i18nc("@label BIOS fan detection", "Fan detection:"), detection.shown);
-    addRow(i18nc("@label", "Licence:"), QStringLiteral("GPL-2.0-or-later"));
+    addRow(i18nc("@label", "Licence:"), u"GPL-2.0-or-later"_s);
     addRow(i18nc("@label", "Copyright:"), i18n("© 2026 Meluxon"));
     layout->addLayout(form);
 
     m_report = QStringList{
-        QStringLiteral("Glowzone ") + QStringLiteral(GLOWZONE_VERSION_STRING),
-        QStringLiteral("Computer: %1 (board %2)").arg(model.displayName(), QLatin1String(model.boardName)),
-        QStringLiteral("Fan controller: USB %1 – %2").arg(usbId, fans.report),
-        QStringLiteral("Case lights: ") + lights.report,
-        QStringLiteral("BIOS fan layout: ") + detection.report,
-        QStringLiteral("Qt: %1, KDE Frameworks: %2").arg(QString::fromLatin1(qVersion()), KCoreAddons::versionString()),
-        QStringLiteral("System: %1 (%2)").arg(QSysInfo::prettyProductName(), QSysInfo::kernelVersion()),
-    }.join(QLatin1Char('\n'));
+        u"Glowzone "_s + QStringLiteral(GLOWZONE_VERSION_STRING),
+        u"Computer: %1 (board %2)"_s.arg(model.displayName(), QLatin1String(model.boardName)),
+        u"Fan controller: USB %1 – %2"_s.arg(usbId, fans.report),
+        u"Case lights: "_s + lights.report,
+        u"BIOS fan layout: "_s + detection.report,
+        u"Qt: %1, KDE Frameworks: %2"_s.arg(QString::fromLatin1(qVersion()), KCoreAddons::versionString()),
+        u"System: %1 (%2)"_s.arg(QSysInfo::prettyProductName(), QSysInfo::kernelVersion()),
+    }.join(u'\n');
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
     auto *copy = buttons->addButton(i18nc("@action:button", "Copy to Clipboard"), QDialogButtonBox::ActionRole);
-    copy->setIcon(QIcon::fromTheme(QStringLiteral("edit-copy")));
+    copy->setIcon(QIcon::fromTheme(u"edit-copy"_s));
     copy->setToolTip(i18nc("@info:tooltip", "Copy version and hardware details, e.g. for a bug report"));
     connect(copy, &QPushButton::clicked, this, [this] {
         QGuiApplication::clipboard()->setText(m_report);

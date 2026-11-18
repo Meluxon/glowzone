@@ -5,6 +5,8 @@
 #include <KLocalizedString>
 #include <hidapi.h>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone
 {
 
@@ -62,9 +64,9 @@ bool FanController::open(QString *error)
 
     m_dev = path.isEmpty() ? nullptr : hid_open_path(path.constData());
     if (!m_dev) {
-        const QString id = QStringLiteral("%1:%2")
-                               .arg(m_model.usbVendorId, 4, 16, QLatin1Char('0'))
-                               .arg(m_model.usbProductId, 4, 16, QLatin1Char('0'))
+        const QString id = u"%1:%2"_s
+                               .arg(m_model.usbVendorId, 4, 16, u'0')
+                               .arg(m_model.usbProductId, 4, 16, u'0')
                                .toUpper();
         *error = i18n("Fan LED controller %1 not found or not accessible (%2).", id, hidError(nullptr));
         return false;

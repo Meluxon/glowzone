@@ -28,6 +28,8 @@
 
 #include <algorithm>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone::Gui
 {
 
@@ -129,7 +131,7 @@ QWidget *MainWindow::buildSidebarPanel()
     auto *modelName = new QLabel(QLatin1String(m_model.productVersion), headerWidget);
     modelName->setToolTip(i18nc("@info:tooltip", "Controlling: %1", m_model.displayName()));
     auto *menuButton = new QToolButton(headerWidget);
-    menuButton->setIcon(QIcon::fromTheme(QStringLiteral("application-menu")));
+    menuButton->setIcon(QIcon::fromTheme(u"application-menu"_s));
     menuButton->setAutoRaise(true);
     menuButton->setPopupMode(QToolButton::InstantPopup);
     menuButton->setToolTip(i18nc("@info:tooltip", "Menu"));
@@ -153,11 +155,11 @@ QWidget *MainWindow::buildSidebarPanel()
     connect(keepRunning, &QAction::triggered, m_app, &App::setKeepRunning);
     connect(startAtLogin, &QAction::triggered, m_app, &App::setStartAtLogin);
     menu->addSeparator();
-    menu->addAction(QIcon::fromTheme(QStringLiteral("help-about")), i18nc("@action:inmenu", "About Glowzone"), this, [this] {
+    menu->addAction(QIcon::fromTheme(u"help-about"_s), i18nc("@action:inmenu", "About Glowzone"), this, [this] {
         AboutDialog(m_lighting, this).exec();
     });
     menu->addSeparator();
-    menu->addAction(QIcon::fromTheme(QStringLiteral("application-exit")), i18nc("@action:inmenu", "Quit"), this, &MainWindow::quitRequested);
+    menu->addAction(QIcon::fromTheme(u"application-exit"_s), i18nc("@action:inmenu", "Quit"), this, &MainWindow::quitRequested);
     menuButton->setMenu(menu);
     header->addWidget(modelName, 1);
     header->addWidget(menuButton);
@@ -183,7 +185,7 @@ QWidget *MainWindow::buildPagePanel()
     QFont f = m_pageTitle->font();
     f.setPointSizeF(f.pointSizeF() * 1.3);
     m_pageTitle->setFont(f);
-    auto *allOff = new QPushButton(QIcon::fromTheme(QStringLiteral("system-shutdown-symbolic")), i18nc("@action:button", "Turn All Off"), headerWidget);
+    auto *allOff = new QPushButton(QIcon::fromTheme(u"system-shutdown-symbolic"_s), i18nc("@action:button", "Turn All Off"), headerWidget);
     allOff->setToolTip(i18nc("@info:tooltip", "Switch every fan LED and case light off. Colours and levels are kept."));
     allOff->setFlat(true);
     connect(allOff, &QPushButton::clicked, m_lighting, &Lighting::turnAllOff);
@@ -221,8 +223,8 @@ QWidget *MainWindow::buildPagePanel()
     m_problemMessage = makeMessage(KMessageWidget::Warning, true);
     m_errorMessage = makeMessage(KMessageWidget::Error, true);
     m_changedMessage = makeMessage(KMessageWidget::Information, false);
-    auto *save = new QAction(QIcon::fromTheme(QStringLiteral("document-save")), i18nc("@action:button", "Save"), m_changedMessage);
-    auto *saveNew = new QAction(QIcon::fromTheme(QStringLiteral("document-save-as")), i18nc("@action:button", "Save as New…"), m_changedMessage);
+    auto *save = new QAction(QIcon::fromTheme(u"document-save"_s), i18nc("@action:button", "Save"), m_changedMessage);
+    auto *saveNew = new QAction(QIcon::fromTheme(u"document-save-as"_s), i18nc("@action:button", "Save as New…"), m_changedMessage);
     connect(save, &QAction::triggered, this, &MainWindow::saveCurrentProfile);
     connect(saveNew, &QAction::triggered, this, &MainWindow::saveNewProfile);
     m_changedMessage->addAction(save);
@@ -479,7 +481,7 @@ void MainWindow::updateProblems()
         hideMessage(m_problemMessage);
         return;
     }
-    m_problemMessage->setText(problems.join(QLatin1String("\n\n")));
+    m_problemMessage->setText(problems.join("\n\n"_L1));
     if (added) {
         showMessage(m_problemMessage);
     }

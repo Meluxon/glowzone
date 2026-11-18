@@ -13,10 +13,10 @@ namespace Glowzone::Instance
 
 QString serviceName()
 {
-    QStringList parts = QCoreApplication::organizationDomain().split(QLatin1Char('.'), Qt::SkipEmptyParts);
+    QStringList parts = QCoreApplication::organizationDomain().split(u'.', Qt::SkipEmptyParts);
     std::reverse(parts.begin(), parts.end());
     parts << QCoreApplication::applicationName();
-    return parts.join(QLatin1Char('.'));
+    return parts.join(u'.');
 }
 
 bool isRunning()

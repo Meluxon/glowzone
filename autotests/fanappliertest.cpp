@@ -17,6 +17,7 @@
 
 #include <unistd.h>
 
+using namespace Qt::StringLiterals;
 
 using namespace Glowzone;
 using namespace Ite8297;
@@ -25,7 +26,7 @@ using FakeHid::sent;
 
 static const ModelProfile &model()
 {
-    const ModelProfile *m = matchModel({QStringLiteral("LENOVO"), QStringLiteral("Legion T5 26IOB6"), QStringLiteral("3733")});
+    const ModelProfile *m = matchModel({u"LENOVO"_s, u"Legion T5 26IOB6"_s, u"3733"_s});
     Q_ASSERT(m);
     return *m;
 }
@@ -35,7 +36,7 @@ static QStringList coloursFor(const QStringList &reports, const QString &header)
 {
     QStringList out;
     for (const QString &r : reports) {
-        if (r.startsWith(header + QLatin1Char(':'))) {
+        if (r.startsWith(header + u':')) {
             out << r.mid(header.size() + 1);
         }
     }
@@ -50,7 +51,7 @@ class FanApplierTest : public QObject
 
     void setTemperature(int celsius)
     {
-        QFile f(m_hwmon.filePath(QStringLiteral("hwmon1/temp1_input")));
+        QFile f(m_hwmon.filePath(u"hwmon1/temp1_input"_s));
         QVERIFY(f.open(QIODevice::WriteOnly));
         f.write(QByteArray::number(celsius * 1000) + '\n');
     }
@@ -64,11 +65,11 @@ private Q_SLOTS:
     void initTestCase()
     {
         QStandardPaths::setTestModeEnabled(true);
-        QDir().mkpath(m_hwmon.filePath(QStringLiteral("hwmon1")));
-        QFile name(m_hwmon.filePath(QStringLiteral("hwmon1/name")));
+        QDir().mkpath(m_hwmon.filePath(u"hwmon1"_s));
+        QFile name(m_hwmon.filePath(u"hwmon1/name"_s));
         QVERIFY(name.open(QIODevice::WriteOnly));
         name.write("coretemp\n");
-        QFile label(m_hwmon.filePath(QStringLiteral("hwmon1/temp1_label")));
+        QFile label(m_hwmon.filePath(u"hwmon1/temp1_label"_s));
         QVERIFY(label.open(QIODevice::WriteOnly));
         label.write("Package id 0\n");
     }
@@ -89,7 +90,7 @@ private Q_SLOTS:
         QVERIFY(fans.open(&error));
         fans.queue({follows(0x13)});
         fans.flushNow();
-        QCOMPARE(sent(), (QStringList{QStringLiteral("13:00ff50"), QStringLiteral("commit")}));
+        QCOMPARE(sent(), (QStringList{u"13:00ff50"_s, u"commit"_s}));
         QVERIFY(fans.followsTemperature());
         QVERIFY(fans.temperature()->isRunning());
         // Saved as the mode, not as the colour of the moment.
@@ -113,7 +114,7 @@ private Q_SLOTS:
         fans.setTemperatureRange({35, 60}); // 60 °C is the top of it: the last colour
         QCOMPARE(sent(), QStringList());
         QTRY_VERIFY(!FakeHid::reports.isEmpty());
-        QCOMPARE(sent(), (QStringList{QStringLiteral("13:ff0000"), QStringLiteral("commit")}));
+        QCOMPARE(sent(), (QStringList{u"13:ff0000"_s, u"commit"_s}));
         QTest::qWait(200);
         QCOMPARE(sent(), QStringList());
     }
@@ -135,7 +136,7 @@ private Q_SLOTS:
 
         setTemperature(65); // 66: 00ff00
         QVERIFY(QTest::qWaitFor([] { return !FakeHid::reports.isEmpty(); }));
-        QCOMPARE(sent(), (QStringList{QStringLiteral("13:00ff00"), QStringLiteral("commit")}));
+        QCOMPARE(sent(), (QStringList{u"13:00ff00"_s, u"commit"_s}));
         QFile f(FanState::filePath());
         QVERIFY(f.open(QIODevice::ReadOnly));
         QCOMPARE(f.readAll(), saved);
@@ -166,12 +167,12 @@ private Q_SLOTS:
         fans.flushNow();
         QVERIFY(writable(true));
         QCOMPARE(saveFailed.count(), 1);
-        QCOMPARE(sent(), (QStringList{QStringLiteral("13:ff0000"), QStringLiteral("commit")}));
+        QCOMPARE(sent(), (QStringList{u"13:ff0000"_s, u"commit"_s}));
         QCOMPARE(fans.unsaved().value(0x13).mode, Mode::Static);
 
         setTemperature(65); // 66: 00ff00
         QVERIFY(QTest::qWaitFor([] { return !FakeHid::reports.isEmpty(); }));
-        QCOMPARE(sent(), (QStringList{QStringLiteral("11:00ff00"), QStringLiteral("commit")}));
+        QCOMPARE(sent(), (QStringList{u"11:00ff00"_s, u"commit"_s}));
 
         fans.queue({{0x12, Mode::Off, 1, 2, Rgb{}}});
         fans.flushNow();
@@ -196,8 +197,8 @@ private Q_SLOTS:
         setTemperature(75); // 76: a0ff00, reached in steps (the smoothing)
         QVERIFY(QTest::qWaitFor([&] { return fans.temperature()->colour() == Rgb{0xa0, 0xff, 0x00}; }));
         const QStringList reports = sent();
-        QVERIFY(coloursFor(reports, QStringLiteral("13")).isEmpty());
-        QCOMPARE(coloursFor(reports, QStringLiteral("11")).constLast(), QStringLiteral("a0ff00"));
+        QVERIFY(coloursFor(reports, u"13"_s).isEmpty());
+        QCOMPARE(coloursFor(reports, u"11"_s).constLast(), u"a0ff00"_s);
 
         QVERIFY(FanState::merge(FanState::Lock(), {{0x11, Mode::Off, 1, 2, Rgb{}}}, &error)); // nothing follows any more
         setTemperature(45);
@@ -219,7 +220,7 @@ private Q_SLOTS:
         QVERIFY(FanState::merge(FanState::Lock(), {follows(0x39)}, &error)); // as the CLI does
         const FanState::Headers state = FanState::load(model());
         fans.setCurrent(state);
-        QCOMPARE(sent(), (QStringList{QStringLiteral("39:00ff50"), QStringLiteral("commit")}));
+        QCOMPARE(sent(), (QStringList{u"39:00ff50"_s, u"commit"_s}));
         fans.setCurrent(state); // nothing new
         QVERIFY(FakeHid::reports.isEmpty());
     }
@@ -244,8 +245,8 @@ private Q_SLOTS:
         QVERIFY(QTest::qWaitFor([&] { return fans.temperature()->colour() == Rgb{0xa0, 0xff, 0x00}; }));
         fans.flushNow();
         const QStringList reports = sent();
-        QCOMPARE(coloursFor(reports, QStringLiteral("13")), QStringList{QStringLiteral("0000ff")});
-        QCOMPARE(coloursFor(reports, QStringLiteral("11")).constLast(), QStringLiteral("a0ff00"));
+        QCOMPARE(coloursFor(reports, u"13"_s), QStringList{u"0000ff"_s});
+        QCOMPARE(coloursFor(reports, u"11"_s).constLast(), u"a0ff00"_s);
         QVERIFY(fans.followsTemperature()); // 0x11 still
     }
 
@@ -270,7 +271,7 @@ private Q_SLOTS:
         FakeHid::failures = 1;
         setTemperature(65); // 66: 00ff00
         QVERIFY(QTest::qWaitFor([] { return !FakeHid::reports.isEmpty(); }));
-        QCOMPARE(sent(), (QStringList{QStringLiteral("13:00ff00"), QStringLiteral("commit")}));
+        QCOMPARE(sent(), (QStringList{u"13:00ff00"_s, u"commit"_s}));
         QCOMPARE(failed.size(), 0);
         QCOMPARE(applied.size(), 1);
 
@@ -281,7 +282,7 @@ private Q_SLOTS:
 
         setTemperature(75); // 76: a0ff00
         QVERIFY(QTest::qWaitFor([&] { return applied.size() == 2; }));
-        QCOMPARE(coloursFor(sent(), QStringLiteral("13")).constLast(), QStringLiteral("a0ff00"));
+        QCOMPARE(coloursFor(sent(), u"13"_s).constLast(), u"a0ff00"_s);
         QCOMPARE(saved.size(), 1); // following saves nothing
     }
 };

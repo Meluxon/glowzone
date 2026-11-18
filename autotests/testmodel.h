@@ -7,7 +7,8 @@
 // The model the tests are written for (also in release builds, unlike Q_ASSERT).
 inline const Glowzone::ModelProfile &legionModel()
 {
-    const Glowzone::ModelProfile *m = Glowzone::matchModel({QStringLiteral("LENOVO"), QStringLiteral("Legion T5 26IOB6"), QStringLiteral("3733")});
+    using namespace Qt::StringLiterals;
+    const Glowzone::ModelProfile *m = Glowzone::matchModel({u"LENOVO"_s, u"Legion T5 26IOB6"_s, u"3733"_s});
     if (!m) {
         qFatal("No model profile for the Legion T5 26IOB6");
     }

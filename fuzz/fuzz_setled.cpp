@@ -13,6 +13,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+using namespace Qt::StringLiterals;
+
 using namespace Glowzone;
 
 [[noreturn]] static void fail(const QByteArray &command)
@@ -116,7 +118,7 @@ struct Reader {
         case 6:
             return QString::number(int(word()));
         case 7:
-            return QStringLiteral("0x%1").arg(byte(), 0, 16);
+            return u"0x%1"_s.arg(byte(), 0, 16);
         case 8:
             return {};
         case 9:

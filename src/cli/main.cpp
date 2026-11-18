@@ -14,6 +14,8 @@
 #include <QCommandLineParser>
 #include <memory>
 
+using namespace Qt::StringLiterals;
+
 enum class Start { Window, Background, Cli };
 
 // The window when there are no arguments – or only Qt's own (e.g.
@@ -61,7 +63,7 @@ int main(int argc, char **argv)
     }
     KLocalizedString::setApplicationDomain(QByteArrayLiteral("glowzone"));
 
-    KAboutData about(QStringLiteral("glowzone"),
+    KAboutData about(u"glowzone"_s,
                      i18n("Glowzone"),
                      QStringLiteral(GLOWZONE_VERSION_STRING),
                      i18n("Lighting control for supported Lenovo desktops: fan LEDs and case lights."),
@@ -69,7 +71,7 @@ int main(int argc, char **argv)
                      i18n("© 2026 Meluxon"));
     about.setLicense(KAboutLicense::GPL_V2, KAboutLicense::OrLaterVersions);
     about.setOrganizationDomain(QByteArrayLiteral("meluxon.github.io"));
-    about.setHomepage(QStringLiteral("https://github.com/Meluxon/glowzone"));
+    about.setHomepage(u"https://github.com/Meluxon/glowzone"_s);
     about.setBugAddress(QByteArrayLiteral("https://github.com/Meluxon/glowzone/issues"));
     about.setDesktopFileName(QStringLiteral(GLOWZONE_APP_ID));
     KAboutData::setApplicationData(about);

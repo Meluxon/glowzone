@@ -114,7 +114,7 @@ bool ModelProfile::matches(const DmiInfo &dmi) const
 
 QString ModelProfile::displayName() const
 {
-    return QLatin1String(vendor) + QLatin1Char(' ') + QLatin1String(productVersion);
+    return QLatin1String(vendor) + u' ' + QLatin1String(productVersion);
 }
 
 const FanDef *ModelProfile::fan(const QString &id) const

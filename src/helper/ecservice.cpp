@@ -4,6 +4,8 @@
 
 #include <QSet>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone
 {
 
@@ -56,7 +58,7 @@ EcService::EcService(const DmiInfo &dmi, AcpiBackend &acpi)
     , m_acpi(acpi)
 {
     if (!m_model) {
-        m_unsupportedDmi = dmi.vendor + QLatin1String(" / ") + dmi.productVersion + QLatin1String(" / ") + dmi.boardName;
+        m_unsupportedDmi = dmi.vendor + " / "_L1 + dmi.productVersion + " / "_L1 + dmi.boardName;
     }
 }
 
@@ -68,7 +70,7 @@ QByteArray EcService::gameZoneCall(quint8 method, const QByteArray &arg) const
 int EcService::checkModel(QString *detail) const
 {
     if (!m_model) {
-        *detail = QStringLiteral("unsupported model: ") + m_unsupportedDmi;
+        *detail = u"unsupported model: "_s + m_unsupportedDmi;
         return HP::UnsupportedModel;
     }
     return 0;
@@ -90,11 +92,11 @@ int EcService::prepareBios(QString *detail)
     }
     const auto presence = parseInteger(*reply);
     if (!presence) {
-        *detail = QStringLiteral("IsSupportBIOSLED returned '%1'").arg(QString::fromLatin1(*reply));
+        *detail = u"IsSupportBIOSLED returned '%1'"_s.arg(QString::fromLatin1(*reply));
         return HP::UnexpectedReply;
     }
     if (int(*presence) != m_model->biosLedPresence) {
-        *detail = QStringLiteral("IsSupportBIOSLED returned '%1', expected 0x%2")
+        *detail = u"IsSupportBIOSLED returned '%1', expected 0x%2"_s
                       .arg(QString::fromLatin1(*reply))
                       .arg(m_model->biosLedPresence, 0, 16);
         return HP::BiosLedMissing;
@@ -136,7 +138,7 @@ std::optional<EcLightState> EcService::getLed(quint8 index, int *error, QString 
     }
     const auto bytes = parseBuffer(*reply);
     if (!bytes || bytes->size() < 3 || bytes->at(0) != index) {
-        *detail = QStringLiteral("GetLED(%1) returned '%2'").arg(index).arg(QString::fromLatin1(*reply));
+        *detail = u"GetLED(%1) returned '%2'"_s.arg(index).arg(QString::fromLatin1(*reply));
         *error = HP::UnexpectedReply;
         return std::nullopt;
     }
@@ -179,7 +181,7 @@ EcService::LayoutResult EcService::layout()
     } else if (const auto value = parseInteger(*reply)) {
         r.layout = int(*value);
     } else {
-        r.detail = QStringLiteral("IsSupportLightingFeature returned '%1'").arg(QString::fromLatin1(*reply));
+        r.detail = u"IsSupportLightingFeature returned '%1'"_s.arg(QString::fromLatin1(*reply));
         r.error = HP::UnexpectedReply;
     }
     return r;
@@ -189,12 +191,12 @@ std::optional<QList<EcRequest>> EcService::parseRequest(const QVariantMap &args,
 {
     const QVariant listVariant = args.value(QLatin1String(HP::KeyLights));
     if (listVariant.typeId() != QMetaType::QVariantList) {
-        *detail = QStringLiteral("missing light list");
+        *detail = u"missing light list"_s;
         return std::nullopt;
     }
     const QVariantList list = listVariant.toList();
     if (list.isEmpty() || list.size() > m_model->ecLights.size()) {
-        *detail = QStringLiteral("bad number of lights: %1").arg(list.size());
+        *detail = u"bad number of lights: %1"_s.arg(list.size());
         return std::nullopt;
     }
 
@@ -221,23 +223,23 @@ std::optional<QList<EcRequest>> EcService::parseRequest(const QVariantMap &args,
     QSet<quint8> seen;
     for (const QVariant &item : list) {
         if (item.typeId() != QMetaType::QVariantMap) {
-            *detail = QStringLiteral("light entry is not a map");
+            *detail = u"light entry is not a map"_s;
             return std::nullopt;
         }
         const QVariantMap m = item.toMap();
         EcRequest req;
         if (!readByte(m, HP::KeyIndex, 0xff, &req.index) || !m_model->ecLightByIndex(req.index) || seen.contains(req.index)) {
-            *detail = QStringLiteral("bad or repeated light index");
+            *detail = u"bad or repeated light index"_s;
             return std::nullopt;
         }
         // Only what this model offers; 0 = leave unchanged.
         if (!readByte(m, HP::KeyMode, 0xff, &req.mode) || (req.mode != 0 && !m_model->hasEcLightMode(req.mode))
             || !readByte(m, HP::KeyBrightness, m_model->ecBrightnessLevels, &req.brightness)) {
-            *detail = QStringLiteral("mode or brightness out of range");
+            *detail = u"mode or brightness out of range"_s;
             return std::nullopt;
         }
         if (req.mode == 0 && req.brightness == 0) {
-            *detail = QStringLiteral("nothing to change for light %1").arg(req.index);
+            *detail = u"nothing to change for light %1"_s.arg(req.index);
             return std::nullopt;
         }
         seen.insert(req.index);
@@ -274,7 +276,7 @@ EcService::Result EcService::set(const QVariantMap &args)
         }
         const auto value = parseInteger(*reply);
         if (isAcpiCallError(*reply) || !value || *value != 0) {
-            r.detail = QStringLiteral("SetLED(%1) returned '%2'").arg(QString::fromLatin1(buffer), QString::fromLatin1(*reply));
+            r.detail = u"SetLED(%1) returned '%2'"_s.arg(QString::fromLatin1(buffer), QString::fromLatin1(*reply));
             r.error = HP::AcpiCallFailed;
             return r;
         }

@@ -4,12 +4,14 @@
 
 #include <QFile>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone
 {
 
 static QString readField(const char *name)
 {
-    QFile f(QLatin1String("/sys/class/dmi/id/") + QLatin1String(name));
+    QFile f("/sys/class/dmi/id/"_L1 + QLatin1String(name));
     if (!f.open(QIODevice::ReadOnly)) {
         return {};
     }

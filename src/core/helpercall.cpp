@@ -18,6 +18,8 @@
 #include <memory>
 #include <utility>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone
 {
 
@@ -63,7 +65,7 @@ static QString errorMessage(int code, const QString &detail)
         break;
     }
     if (!detail.isEmpty()) {
-        msg += QLatin1Char('\n') + i18nc("@info technical details follow", "Details: %1", detail);
+        msg += u'\n' + i18nc("@info technical details follow", "Details: %1", detail);
     }
     return msg;
 }
@@ -85,7 +87,7 @@ constexpr auto CallLimit = 60s;
 // The user's runtime directory (Qt makes a private one if XDG_RUNTIME_DIR is unset).
 QString lockPath()
 {
-    return QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + QLatin1String("/glowzone-helper.lock");
+    return QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + "/glowzone-helper.lock"_L1;
 }
 
 class KAuthCall : public HelperCall

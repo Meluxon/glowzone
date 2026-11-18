@@ -13,12 +13,14 @@
 #include <QSettings>
 #include <QStandardPaths>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone::Settings
 {
 
 QString filePath()
 {
-    return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + QLatin1String("/glowzone.conf");
+    return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + "/glowzone.conf"_L1;
 }
 
 // The file is opened per call: the window and the CLI may both change it.
@@ -26,14 +28,14 @@ QString filePath()
 std::optional<bool> linked(const QString &fanId)
 {
     const QSettings s(filePath(), QSettings::IniFormat);
-    const QVariant v = s.value(QLatin1String("links/") + fanId);
+    const QVariant v = s.value("links/"_L1 + fanId);
     return v.isValid() ? std::optional<bool>(v.toBool()) : std::nullopt;
 }
 
 void setLinked(const QString &fanId, bool isLinked)
 {
     QSettings s(filePath(), QSettings::IniFormat);
-    s.setValue(QLatin1String("links/") + fanId, isLinked);
+    s.setValue("links/"_L1 + fanId, isLinked);
 }
 
 TemperatureRange temperatureRange(const CpuTemperatureDef &def)
@@ -41,64 +43,64 @@ TemperatureRange temperatureRange(const CpuTemperatureDef &def)
     const QSettings s(filePath(), QSettings::IniFormat);
     bool okCoolest = false;
     bool okHottest = false;
-    const int coolest = s.value(QLatin1String("cpuTemperature/coolest")).toInt(&okCoolest);
-    const int hottest = s.value(QLatin1String("cpuTemperature/hottest")).toInt(&okHottest);
+    const int coolest = s.value("cpuTemperature/coolest"_L1).toInt(&okCoolest);
+    const int hottest = s.value("cpuTemperature/hottest"_L1).toInt(&okHottest);
     return okCoolest && okHottest ? TemperatureRange{coolest, hottest} : def.defaultRange;
 }
 
 void setTemperatureRange(TemperatureRange range)
 {
     QSettings s(filePath(), QSettings::IniFormat);
-    s.setValue(QLatin1String("cpuTemperature/coolest"), range.coolest);
-    s.setValue(QLatin1String("cpuTemperature/hottest"), range.hottest);
+    s.setValue("cpuTemperature/coolest"_L1, range.coolest);
+    s.setValue("cpuTemperature/hottest"_L1, range.hottest);
 }
 
 QString currentProfile()
 {
     const QSettings s(filePath(), QSettings::IniFormat);
-    return s.value(QLatin1String("profiles/current")).toString();
+    return s.value("profiles/current"_L1).toString();
 }
 
 void setCurrentProfile(const QString &name)
 {
     QSettings s(filePath(), QSettings::IniFormat);
     if (name.isEmpty()) {
-        s.remove(QLatin1String("profiles/current"));
+        s.remove("profiles/current"_L1);
     } else {
-        s.setValue(QLatin1String("profiles/current"), name);
+        s.setValue("profiles/current"_L1, name);
     }
 }
 
 QByteArray windowGeometry()
 {
     const QSettings s(filePath(), QSettings::IniFormat);
-    return s.value(QLatin1String("window/geometry")).toByteArray();
+    return s.value("window/geometry"_L1).toByteArray();
 }
 
 void setWindowGeometry(const QByteArray &geometry)
 {
     QSettings s(filePath(), QSettings::IniFormat);
-    if (s.value(QLatin1String("window/geometry")).toByteArray() != geometry) {
-        s.setValue(QLatin1String("window/geometry"), geometry);
+    if (s.value("window/geometry"_L1).toByteArray() != geometry) {
+        s.setValue("window/geometry"_L1, geometry);
     }
 }
 
 bool keepRunning()
 {
     const QSettings s(filePath(), QSettings::IniFormat);
-    return s.value(QLatin1String("background/keepRunning"), false).toBool();
+    return s.value("background/keepRunning"_L1, false).toBool();
 }
 
 void setKeepRunning(bool on)
 {
     QSettings s(filePath(), QSettings::IniFormat);
-    s.setValue(QLatin1String("background/keepRunning"), on);
+    s.setValue("background/keepRunning"_L1, on);
 }
 
 QString autostartPath()
 {
-    return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + QLatin1String("/autostart/") + QLatin1String(GLOWZONE_APP_ID)
-        + QLatin1String(".desktop");
+    return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + "/autostart/"_L1 + QLatin1String(GLOWZONE_APP_ID)
+        + ".desktop"_L1;
 }
 
 bool startsAtLogin()
@@ -109,10 +111,10 @@ bool startsAtLogin()
 // A value of type string in a desktop entry: \ and line breaks escaped.
 static QString desktopString(QString value)
 {
-    value.replace(QLatin1Char('\\'), QLatin1String("\\\\"));
-    value.replace(QLatin1Char('\n'), QLatin1String("\\n"));
-    value.replace(QLatin1Char('\r'), QLatin1String("\\r"));
-    value.replace(QLatin1Char('\t'), QLatin1String("\\t"));
+    value.replace(u'\\', "\\\\"_L1);
+    value.replace(u'\n', "\\n"_L1);
+    value.replace(u'\r', "\\r"_L1);
+    value.replace(u'\t', "\\t"_L1);
     return value;
 }
 
@@ -122,11 +124,11 @@ static QString desktopString(QString value)
 static QString execProgram(const QString &path)
 {
     QString q = path;
-    for (const QChar c : {QLatin1Char('\\'), QLatin1Char('"'), QLatin1Char('`'), QLatin1Char('$')}) {
-        q.replace(c, QLatin1Char('\\') + c);
+    for (const QChar c : {u'\\', u'"', u'`', u'$'}) {
+        q.replace(c, u'\\' + c);
     }
-    q.replace(QLatin1Char('%'), QLatin1String("%%"));
-    return desktopString(QLatin1Char('"') + q + QLatin1Char('"'));
+    q.replace(u'%', "%%"_L1);
+    return desktopString(u'"' + q + u'"');
 }
 
 bool setStartAtLogin(bool on, QString *error)
@@ -157,17 +159,16 @@ bool setStartAtLogin(bool on, QString *error)
 QString autostartEntry(const QString &program)
 {
     const QString comment = i18nc("@info autostart entry", "Keeps the fan lighting running in the background");
-    return QStringLiteral(
-               "[Desktop Entry]\n"
-               "Type=Application\n"
-               "Name=Glowzone\n"
-               "Comment=%1\n"
-               "TryExec=%2\n"
-               "Exec=%3 --background\n"
-               "Icon=%4\n"
-               "Terminal=false\n"
-               "NoDisplay=true\n"
-               "X-GNOME-Autostart-enabled=true\n")
+    return u"[Desktop Entry]\n"
+           "Type=Application\n"
+           "Name=Glowzone\n"
+           "Comment=%1\n"
+           "TryExec=%2\n"
+           "Exec=%3 --background\n"
+           "Icon=%4\n"
+           "Terminal=false\n"
+           "NoDisplay=true\n"
+           "X-GNOME-Autostart-enabled=true\n"_s
         .arg(desktopString(comment), desktopString(program), execProgram(program), QLatin1String(GLOWZONE_APP_ID));
 }
 

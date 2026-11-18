@@ -15,6 +15,8 @@
 #include <cmath>
 #include <limits>
 
+using namespace Qt::StringLiterals;
+
 namespace Glowzone
 {
 
@@ -25,7 +27,7 @@ static constexpr int FormatVersion = 1;
 
 QString directory()
 {
-    return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + QLatin1String("/profiles");
+    return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + "/profiles"_L1;
 }
 
 QString cleanName(const QString &name)
@@ -51,18 +53,18 @@ static std::optional<int> wholeNumber(const QJsonValue &v)
 
 static std::optional<Profile> fromJson(const ModelProfile &model, const QJsonObject &root)
 {
-    if (root.value(QLatin1String("version")).toInt() != FormatVersion
-        || root.value(QLatin1String("model")).toString() != QLatin1String(model.productVersion)) {
+    if (root.value("version"_L1).toInt() != FormatVersion
+        || root.value("model"_L1).toString() != QLatin1String(model.productVersion)) {
         return std::nullopt;
     }
     Profile p;
-    p.name = cleanName(root.value(QLatin1String("name")).toString());
+    p.name = cleanName(root.value("name"_L1).toString());
     if (p.name.isEmpty()) {
         return std::nullopt;
     }
 
     // Only headers this model actually has.
-    const FanState::Headers all = FanState::headersFromJson(root.value(QLatin1String("fans")).toObject(), model);
+    const FanState::Headers all = FanState::headersFromJson(root.value("fans"_L1).toObject(), model);
     for (const FanDef &fan : model.fans) {
         for (const LedDef &led : fan.leds) {
             if (all.contains(led.header)) {
@@ -71,7 +73,7 @@ static std::optional<Profile> fromJson(const ModelProfile &model, const QJsonObj
         }
     }
 
-    const QJsonObject links = root.value(QLatin1String("links")).toObject();
+    const QJsonObject links = root.value("links"_L1).toObject();
     for (const FanDef &fan : model.fans) {
         const QJsonValue v = links.value(QLatin1String(fan.id));
         if (fan.isDouble() && v.isBool()) {
@@ -81,17 +83,17 @@ static std::optional<Profile> fromJson(const ModelProfile &model, const QJsonObj
 
     if (model.cpuTemperature) {
         // A file without a usable range gets the default one.
-        const QJsonObject range = root.value(QLatin1String("cpuTemperature")).toObject();
-        const auto coolest = wholeNumber(range.value(QLatin1String("coolest")));
-        const auto hottest = wholeNumber(range.value(QLatin1String("hottest")));
+        const QJsonObject range = root.value("cpuTemperature"_L1).toObject();
+        const auto coolest = wholeNumber(range.value("coolest"_L1));
+        const auto hottest = wholeNumber(range.value("hottest"_L1));
         p.temperatureRange = coolest && hottest ? TemperatureRange{*coolest, *hottest} : model.cpuTemperature->defaultRange;
     }
 
-    const QJsonObject lights = root.value(QLatin1String("lights")).toObject();
+    const QJsonObject lights = root.value("lights"_L1).toObject();
     for (const EcLightDef &light : model.ecLights) {
         const QJsonObject o = lights.value(QLatin1String(light.id)).toObject();
-        const EcLights::ModeInfo *mode = EcLights::modeInfo(o.value(QLatin1String("mode")).toString());
-        const int brightness = o.value(QLatin1String("brightness")).toInt();
+        const EcLights::ModeInfo *mode = EcLights::modeInfo(o.value("mode"_L1).toString());
+        const int brightness = o.value("brightness"_L1).toInt();
         if (mode && model.hasEcLightMode(mode->value) && brightness >= EcLights::MinBrightness && brightness <= model.ecBrightnessLevels) {
             p.lights.insert(light.index, {light.index, mode->value, quint8(brightness)});
         }
@@ -111,20 +113,20 @@ static QJsonObject toJson(const ModelProfile &model, const Profile &p)
         const EcLights::ModeInfo *mode = EcLights::modeInfo(s.mode);
         if (def && mode) {
             lights.insert(QLatin1String(def->id),
-                          QJsonObject{{QLatin1String("mode"), QLatin1String(mode->id)}, {QLatin1String("brightness"), s.brightness}});
+                          QJsonObject{{"mode"_L1, QLatin1String(mode->id)}, {"brightness"_L1, s.brightness}});
         }
     }
     QJsonObject root{
-        {QLatin1String("version"), FormatVersion},
-        {QLatin1String("name"), p.name},
-        {QLatin1String("model"), QLatin1String(model.productVersion)},
-        {QLatin1String("fans"), FanState::headersToJson(p.fans)},
-        {QLatin1String("links"), links},
-        {QLatin1String("lights"), lights},
+        {"version"_L1, FormatVersion},
+        {"name"_L1, p.name},
+        {"model"_L1, QLatin1String(model.productVersion)},
+        {"fans"_L1, FanState::headersToJson(p.fans)},
+        {"links"_L1, links},
+        {"lights"_L1, lights},
     };
     if (p.temperatureRange) {
-        root.insert(QLatin1String("cpuTemperature"),
-                    QJsonObject{{QLatin1String("coolest"), p.temperatureRange->coolest}, {QLatin1String("hottest"), p.temperatureRange->hottest}});
+        root.insert("cpuTemperature"_L1,
+                    QJsonObject{{"coolest"_L1, p.temperatureRange->coolest}, {"hottest"_L1, p.temperatureRange->hottest}});
     }
     return root;
 }
@@ -133,7 +135,7 @@ static QJsonObject toJson(const ModelProfile &model, const Profile &p)
 // locale-aware. (QCollator's numeric mode needs ICU, which not every Qt has.)
 static bool naturalLess(const QString &a, const QString &b)
 {
-    static const QRegularExpression chunks(QStringLiteral("\\d+|\\D+"));
+    static const QRegularExpression chunks(u"\\d+|\\D+"_s);
     auto ia = chunks.globalMatch(a);
     auto ib = chunks.globalMatch(b);
     while (ia.hasNext() && ib.hasNext()) {
@@ -161,7 +163,7 @@ static QList<Stored> loadStored(const ModelProfile &model)
 {
     QList<Stored> out;
     const QDir dir(directory());
-    const QStringList files = dir.entryList({QStringLiteral("*.json")}, QDir::Files);
+    const QStringList files = dir.entryList({u"*.json"_s}, QDir::Files);
     for (const QString &file : files) {
         QFile f(dir.filePath(file));
         if (!f.open(QIODevice::ReadOnly)) {
@@ -208,18 +210,18 @@ std::optional<Profile> find(const ModelProfile &model, const QString &name)
 // "Night (blue)" -> "night-blue.json"; unique within the directory.
 static QString newFilePath(const QString &name)
 {
-    static const QRegularExpression separators(QStringLiteral("[^a-z0-9]+"));
-    static const QRegularExpression edges(QStringLiteral("^-+|-+$"));
+    static const QRegularExpression separators(u"[^a-z0-9]+"_s);
+    static const QRegularExpression edges(u"^-+|-+$"_s);
     QString slug = name.toLower();
-    slug.replace(separators, QStringLiteral("-"));
+    slug.replace(separators, u"-"_s);
     slug.remove(edges);
     if (slug.isEmpty()) {
-        slug = QStringLiteral("profile");
+        slug = u"profile"_s;
     }
     const QDir dir(directory());
-    QString path = dir.filePath(slug + QLatin1String(".json"));
+    QString path = dir.filePath(slug + ".json"_L1);
     for (int n = 2; QFile::exists(path); ++n) {
-        path = dir.filePath(slug + QLatin1Char('-') + QString::number(n) + QLatin1String(".json"));
+        path = dir.filePath(slug + u'-' + QString::number(n) + ".json"_L1);
     }
     return path;
 }
@@ -291,7 +293,7 @@ bool rename(const ModelProfile &model, const QString &oldName, const QString &ne
     }
     QJsonObject root = QJsonDocument::fromJson(f.readAll()).object();
     f.close();
-    root.insert(QLatin1String("name"), name);
+    root.insert("name"_L1, name);
     if (clash) { // the same profile, only the case changes: rewrite it in place
         return writeFile(existing->path, root, error);
     }

@@ -14,6 +14,8 @@
 #include <QStandardPaths>
 #include <QTest>
 
+using namespace Qt::StringLiterals;
+
 using namespace Glowzone;
 
 // A helper call the test finishes by hand.
@@ -65,7 +67,7 @@ public:
         QVERIFY(call);
         HelperResult r;
         if (!ok) {
-            r.error = QStringLiteral("firmware call failed");
+            r.error = u"firmware call failed"_s;
         } else if (call->kind == HelperCall::Layout) {
             r.layout = 0x0b;
         } else {

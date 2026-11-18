@@ -10,6 +10,8 @@
 #include <QFile>
 #include <QTest>
 
+using namespace Qt::StringLiterals;
+
 using namespace Glowzone;
 
 class ModelTest : public QObject
@@ -41,23 +43,23 @@ private Q_SLOTS:
 
     void legionLayout()
     {
-        const ModelProfile *m = matchModel({QStringLiteral("LENOVO"), QStringLiteral("Legion T5 26IOB6"), QStringLiteral("3733")});
+        const ModelProfile *m = matchModel({u"LENOVO"_s, u"Legion T5 26IOB6"_s, u"3733"_s});
         QVERIFY(m);
-        QCOMPARE(m->fan(QStringLiteral("top"))->headers(), (QList<quint8>{0x39, 0x12}));
-        QCOMPARE(m->fan(QStringLiteral("front"))->headers(), (QList<quint8>{0x3a, 0x38}));
-        QVERIFY(!m->fan(QStringLiteral("cpu"))->isDouble());
-        QVERIFY(m->fan(QStringLiteral("top"))->isDouble());
+        QCOMPARE(m->fan(u"top"_s)->headers(), (QList<quint8>{0x39, 0x12}));
+        QCOMPARE(m->fan(u"front"_s)->headers(), (QList<quint8>{0x3a, 0x38}));
+        QVERIFY(!m->fan(u"cpu"_s)->isDouble());
+        QVERIFY(m->fan(u"top"_s)->isDouble());
         // Physical positions, confirmed on the hardware
-        QCOMPARE(m->fan(QStringLiteral("front"))->led(QStringLiteral("upper"))->header, quint8(0x3a));
-        QCOMPARE(m->fan(QStringLiteral("front"))->led(QStringLiteral("lower"))->header, quint8(0x38));
-        QCOMPARE(m->fan(QStringLiteral("top"))->led(QStringLiteral("front"))->header, quint8(0x39));
-        QCOMPARE(m->fan(QStringLiteral("top"))->led(QStringLiteral("rear"))->header, quint8(0x12));
-        QCOMPARE(m->fan(QStringLiteral("top"))->led(QStringLiteral("2"))->header, quint8(0x12));
-        QVERIFY(!m->fan(QStringLiteral("top"))->led(QStringLiteral("3")));
-        QVERIFY(!m->fan(QStringLiteral("top"))->led(QStringLiteral("upper")));
-        QVERIFY(!m->fan(QStringLiteral("cpu"))->led(QStringLiteral("front")));
-        QCOMPARE(m->ecLight(QStringLiteral("ambient"))->index, quint8(2));
-        QVERIFY(!m->fan(QStringLiteral("gpu")));
+        QCOMPARE(m->fan(u"front"_s)->led(u"upper"_s)->header, quint8(0x3a));
+        QCOMPARE(m->fan(u"front"_s)->led(u"lower"_s)->header, quint8(0x38));
+        QCOMPARE(m->fan(u"top"_s)->led(u"front"_s)->header, quint8(0x39));
+        QCOMPARE(m->fan(u"top"_s)->led(u"rear"_s)->header, quint8(0x12));
+        QCOMPARE(m->fan(u"top"_s)->led(u"2"_s)->header, quint8(0x12));
+        QVERIFY(!m->fan(u"top"_s)->led(u"3"_s));
+        QVERIFY(!m->fan(u"top"_s)->led(u"upper"_s));
+        QVERIFY(!m->fan(u"cpu"_s)->led(u"front"_s));
+        QCOMPARE(m->ecLight(u"ambient"_s)->index, quint8(2));
+        QVERIFY(!m->fan(u"gpu"_s));
     }
 
     // Every profile may only offer what the protocol code can encode, must
@@ -109,9 +111,9 @@ private Q_SLOTS:
         QVERIFY(f.open(QIODevice::ReadOnly));
         const QString rules = QString::fromUtf8(f.readAll());
         for (const ModelProfile &m : supportedModels()) {
-            const QString line = QStringLiteral("ATTRS{idVendor}==\"%1\", ATTRS{idProduct}==\"%2\"")
-                                     .arg(m.usbVendorId, 4, 16, QLatin1Char('0'))
-                                     .arg(m.usbProductId, 4, 16, QLatin1Char('0'));
+            const QString line = u"ATTRS{idVendor}==\"%1\", ATTRS{idProduct}==\"%2\""_s
+                                     .arg(m.usbVendorId, 4, 16, u'0')
+                                     .arg(m.usbProductId, 4, 16, u'0');
             QVERIFY2(rules.contains(line), qPrintable(m.displayName()));
         }
     }

@@ -11,12 +11,14 @@
 #include <QStandardPaths>
 #include <QTest>
 
+using namespace Qt::StringLiterals;
+
 using namespace Glowzone;
 
 static QString line(const QString &entry, const QString &key)
 {
-    for (const QString &l : entry.split(QLatin1Char('\n'))) {
-        if (l.startsWith(key + QLatin1Char('='))) {
+    for (const QString &l : entry.split(u'\n')) {
+        if (l.startsWith(key + u'=')) {
             return l.mid(key.size() + 1);
         }
     }
@@ -33,19 +35,19 @@ private Q_SLOTS:
         QTest::addColumn<QString>("program");
         QTest::addColumn<QString>("exec");
         QTest::addColumn<QString>("tryExec");
-        QTest::newRow("plain") << QStringLiteral("/usr/bin/glowzone") << QStringLiteral("\"/usr/bin/glowzone\" --background")
-                               << QStringLiteral("/usr/bin/glowzone");
-        QTest::newRow("space") << QStringLiteral("/home/me/My Apps/glowzone") << QStringLiteral("\"/home/me/My Apps/glowzone\" --background")
-                               << QStringLiteral("/home/me/My Apps/glowzone");
+        QTest::newRow("plain") << u"/usr/bin/glowzone"_s << u"\"/usr/bin/glowzone\" --background"_s
+                               << u"/usr/bin/glowzone"_s;
+        QTest::newRow("space") << u"/home/me/My Apps/glowzone"_s << u"\"/home/me/My Apps/glowzone\" --background"_s
+                               << u"/home/me/My Apps/glowzone"_s;
         // Quoting first (\" \` \$ \\), then string escaping doubles every \.
-        QTest::newRow("specials") << QStringLiteral("/opt/a\"b`c$d\\e/glowzone")
-                                  << QStringLiteral("\"/opt/a\\\\\"b\\\\`c\\\\$d\\\\\\\\e/glowzone\" --background")
-                                  << QStringLiteral("/opt/a\"b`c$d\\\\e/glowzone");
-        QTest::newRow("percent") << QStringLiteral("/opt/100%/glowzone") << QStringLiteral("\"/opt/100%%/glowzone\" --background")
-                                 << QStringLiteral("/opt/100%/glowzone");
+        QTest::newRow("specials") << u"/opt/a\"b`c$d\\e/glowzone"_s
+                                  << u"\"/opt/a\\\\\"b\\\\`c\\\\$d\\\\\\\\e/glowzone\" --background"_s
+                                  << u"/opt/a\"b`c$d\\\\e/glowzone"_s;
+        QTest::newRow("percent") << u"/opt/100%/glowzone"_s << u"\"/opt/100%%/glowzone\" --background"_s
+                                 << u"/opt/100%/glowzone"_s;
         // A line break must not start a new key.
-        QTest::newRow("newline") << QStringLiteral("/tmp/x\nExec=evil") << QStringLiteral("\"/tmp/x\\nExec=evil\" --background")
-                                 << QStringLiteral("/tmp/x\\nExec=evil");
+        QTest::newRow("newline") << u"/tmp/x\nExec=evil"_s << u"\"/tmp/x\\nExec=evil\" --background"_s
+                                 << u"/tmp/x\\nExec=evil"_s;
     }
     void autostartEntry()
     {
@@ -53,26 +55,26 @@ private Q_SLOTS:
         QFETCH(QString, exec);
         QFETCH(QString, tryExec);
         const QString entry = Settings::autostartEntry(program);
-        QCOMPARE(line(entry, QStringLiteral("Exec")), exec);
-        QCOMPARE(line(entry, QStringLiteral("TryExec")), tryExec);
-        QCOMPARE(entry.count(QLatin1String("\nExec=")), 1);
-        QVERIFY(entry.startsWith(QLatin1String("[Desktop Entry]\n")));
+        QCOMPARE(line(entry, u"Exec"_s), exec);
+        QCOMPARE(line(entry, u"TryExec"_s), tryExec);
+        QCOMPARE(entry.count("\nExec="_L1), 1);
+        QVERIFY(entry.startsWith("[Desktop Entry]\n"_L1));
     }
 
     void temperatureRange()
     {
         QStandardPaths::setTestModeEnabled(true);
         QFile::remove(Settings::filePath());
-        const ModelProfile *m = matchModel({QStringLiteral("LENOVO"), QStringLiteral("Legion T5 26IOB6"), QStringLiteral("3733")});
+        const ModelProfile *m = matchModel({u"LENOVO"_s, u"Legion T5 26IOB6"_s, u"3733"_s});
         QVERIFY(m && m->cpuTemperature);
         QCOMPARE(Settings::temperatureRange(*m->cpuTemperature), m->cpuTemperature->defaultRange); // never set
         Settings::setTemperatureRange({40, 85});
         QCOMPARE(Settings::temperatureRange(*m->cpuTemperature), (TemperatureRange{40, 85}));
 
         // Hand-edited nonsense, or only half of it: the default.
-        QSettings(Settings::filePath(), QSettings::IniFormat).setValue(QStringLiteral("cpuTemperature/hottest"), QStringLiteral("hot"));
+        QSettings(Settings::filePath(), QSettings::IniFormat).setValue(u"cpuTemperature/hottest"_s, u"hot"_s);
         QCOMPARE(Settings::temperatureRange(*m->cpuTemperature), m->cpuTemperature->defaultRange);
-        QSettings(Settings::filePath(), QSettings::IniFormat).remove(QStringLiteral("cpuTemperature/hottest"));
+        QSettings(Settings::filePath(), QSettings::IniFormat).remove(u"cpuTemperature/hottest"_s);
         QCOMPARE(Settings::temperatureRange(*m->cpuTemperature), m->cpuTemperature->defaultRange);
     }
 
@@ -82,7 +84,7 @@ private Q_SLOTS:
         QString error;
         QVERIFY2(Settings::setStartAtLogin(true, &error), qPrintable(error));
         QVERIFY(Settings::startsAtLogin());
-        QVERIFY(Settings::autostartPath().endsWith(QLatin1String("/autostart/io.github.meluxon.Glowzone.desktop")));
+        QVERIFY(Settings::autostartPath().endsWith("/autostart/io.github.meluxon.Glowzone.desktop"_L1));
         QVERIFY2(Settings::setStartAtLogin(false, &error), qPrintable(error));
         QVERIFY(!Settings::startsAtLogin());
         QVERIFY(Settings::setStartAtLogin(false, &error)); // already off: fine
