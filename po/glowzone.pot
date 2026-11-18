@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 00:19+0100\n"
+"POT-Creation-Date: 2026-11-18 11:36+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -102,16 +102,6 @@ msgstr ""
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "Computer: %1"
-msgstr ""
-
-#: src/cli/commands.cpp
-#, kde-format
-msgid "Fans (as last set by Glowzone – the controller can’t be read back):"
-msgstr ""
-
-#: src/cli/commands.cpp
-#, kde-format
 msgid "unknown (not set by Glowzone yet)"
 msgstr ""
 
@@ -119,6 +109,16 @@ msgstr ""
 #, kde-format
 msgctxt "@info fan position: description"
 msgid "%1: %2"
+msgstr ""
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "Computer: %1"
+msgstr ""
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "Fans (as last set by Glowzone – the controller can’t be read back):"
 msgstr ""
 
 #: src/cli/commands.cpp
@@ -196,13 +196,13 @@ msgstr ""
 
 #: src/cli/commands.cpp
 #, kde-format
-msgctxt "@item fan (position)"
-msgid "%1 (%2)"
+msgid "The fans were changed, but the state could not be saved: %1"
 msgstr ""
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "The fans were changed, but the state could not be saved: %1"
+msgctxt "@item fan (position)"
+msgid "%1 (%2)"
 msgstr ""
 
 #: src/cli/commands.cpp
@@ -570,7 +570,7 @@ msgstr ""
 msgid "%1 was saved by a newer version of Glowzone and is left as it is."
 msgstr ""
 
-#: src/core/fanstate.cpp
+#: src/core/fanstate.cpp src/core/profiles.cpp
 #, kde-format
 msgid "Could not read %1: %2"
 msgstr ""
@@ -716,12 +716,12 @@ msgstr ""
 
 #: src/core/profiles.cpp
 #, kde-format
-msgid "Could not create the directory %1."
+msgid "Could not save the profile to %1: %2"
 msgstr ""
 
 #: src/core/profiles.cpp
 #, kde-format
-msgid "Could not save the profile to %1: %2"
+msgid "Could not create the directory %1."
 msgstr ""
 
 #: src/core/profiles.cpp

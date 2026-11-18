@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
+#include <QStringList>
+
 class QCommandLineParser;
 
 namespace Glowzone::Cli
@@ -14,7 +16,8 @@ enum ExitCode {
     ExitUsage = 64,        // bad command line (EX_USAGE)
 };
 
-void addOptions(QCommandLineParser &parser);
+// Call after the help option is added (KAboutData::setupCommandLine()).
+void addOptions(QCommandLineParser &parser, const QStringList &arguments);
 int run(QCommandLineParser &parser);
 
 } // namespace Glowzone::Cli

@@ -69,16 +69,18 @@ void setCurrentProfile(const QString &name)
     }
 }
 
-QSize windowSize()
+QByteArray windowGeometry()
 {
     const QSettings s(filePath(), QSettings::IniFormat);
-    return s.value(QLatin1String("window/size")).toSize();
+    return s.value(QLatin1String("window/geometry")).toByteArray();
 }
 
-void setWindowSize(QSize size)
+void setWindowGeometry(const QByteArray &geometry)
 {
     QSettings s(filePath(), QSettings::IniFormat);
-    s.setValue(QLatin1String("window/size"), size);
+    if (s.value(QLatin1String("window/geometry")).toByteArray() != geometry) {
+        s.setValue(QLatin1String("window/geometry"), geometry);
+    }
 }
 
 bool keepRunning()

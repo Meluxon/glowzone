@@ -61,7 +61,8 @@ the window is closed, so fans following the CPU temperature keep changing
 colour. That process is the normal program, as your user: it reads the CPU
 temperature from hwmon (readable by everyone) and talks to the fan controller
 like the window does. It doesn't use the root helper – the case lights are
-only read when a window is open. *Start at Login* adds
+only read and set while a window is open (a change made just before closing
+it is still sent). *Start at Login* adds
 `~/.config/autostart/io.github.meluxon.Glowzone.desktop`, which starts the
 same program with `--background`; nothing system-wide is installed for it.
 

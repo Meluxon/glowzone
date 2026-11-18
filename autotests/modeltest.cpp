@@ -3,6 +3,7 @@
 
 #include "core/cputemperature.h"
 #include "core/eclights.h"
+#include "core/fanstate.h"
 #include "core/ite8297.h"
 #include "model/modelprofile.h"
 
@@ -88,6 +89,7 @@ private Q_SLOTS:
             for (const FanDef &f : m.fans) {
                 for (quint8 h : f.headers()) {
                     QVERIFY2(Ite8297::isKnownHeader(h), name.constData());
+                    QVERIFY2(FanState::fitsModel(m, Ite8297::initialSetting(h)), name.constData()); // e.g. its brightness
                 }
             }
 

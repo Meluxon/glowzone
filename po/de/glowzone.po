@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 00:19+0100\n"
+"POT-Creation-Date: 2026-11-18 11:36+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: German\n"
@@ -93,16 +93,6 @@ msgstr "„%1“ ist kein gültiger Bereich. Geben Sie zwei ganze Zahlen in °C 
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "Computer: %1"
-msgstr "Computer: %1"
-
-#: src/cli/commands.cpp
-#, kde-format
-msgid "Fans (as last set by Glowzone – the controller can’t be read back):"
-msgstr "Lüfter (wie zuletzt von Glowzone eingestellt – der Controller lässt sich nicht auslesen):"
-
-#: src/cli/commands.cpp
-#, kde-format
 msgid "unknown (not set by Glowzone yet)"
 msgstr "unbekannt (noch nicht von Glowzone eingestellt)"
 
@@ -111,6 +101,16 @@ msgstr "unbekannt (noch nicht von Glowzone eingestellt)"
 msgctxt "@info fan position: description"
 msgid "%1: %2"
 msgstr "%1: %2"
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "Computer: %1"
+msgstr "Computer: %1"
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "Fans (as last set by Glowzone – the controller can’t be read back):"
+msgstr "Lüfter (wie zuletzt von Glowzone eingestellt – der Controller lässt sich nicht auslesen):"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -185,14 +185,14 @@ msgstr "Unbekannte Position „%1“. Möglich sind: %2"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgctxt "@item fan (position)"
-msgid "%1 (%2)"
-msgstr "%1 (%2)"
+msgid "The fans were changed, but the state could not be saved: %1"
+msgstr "Die Lüfter wurden geändert, aber der Zustand konnte nicht gespeichert werden: %1"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "The fans were changed, but the state could not be saved: %1"
-msgstr "Die Lüfter wurden geändert, aber der Zustand konnte nicht gespeichert werden: %1"
+msgctxt "@item fan (position)"
+msgid "%1 (%2)"
+msgstr "%1 (%2)"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -549,7 +549,7 @@ msgstr "%1 ist beschädigt und konnte nicht nach %2 verschoben werden."
 msgid "%1 was saved by a newer version of Glowzone and is left as it is."
 msgstr "%1 wurde von einer neueren Glowzone-Version gespeichert und bleibt unverändert."
 
-#: src/core/fanstate.cpp
+#: src/core/fanstate.cpp src/core/profiles.cpp
 #, kde-format
 msgid "Could not read %1: %2"
 msgstr "%1 konnte nicht gelesen werden: %2"
@@ -693,13 +693,13 @@ msgstr ""
 
 #: src/core/profiles.cpp
 #, kde-format
-msgid "Could not create the directory %1."
-msgstr "Das Verzeichnis %1 konnte nicht erstellt werden."
+msgid "Could not save the profile to %1: %2"
+msgstr "Das Profil konnte nicht in %1 gespeichert werden: %2"
 
 #: src/core/profiles.cpp
 #, kde-format
-msgid "Could not save the profile to %1: %2"
-msgstr "Das Profil konnte nicht in %1 gespeichert werden: %2"
+msgid "Could not create the directory %1."
+msgstr "Das Verzeichnis %1 konnte nicht erstellt werden."
 
 #: src/core/profiles.cpp
 #, kde-format

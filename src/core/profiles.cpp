@@ -224,6 +224,17 @@ static QString newFilePath(const QString &name)
     return path;
 }
 
+static bool writeFile(const QString &path, const QJsonObject &root, QString *error)
+{
+    const QByteArray data = QJsonDocument(root).toJson();
+    QSaveFile f(path);
+    if (!f.open(QIODevice::WriteOnly) || f.write(data) != data.size() || !f.commit()) {
+        *error = i18n("Could not save the profile to %1: %2", path, f.errorString());
+        return false;
+    }
+    return true;
+}
+
 bool save(const ModelProfile &model, const Profile &profile, QString *error)
 {
     Profile p = profile;
@@ -237,15 +248,7 @@ bool save(const ModelProfile &model, const Profile &profile, QString *error)
         return false;
     }
     const auto existing = findStored(model, p.name);
-    const QString path = existing ? existing->path : newFilePath(p.name);
-
-    const QByteArray data = QJsonDocument(toJson(model, p)).toJson();
-    QSaveFile f(path);
-    if (!f.open(QIODevice::WriteOnly) || f.write(data) != data.size() || !f.commit()) {
-        *error = i18n("Could not save the profile to %1: %2", path, f.errorString());
-        return false;
-    }
-    return true;
+    return writeFile(existing ? existing->path : newFilePath(p.name), toJson(model, p), error);
 }
 
 bool remove(const ModelProfile &model, const QString &name, QString *error)
@@ -279,20 +282,27 @@ bool rename(const ModelProfile &model, const QString &oldName, const QString &ne
         *error = i18n("A profile called “%1” already exists.", clash->profile.name);
         return false;
     }
-    Profile p = existing->profile;
-    p.name = name;
-    if (clash) {
-        // Same profile, only the case changes: rewrite it in place.
-        return save(model, p, error);
+    // Only the name changes: everything else in the file stays as it is,
+    // including what this version doesn't read.
+    QFile f(existing->path);
+    if (!f.open(QIODevice::ReadOnly)) {
+        *error = i18n("Could not read %1: %2", existing->path, f.errorString());
+        return false;
+    }
+    QJsonObject root = QJsonDocument::fromJson(f.readAll()).object();
+    f.close();
+    root.insert(QLatin1String("name"), name);
+    if (clash) { // the same profile, only the case changes: rewrite it in place
+        return writeFile(existing->path, root, error);
     }
     // Write the new file first, then remove the old one – never lose the profile.
-    if (!save(model, p, error)) {
+    const QString path = newFilePath(name);
+    if (!writeFile(path, root, error)) {
         return false;
     }
     if (!QFile::remove(existing->path)) {
         *error = i18n("Could not delete %1.", existing->path);
-        QString ignored;
-        remove(model, name, &ignored); // undo: keep exactly one copy
+        QFile::remove(path); // undo: keep exactly one copy
         return false;
     }
     return true;

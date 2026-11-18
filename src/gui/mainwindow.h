@@ -5,7 +5,6 @@
 #include "core/ite8297.h"
 #include "core/profiles.h"
 
-#include <QElapsedTimer>
 #include <QMainWindow>
 
 class KMessageWidget;
@@ -43,7 +42,6 @@ Q_SIGNALS:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
-    void changeEvent(QEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
@@ -64,7 +62,6 @@ private:
     void updateBanner();
     void updateBackgroundMessage();
     void refreshTemperature();
-    void reloadCurrentProfile();
 
     void updateProblems();
     void showError(const QString &text);
@@ -89,9 +86,6 @@ private:
     QStringList m_problems; // as shown
     Ite8297::Rgb m_temperatureColour; // as the sidebar shows it
     QList<Profile> m_profiles;
-    QString m_currentProfile;
-    QElapsedTimer m_lastReload; // the CLI may change things while the window is open
-    bool m_closing = false; // deleted once closed (WA_DeleteOnClose), so never reset
 };
 
 } // namespace Glowzone::Gui

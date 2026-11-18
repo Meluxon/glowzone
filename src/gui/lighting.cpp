@@ -18,8 +18,6 @@ namespace Glowzone::Gui
 
 using namespace Ite8297;
 
-enum ErrorSource { FanErrors = 1, LightErrors = 2 };
-
 // Dragging a range slider: the setting is written once it stops for this long.
 static constexpr int RangeSaveDelayMs = 500;
 // A command writes several files: read them once it is done.
@@ -35,16 +33,17 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
     loadTemperatureRange();
     loadFans();
     m_currentProfile = Settings::currentProfile();
+    m_lightsStamp = QFileInfo(EcLights::stateFilePath()).lastModified(); // older than any window
     m_rangeSave.setSingleShot(true);
     m_rangeSave.setInterval(RangeSaveDelayMs);
     connect(&m_rangeSave, &QTimer::timeout, this, &Lighting::saveTemperatureRange);
 
     // The command line may change things while Glowzone runs – maybe only in
-    // the tray, with LEDs following the CPU temperature: the fan state, the
-    // split choices, temperature range and current profile (glowzone.conf),
-    // the profiles. They are
-    // read again when they change. Files are replaced, not written in place, so
-    // the directories are watched.
+    // the tray, with LEDs following the CPU temperature: the fan state and the
+    // case lights it set (the state directory), the split choices, temperature
+    // range and current profile (glowzone.conf), the profiles. They are read
+    // again when they change. Files are replaced, not written in place, so the
+    // directories are watched.
     m_savedReload.setSingleShot(true);
     m_savedReload.setInterval(SavedReloadDelayMs);
     connect(&m_savedReload, &QTimer::timeout, this, &Lighting::reloadSaved);
@@ -80,26 +79,38 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
     });
     connect(m_fanApplier, &FanApplier::applied, this, [this] {
         clearError(FanErrors);
+        if (!m_fanProblem.isEmpty()) { // the controller came back
+            setProblem(m_fanProblem, {});
+            Q_EMIT changed();
+        }
+    });
+    // The LEDs show the change, so the window keeps showing it too.
+    connect(m_fanApplier, &FanApplier::saveFailed, this, [this](const QString &text) {
+        setError(text, SaveErrors);
     });
     connect(m_fanApplier, &FanApplier::saved, this, [this] {
-        m_stateStamp = QFileInfo(FanState::filePath()).lastModified(); // no need to read it back
+        clearError(SaveErrors);
     });
     connect(m_lightApplier, &LightApplier::succeeded, this, [this] {
         clearError(LightErrors);
     });
     connect(m_lightApplier, &LightApplier::stateChanged, this, [this](const QList<EcLightState> &lights) {
+        if (!m_windowOpen) {
+            return; // a change made just before the window closed
+        }
         for (const EcLightState &l : lights) {
             m_lights.insert(l.index, l);
         }
         m_lightsLoaded = true;
         m_lightsFailed = false;
-        m_lightsStale = false;
         setProblem(m_lightProblem, {});
         Q_EMIT changed();
         checkFanLayout();
     });
     connect(m_lightApplier, &LightApplier::failed, this, [this](const QString &text) {
-        m_lightsStale = false;
+        if (!m_windowOpen) {
+            return;
+        }
         if (m_lightsLoaded) {
             setError(text, LightErrors);
         } else {
@@ -120,15 +131,31 @@ void Lighting::start(QWindow *window)
 {
     if (!m_fanApplier->isOpen()) { // the first time, or the controller was missing
         QString error;
-        m_fansAvailable = m_fanApplier->open(&error);
+        m_fanApplier->open(&error);
         setProblem(m_fanProblem, error);
         Q_EMIT changed();
     }
+    m_windowOpen = m_windowOpen || window;
     m_helper->setWindow(window);
     if (window && !m_model.ecLights.isEmpty() && !m_lightsLoaded && !m_lightApplier->isBusy()) {
         m_lightsFailed = false; // try again with this window
         m_lightApplier->refresh();
     }
+}
+
+void Lighting::windowClosed()
+{
+    m_windowOpen = false;
+    m_lights.clear();
+    m_lightsLoaded = false;
+    m_lightsFailed = false;
+    m_lightApplier->forget();
+    setProblem(m_lightProblem, {});
+}
+
+bool Lighting::fansAvailable() const
+{
+    return m_fanApplier->isOpen();
 }
 
 QStringList Lighting::problems() const
@@ -196,39 +223,49 @@ void Lighting::saveTemperatureRange()
     }
 }
 
-// Something in the state directory changed – the command line, most likely.
-// Our own saves land here as well; they read back what we already show.
+// Something in the state or settings directories changed: the command line,
+// most likely, or our own save, which reads back what we already show.
 void Lighting::reloadSaved()
 {
-    if (m_fanApplier->isBusy()) {
+    if (isBusy()) {
         m_savedReload.start(); // after our own change is out
         return;
     }
-    const bool settingsChanged = std::exchange(m_settingsChanged, false);
-    if (!settingsChanged && QFileInfo(FanState::filePath()).lastModified() == m_stateStamp) {
-        return; // our own save, the lock file, ...
-    }
-    // A profile applied elsewhere changes the case lights too, and they can only
-    // be read back. The command sets them after recording the profile; through
-    // the helper's lock this read comes after that.
-    if (const QString profile = Settings::currentProfile(); profile != m_currentProfile) {
-        m_currentProfile = profile;
-        if (m_lightsLoaded) {
-            m_lightsStale = true;
-            m_lightApplier->refresh();
-        }
-    }
+    m_currentProfile = Settings::currentProfile();
     const FanState::Headers before = m_fans;
     const QMap<QString, bool> linksBefore = m_links;
     const auto rangeBefore = m_temperatureRange;
+    const QMap<quint8, EcLightState> lightsBefore = m_lights;
     if (!m_rangeSave.isActive()) { // otherwise ours is newer
         loadTemperatureRange();
     }
     loadFans(); // also the split choices, from the settings
-    Q_EMIT savedChanged();
-    if (m_fans != before || m_links != linksBefore || m_temperatureRange != rangeBefore) {
+    takeCommandLineLights();
+    if (std::exchange(m_settingsChanged, false)) {
+        Q_EMIT savedChanged();
+    }
+    if (m_fans != before || m_links != linksBefore || m_temperatureRange != rangeBefore || m_lights != lightsBefore) {
         Q_EMIT changed();
     }
+}
+
+// The command line records the case lights after it sets them. A window that
+// knows them takes that over, without a call to the root helper.
+void Lighting::takeCommandLineLights()
+{
+    const QDateTime stamp = QFileInfo(EcLights::stateFilePath()).lastModified();
+    if (stamp == m_lightsStamp) {
+        return;
+    }
+    m_lightsStamp = stamp;
+    const auto lights = m_lightsLoaded ? EcLights::loadState(m_model) : std::nullopt;
+    if (!lights) {
+        return; // without a window they're read when one opens
+    }
+    for (const EcLightState &l : *lights) {
+        m_lights.insert(l.index, l);
+    }
+    m_lightApplier->setKnown(*lights);
 }
 
 // Read-only: tells whether the BIOS currently sees every fan. Never changes
@@ -257,6 +294,7 @@ bool Lighting::isLinked(const FanDef &fan) const
     return m_links.value(QLatin1String(fan.id), true);
 }
 
+// Choosing what an LED already shows sends nothing (and writes nothing).
 void Lighting::setLed(const FanDef &fan, quint8 header, HeaderSetting values)
 {
     QList<HeaderSetting> changedLeds;
@@ -264,9 +302,15 @@ void Lighting::setLed(const FanDef &fan, quint8 header, HeaderSetting values)
         if (led.header == header || (fan.isDouble() && isLinked(fan))) {
             HeaderSetting s = values;
             s.header = led.header;
+            if (isKnown(led.header) && m_fans.value(led.header) == s) {
+                continue;
+            }
             m_fans.insert(led.header, s);
             changedLeds << s;
         }
+    }
+    if (changedLeds.isEmpty()) {
+        return;
     }
     m_fanApplier->queue(changedLeds);
     Q_EMIT changed();
@@ -333,7 +377,7 @@ bool Lighting::matches(const Profile &profile) const
             return false;
         }
     }
-    if (m_lightsLoaded && !m_lightsStale) { // otherwise unknown: they don't count
+    if (m_lightsLoaded) { // otherwise unknown: they don't count
         for (const EcLightState &l : profile.lights) {
             if (m_lights.value(l.index) != l) {
                 return false;
@@ -350,7 +394,8 @@ void Lighting::apply(const Profile &profile)
     }
     m_fanApplier->queue(profile.fans.values());
     // With the profile's fans queued, a new range only recolours the following
-    // LEDs it leaves alone; the queued ones go out with the new colour below.
+    // LEDs it leaves alone (a moment later); the queued ones go out with the
+    // new colour below.
     if (profile.temperatureRange && m_temperatureRange) {
         m_temperatureRange = profile.temperatureRange;
         m_fanApplier->setTemperatureRange(*profile.temperatureRange);
@@ -404,10 +449,11 @@ bool Lighting::isBusy() const
     return m_fanApplier->isBusy() || m_lightApplier->isBusy();
 }
 
+// What the LEDs show: the saved state, and what was sent but couldn't be saved.
 void Lighting::loadFans()
 {
-    m_stateStamp = QFileInfo(FanState::filePath()).lastModified();
-    const FanState::Headers saved = FanState::load(m_model);
+    FanState::Headers saved = FanState::load(m_model);
+    saved.insert(m_fanApplier->unsaved());
     m_fans.clear();
     for (const FanDef &fan : m_model.fans) {
         for (const LedDef &led : fan.leds) {
@@ -423,31 +469,16 @@ void Lighting::loadFans()
     m_fanApplier->setCurrent(m_fans);
 }
 
-void Lighting::reloadFromDisk()
-{
-    if (isBusy()) {
-        return;
-    }
-    if (!m_rangeSave.isActive()) { // otherwise ours is newer
-        loadTemperatureRange();
-    }
-    loadFans();
-    if (m_lightsLoaded) {
-        m_lightApplier->refresh();
-    }
-    Q_EMIT changed();
-}
-
-void Lighting::setError(const QString &text, int source)
+void Lighting::setError(const QString &text, ErrorSource source)
 {
     m_errorSource = source;
     Q_EMIT error(text);
 }
 
-void Lighting::clearError(int source)
+void Lighting::clearError(ErrorSource source)
 {
     if (m_errorSource == source) {
-        m_errorSource = 0;
+        m_errorSource = NoErrors;
         Q_EMIT errorCleared();
     }
 }

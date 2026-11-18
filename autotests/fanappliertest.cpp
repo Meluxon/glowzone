@@ -2,81 +2,26 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 // The fan queue and the LEDs following the CPU temperature, against a fake
-// hidapi (defined here, so it takes the place of the real library) and a fake
-// hwmon tree: what reaches the controller, and when.
+// hidapi and a fake hwmon tree: what reaches the controller, and when.
 
 #include "core/appliers.h"
+#include "fakehid.h"
 
 #include <QDir>
+#include <QFileInfo>
 #include <QFile>
 #include <QSignalSpy>
 #include <QStandardPaths>
 #include <QTemporaryDir>
 #include <QTest>
 
-#include <cstring>
-#include <hidapi.h>
+#include <unistd.h>
+
 
 using namespace Glowzone;
 using namespace Ite8297;
+using FakeHid::sent;
 
-// --- fake hidapi: one ITE 8297; every feature report sent is recorded ----------
-
-static QList<QByteArray> s_reports;
-static int s_failures; // the next ones fail
-static int s_device;
-
-extern "C" {
-int hid_init(void)
-{
-    return 0;
-}
-int hid_exit(void)
-{
-    return 0;
-}
-hid_device_info *hid_enumerate(unsigned short, unsigned short)
-{
-    auto *info = static_cast<hid_device_info *>(calloc(1, sizeof(hid_device_info)));
-    info->path = strdup("/dev/hidraw-test");
-    info->vendor_id = 0x17ef;
-    info->product_id = 0xc955;
-    info->usage_page = UsagePage;
-    info->usage = Usage;
-    return info;
-}
-void hid_free_enumeration(hid_device_info *info)
-{
-    while (info) {
-        hid_device_info *next = info->next;
-        free(info->path);
-        free(info);
-        info = next;
-    }
-}
-hid_device *hid_open_path(const char *)
-{
-    return reinterpret_cast<hid_device *>(&s_device);
-}
-void hid_close(hid_device *)
-{
-}
-const wchar_t *hid_error(hid_device *)
-{
-    return L"fake";
-}
-int hid_send_feature_report(hid_device *, const unsigned char *data, size_t length)
-{
-    if (s_failures > 0) {
-        --s_failures;
-        return -1;
-    }
-    s_reports << QByteArray(reinterpret_cast<const char *>(data), int(length));
-    return int(length);
-}
-}
-
-// -------------------------------------------------------------------------------
 
 static const ModelProfile &model()
 {
@@ -94,21 +39,6 @@ static QStringList coloursFor(const QStringList &reports, const QString &header)
             out << r.mid(header.size() + 1);
         }
     }
-    return out;
-}
-
-// "13:00ff50" per settings report, "commit" per commit – easy to compare.
-static QStringList sent()
-{
-    QStringList out;
-    for (const QByteArray &r : std::as_const(s_reports)) {
-        if (r.at(1) == char(0x28) || r.at(1) == char(0x2D)) {
-            out << QStringLiteral("commit");
-        } else {
-            out << QStringLiteral("%1:%2").arg(quint8(r.at(1)), 2, 16, QLatin1Char('0')).arg(QString::fromLatin1(r.mid(5, 3).toHex()));
-        }
-    }
-    s_reports.clear();
     return out;
 }
 
@@ -146,8 +76,7 @@ private Q_SLOTS:
     void init()
     {
         QFile::remove(FanState::filePath());
-        s_reports.clear();
-        s_failures = 0;
+        FakeHid::reset();
         setTemperature(59); // + 1 °C offset: 60, colour 00ff50
     }
 
@@ -167,7 +96,8 @@ private Q_SLOTS:
         QCOMPARE(FanState::load(model()).value(0x13).mode, Mode::CpuTemperature);
     }
 
-    // A new range sends to the following LEDs only if their colour changes.
+    // A new range sends to the following LEDs only if their colour changes,
+    // a moment later: dragging a slider over several ranges sends once.
     void rangeSendsOnlyANewColour()
     {
         FanApplier fans(model(), nullptr, m_hwmon.path());
@@ -175,11 +105,17 @@ private Q_SLOTS:
         QVERIFY(fans.open(&error));
         fans.queue({follows(0x13)});
         fans.flushNow();
-        s_reports.clear();
+        FakeHid::reports.clear();
         fans.setTemperatureRange({34, 100}); // 60 °C keeps 00ff50
+        QTest::qWait(200);
         QCOMPARE(sent(), QStringList());
+        fans.setTemperatureRange({35, 75});
         fans.setTemperatureRange({35, 60}); // 60 °C is the top of it: the last colour
+        QCOMPARE(sent(), QStringList());
+        QTRY_VERIFY(!FakeHid::reports.isEmpty());
         QCOMPARE(sent(), (QStringList{QStringLiteral("13:ff0000"), QStringLiteral("commit")}));
+        QTest::qWait(200);
+        QCOMPARE(sent(), QStringList());
     }
 
     // A new step: only the following LEDs, nothing saved.
@@ -198,11 +134,49 @@ private Q_SLOTS:
         }();
 
         setTemperature(65); // 66: 00ff00
-        QVERIFY(QTest::qWaitFor([] { return !s_reports.isEmpty(); }));
+        QVERIFY(QTest::qWaitFor([] { return !FakeHid::reports.isEmpty(); }));
         QCOMPARE(sent(), (QStringList{QStringLiteral("13:00ff00"), QStringLiteral("commit")}));
         QFile f(FanState::filePath());
         QVERIFY(f.open(QIODevice::ReadOnly));
         QCOMPARE(f.readAll(), saved);
+    }
+
+    // Sent but not saved (the state can't be written): the next step leaves
+    // that LED alone, and the next save takes it along.
+    void unsavedChangeIsNotOverwritten()
+    {
+        if (::geteuid() == 0) {
+            QSKIP("root can write the state anyway");
+        }
+        const QString dir = QFileInfo(FanState::filePath()).absolutePath();
+        const auto writable = [&dir](bool on) {
+            return QFile::setPermissions(dir, QFileDevice::ReadOwner | QFileDevice::ExeOwner | (on ? QFileDevice::WriteOwner : QFileDevice::Permissions()));
+        };
+        FanApplier fans(model(), nullptr, m_hwmon.path());
+        fans.setTemperatureInterval(10);
+        QSignalSpy saveFailed(&fans, &FanApplier::saveFailed);
+        QString error;
+        QVERIFY(fans.open(&error));
+        fans.queue({follows(0x13), follows(0x11)});
+        fans.flushNow();
+        sent();
+
+        QVERIFY(writable(false));
+        fans.queue({{0x13, Mode::Static, 1, 2, Rgb{0xff, 0, 0}}});
+        fans.flushNow();
+        QVERIFY(writable(true));
+        QCOMPARE(saveFailed.count(), 1);
+        QCOMPARE(sent(), (QStringList{QStringLiteral("13:ff0000"), QStringLiteral("commit")}));
+        QCOMPARE(fans.unsaved().value(0x13).mode, Mode::Static);
+
+        setTemperature(65); // 66: 00ff00
+        QVERIFY(QTest::qWaitFor([] { return !FakeHid::reports.isEmpty(); }));
+        QCOMPARE(sent(), (QStringList{QStringLiteral("11:00ff00"), QStringLiteral("commit")}));
+
+        fans.queue({{0x12, Mode::Off, 1, 2, Rgb{}}});
+        fans.flushNow();
+        QVERIFY(fans.unsaved().isEmpty());
+        QCOMPARE(FanState::load(model()).value(0x13).mode, Mode::Static);
     }
 
     // The command line switched an LED away from the temperature a moment ago,
@@ -228,7 +202,7 @@ private Q_SLOTS:
         QVERIFY(FanState::merge(FanState::Lock(), {{0x11, Mode::Off, 1, 2, Rgb{}}}, &error)); // nothing follows any more
         setTemperature(45);
         QVERIFY(QTest::qWaitFor([&] { return !fans.temperature()->isRunning(); }));
-        QVERIFY(s_reports.isEmpty());
+        QVERIFY(FakeHid::reports.isEmpty());
     }
 
     // An LED that starts following elsewhere (the CLI, with its own one-off
@@ -242,12 +216,12 @@ private Q_SLOTS:
         fans.flushNow();
         sent();
 
-        FanState::Headers state = FanState::load(model());
-        state.insert(0x39, follows(0x39));
+        QVERIFY(FanState::merge(FanState::Lock(), {follows(0x39)}, &error)); // as the CLI does
+        const FanState::Headers state = FanState::load(model());
         fans.setCurrent(state);
         QCOMPARE(sent(), (QStringList{QStringLiteral("39:00ff50"), QStringLiteral("commit")}));
         fans.setCurrent(state); // nothing new
-        QVERIFY(s_reports.isEmpty());
+        QVERIFY(FakeHid::reports.isEmpty());
     }
 
     // A queued change sends its own colour; the reading leaves that LED alone.
@@ -293,17 +267,17 @@ private Q_SLOTS:
         QCOMPARE(saved.size(), 1);
         applied.clear();
 
-        s_failures = 1;
+        FakeHid::failures = 1;
         setTemperature(65); // 66: 00ff00
-        QVERIFY(QTest::qWaitFor([] { return !s_reports.isEmpty(); }));
+        QVERIFY(QTest::qWaitFor([] { return !FakeHid::reports.isEmpty(); }));
         QCOMPARE(sent(), (QStringList{QStringLiteral("13:00ff00"), QStringLiteral("commit")}));
         QCOMPARE(failed.size(), 0);
         QCOMPARE(applied.size(), 1);
 
-        s_failures = 2;
+        FakeHid::failures = 2;
         setTemperature(70); // 71: 50ff00
         QVERIFY(QTest::qWaitFor([&] { return !failed.isEmpty(); }));
-        QVERIFY(s_reports.isEmpty());
+        QVERIFY(FakeHid::reports.isEmpty());
 
         setTemperature(75); // 76: a0ff00
         QVERIFY(QTest::qWaitFor([&] { return applied.size() == 2; }));

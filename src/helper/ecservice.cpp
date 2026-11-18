@@ -153,11 +153,16 @@ EcService::Result EcService::status()
     return r;
 }
 
+// About the fans, not the lights: no light presence check.
 EcService::LayoutResult EcService::layout()
 {
     LayoutResult r;
-    r.error = preflight(&r.detail);
+    r.error = checkModel(&r.detail);
     if (r.error) {
+        return r;
+    }
+    if (!m_acpi.ensureReady(&r.detail)) {
+        r.error = HP::AcpiCallUnavailable;
         return r;
     }
     const auto reply = m_acpi.call(gameZoneCall(MethodLightingLayout, "0"), &r.detail);

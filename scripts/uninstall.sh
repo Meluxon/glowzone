@@ -41,6 +41,10 @@ ask() {
 if command -v pgrep >/dev/null 2>&1 && pgrep -x -u "$(id -u)" glowzone >/dev/null 2>&1; then
     echo "Glowzone is running (window or system tray) – quitting it."
     pkill -x -u "$(id -u)" glowzone || true
+    for _ in 1 2 3 4 5 6 7 8 9 10; do # up to 5 s: it may be finishing a change
+        pgrep -x -u "$(id -u)" glowzone >/dev/null 2>&1 || break
+        sleep 0.5
+    done
 fi
 if command -v glowzone >/dev/null 2>&1; then
     if ask "Turn all lighting off before uninstalling (glowzone reset)?"; then

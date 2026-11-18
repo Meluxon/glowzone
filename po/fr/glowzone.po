@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 00:19+0100\n"
+"POT-Creation-Date: 2026-11-18 11:36+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: French\n"
@@ -94,16 +94,6 @@ msgstr "« %1 » n’est pas une plage utilisable. Indiquez deux nombres entiers
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "Computer: %1"
-msgstr "Ordinateur : %1"
-
-#: src/cli/commands.cpp
-#, kde-format
-msgid "Fans (as last set by Glowzone – the controller can’t be read back):"
-msgstr "Ventilateurs (tels que Glowzone les a réglés en dernier – le contrôleur ne peut pas être relu) :"
-
-#: src/cli/commands.cpp
-#, kde-format
 msgid "unknown (not set by Glowzone yet)"
 msgstr "inconnu (pas encore réglé par Glowzone)"
 
@@ -112,6 +102,16 @@ msgstr "inconnu (pas encore réglé par Glowzone)"
 msgctxt "@info fan position: description"
 msgid "%1: %2"
 msgstr "%1 : %2"
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "Computer: %1"
+msgstr "Ordinateur : %1"
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "Fans (as last set by Glowzone – the controller can’t be read back):"
+msgstr "Ventilateurs (tels que Glowzone les a réglés en dernier – le contrôleur ne peut pas être relu) :"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -186,14 +186,14 @@ msgstr "Position « %1 » inconnue. Choisissez parmi : %2"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgctxt "@item fan (position)"
-msgid "%1 (%2)"
-msgstr "%1 (%2)"
+msgid "The fans were changed, but the state could not be saved: %1"
+msgstr "Les ventilateurs ont été modifiés, mais l’état n’a pas pu être enregistré : %1"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "The fans were changed, but the state could not be saved: %1"
-msgstr "Les ventilateurs ont été modifiés, mais l’état n’a pas pu être enregistré : %1"
+msgctxt "@item fan (position)"
+msgid "%1 (%2)"
+msgstr "%1 (%2)"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -550,7 +550,7 @@ msgstr "%1 est endommagé et n’a pas pu être mis de côté sous %2."
 msgid "%1 was saved by a newer version of Glowzone and is left as it is."
 msgstr "%1 a été enregistré par une version plus récente de Glowzone et reste tel quel."
 
-#: src/core/fanstate.cpp
+#: src/core/fanstate.cpp src/core/profiles.cpp
 #, kde-format
 msgid "Could not read %1: %2"
 msgstr "Impossible de lire %1 : %2"
@@ -694,13 +694,13 @@ msgstr ""
 
 #: src/core/profiles.cpp
 #, kde-format
-msgid "Could not create the directory %1."
-msgstr "Impossible de créer le répertoire %1."
+msgid "Could not save the profile to %1: %2"
+msgstr "Impossible d’enregistrer le profil dans %1 : %2"
 
 #: src/core/profiles.cpp
 #, kde-format
-msgid "Could not save the profile to %1: %2"
-msgstr "Impossible d’enregistrer le profil dans %1 : %2"
+msgid "Could not create the directory %1."
+msgstr "Impossible de créer le répertoire %1."
 
 #: src/core/profiles.cpp
 #, kde-format

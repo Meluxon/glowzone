@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "appliers.h"
 
+#include <QSignalBlocker>
+
 #include <utility>
 
 namespace Glowzone
@@ -18,10 +20,17 @@ FanApplier::FanApplier(const ModelProfile &model, QObject *parent, const QString
     m_timer.setSingleShot(true);
     m_timer.setInterval(FanDelayMs);
     connect(&m_timer, &QTimer::timeout, this, &FanApplier::flushNow);
+    m_rangeTimer.setSingleShot(true);
+    m_rangeTimer.setInterval(FanDelayMs);
+    connect(&m_rangeTimer, &QTimer::timeout, this, [this] {
+        sendFollowers();
+    });
 
     if (model.cpuTemperature) {
         m_temperature = new CpuTemperature(*model.cpuTemperature, this, hwmonRoot);
-        connect(m_temperature, &CpuTemperature::colourChanged, this, &FanApplier::sendFollowers);
+        connect(m_temperature, &CpuTemperature::colourChanged, this, [this] {
+            sendFollowers();
+        });
         connect(m_temperature, &CpuTemperature::updated, this, &FanApplier::temperatureUpdated);
         connect(m_temperature, &CpuTemperature::failed, this, &FanApplier::temperatureFailed);
         connect(m_temperature, &CpuTemperature::recovered, this, &FanApplier::temperatureRecovered);
@@ -49,23 +58,31 @@ void FanApplier::setCurrent(const FanState::Headers &headers)
     const auto before = m_followers;
     m_followers.clear();
     follow(headers.values());
-    if (m_temperature && m_temperature->isRunning()) {
-        // E.g. set from the command line, with its own one-off reading.
-        QList<Ite8297::HeaderSetting> added;
-        for (const Ite8297::HeaderSetting &s : std::as_const(m_followers)) {
-            if (!before.contains(s.header)) {
-                added << s;
-            }
-        }
-        send(added);
+    // E.g. set from the command line, with its own one-off reading. Sent the
+    // way every temperature colour is: by the saved state, under the lock.
+    QList<quint8> added = m_followers.keys();
+    added.removeIf([&before](quint8 header) {
+        return before.contains(header);
+    });
+    if (!added.isEmpty() && m_temperature && m_temperature->isRunning()) {
+        sendFollowers(added);
+        return;
     }
     updateTemperatureReading();
 }
 
 void FanApplier::setTemperatureRange(TemperatureRange range)
 {
-    if (m_temperature) {
-        m_temperature->setRange(range); // colourChanged() -> sendFollowers()
+    if (!m_temperature) {
+        return;
+    }
+    const Ite8297::Rgb before = m_temperature->colour();
+    {
+        const QSignalBlocker blocker(m_temperature); // colourChanged() would send at once
+        m_temperature->setRange(range);
+    }
+    if (m_temperature->colour() != before || m_rangeTimer.isActive()) {
+        m_rangeTimer.start();
     }
 }
 
@@ -120,33 +137,57 @@ void FanApplier::flushNow()
     m_pending.clear();
 
     QString error;
-    bool ok = false;
+    bool sent = false;
+    bool stored = false;
     {
         const FanState::Lock lock;
-        ok = sendNow(batch, &error) && FanState::merge(lock, batch, &error);
+        sent = sendNow(batch, &error);
+        if (sent) {
+            for (const Ite8297::HeaderSetting &s : batch) {
+                m_unsaved.insert(s.header, s);
+            }
+            stored = FanState::merge(lock, m_unsaved.values(), &error);
+            if (stored) {
+                m_unsaved.clear();
+            }
+        }
     }
     updateTemperatureReading();
-    if (!ok) {
+    if (!sent) {
         Q_EMIT failed(error);
         return;
     }
     Q_EMIT applied();
-    Q_EMIT saved();
+    if (stored) {
+        Q_EMIT saved();
+    } else {
+        Q_EMIT saveFailed(error);
+    }
 }
 
-// The temperature colour changed: only the following LEDs get it.
-void FanApplier::sendFollowers()
+// The temperature colour changed: only the following LEDs get it (or those of
+// them in only).
+void FanApplier::sendFollowers(const QList<quint8> &only)
 {
+    m_rangeTimer.stop();
     // The command line may have changed an LED a moment ago, before Glowzone
     // read the saved state again: go by the saved state, so that change isn't
     // overwritten. The lock keeps a command from changing an LED between the
-    // two. Our own changes are saved as they are sent, or are still pending.
+    // two. Our own changes are saved as they are sent, not saved yet, or still
+    // pending.
     {
         const FanState::Lock lock;
         m_followers.clear();
         follow(FanState::load(m_model).values());
+        follow(m_unsaved.values());
         follow(m_pending.values()); // changes on their way win
-        send(m_followers.values());
+        QList<Ite8297::HeaderSetting> list = m_followers.values();
+        if (!only.isEmpty()) {
+            list.removeIf([&only](const Ite8297::HeaderSetting &s) {
+                return !only.contains(s.header);
+            });
+        }
+        send(list);
     }
     updateTemperatureReading();
 }
@@ -240,6 +281,18 @@ std::optional<EcLightState> LightApplier::expected(quint8 index) const
     return state;
 }
 
+void LightApplier::setKnown(const QList<EcLightState> &lights)
+{
+    for (const EcLightState &l : lights) {
+        m_known.insert(l.index, l);
+    }
+}
+
+void LightApplier::forget()
+{
+    m_known.clear();
+}
+
 bool LightApplier::isNoOp(EcRequest request) const
 {
     const auto state = expected(request.index);
@@ -249,11 +302,20 @@ bool LightApplier::isNoOp(EcRequest request) const
 void LightApplier::finish()
 {
     m_timer.stop();
+    m_finishing = true;
+    m_refreshWanted = false; // nobody would see what they read
+    m_layoutWanted = false;
     if (!isBusy()) {
-        Q_EMIT idle();
+        reportIdle();
         return;
     }
     startNext();
+}
+
+void LightApplier::reportIdle()
+{
+    m_finishing = false;
+    Q_EMIT idle();
 }
 
 bool LightApplier::isBusy() const
@@ -279,7 +341,7 @@ void LightApplier::startNext()
         kind = HelperCall::Layout;
         m_layoutWanted = false;
     } else {
-        Q_EMIT idle();
+        reportIdle();
         return;
     }
 
@@ -295,7 +357,7 @@ void LightApplier::startNext()
             m_known.clear(); // unsure now – don't skip anything
             // A failed change may have set some lights and not others (each is
             // its own BIOS call): read back what they really show.
-            m_refreshWanted = m_refreshWanted || kind == HelperCall::Set;
+            m_refreshWanted = m_refreshWanted || (kind == HelperCall::Set && !m_finishing);
             Q_EMIT failed(r.error);
         } else {
             for (const EcLightState &l : r.lights) {

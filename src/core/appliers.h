@@ -39,22 +39,28 @@ public:
 
     // What the LEDs are set to, e.g. after reading the saved state again: the
     // CPU-temperature LEDs among them are followed from now on, and one that
-    // wasn't followed before gets the current colour. Sends nothing else.
+    // wasn't followed before gets the current colour.
     void setCurrent(const FanState::Headers &headers);
+
+    // Sent, but not saved yet (saving failed): what these LEDs really show.
+    // Saved together with the next change.
+    const FanState::Headers &unsaved() const { return m_unsaved; }
 
     // Any LED in the CPU-temperature mode?
     bool followsTemperature() const { return !m_followers.isEmpty(); }
     // nullptr if the model doesn't offer the mode.
     const CpuTemperature *temperature() const { return m_temperature; }
-    // The range the colours are spread over; following LEDs get a new colour
-    // at once if it changes theirs.
+    // The range the colours are spread over. Following LEDs get a new colour a
+    // moment later if it changes theirs, so dragging a slider doesn't flood the
+    // controller.
     void setTemperatureRange(TemperatureRange range);
     void setTemperatureInterval(int ms) { m_temperature->setInterval(ms); } // for tests
 
 Q_SIGNALS:
-    void failed(const QString &error);
-    void applied(); // something was sent: the controller works
-    void saved();   // a queued change was sent and saved
+    void failed(const QString &error);     // sending failed: the LEDs show what was sent before
+    void applied();                        // something was sent: the controller works
+    void saveFailed(const QString &error); // sent, but the state could not be saved
+    void saved();                          // the state of every LED sent so far is saved
     void temperatureUpdated();
     void temperatureFailed(const QString &error);
     void temperatureRecovered();
@@ -63,7 +69,7 @@ Q_SIGNALS:
 private:
     void follow(const QList<Ite8297::HeaderSetting> &settings);
     void updateTemperatureReading();
-    void sendFollowers();
+    void sendFollowers(const QList<quint8> &only = {});
     void send(const QList<Ite8297::HeaderSetting> &followers);
     bool sendNow(const QList<Ite8297::HeaderSetting> &settings, QString *error);
     QList<Ite8297::HeaderSetting> resolved(const QList<Ite8297::HeaderSetting> &settings) const;
@@ -71,10 +77,12 @@ private:
     const ModelProfile &m_model;
     FanController m_controller;
     bool m_open = false;
-    QMap<quint8, Ite8297::HeaderSetting> m_pending;
-    QMap<quint8, Ite8297::HeaderSetting> m_followers; // as saved: mode CPU temperature
+    FanState::Headers m_pending;
+    FanState::Headers m_unsaved;
+    FanState::Headers m_followers; // as saved: mode CPU temperature
     CpuTemperature *m_temperature = nullptr;
     QTimer m_timer;
+    QTimer m_rangeTimer; // a new range's colour goes out when it fires
 };
 
 // The case lights go through the root helper, asynchronously and one call at a
@@ -94,8 +102,12 @@ public:
     void refresh();
     void readLayout(); // answered by layoutRead(); failures are silent
     void queue(EcRequest request);
+    // The lights were set elsewhere (the command line): skip requests by this state.
+    void setKnown(const QList<EcLightState> &lights);
+    void forget(); // nothing is known about the lights any more
     bool isBusy() const;
-    void finish(); // send anything queued right away; idle() follows
+    // Send anything queued right away, without reading anything back; idle() follows.
+    void finish();
 
 Q_SIGNALS:
     void stateChanged(const QList<Glowzone::EcLightState> &lights);
@@ -106,6 +118,7 @@ Q_SIGNALS:
 
 private:
     void startNext();
+    void reportIdle();
 
     std::optional<EcLightState> expected(quint8 index) const;
     bool isNoOp(EcRequest request) const;
@@ -118,6 +131,7 @@ private:
     HelperCall *m_call = nullptr;
     bool m_refreshWanted = false;
     bool m_layoutWanted = false;
+    bool m_finishing = false;
 };
 
 } // namespace Glowzone

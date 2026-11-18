@@ -90,7 +90,8 @@ the menu entry's in `data/io.github.meluxon.Glowzone.desktop`.
 | `/usr/share/locale/*/LC_MESSAGES/glowzone.mo` | translations |
 
 Your own files: `~/.config/glowzone/` (settings, profiles),
-`~/.local/state/glowzone/` (the last fan state) and, with *Start at Login*,
+`~/.local/state/glowzone/` (the last fan state, and the case lights as the
+command line last set them) and, with *Start at Login*,
 `~/.config/autostart/io.github.meluxon.Glowzone.desktop`.
 `glowzone --purge-user-data` removes them.
 

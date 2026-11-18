@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 00:19+0100\n"
+"POT-Creation-Date: 2026-11-18 11:36+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: Japanese\n"
@@ -94,16 +94,6 @@ msgstr "「%1」は使用できる範囲ではありません。%2〜%3 °C の�
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "Computer: %1"
-msgstr "コンピューター：%1"
-
-#: src/cli/commands.cpp
-#, kde-format
-msgid "Fans (as last set by Glowzone – the controller can’t be read back):"
-msgstr "ファン（Glowzone が最後に設定した状態。コントローラーからは読み取れません）："
-
-#: src/cli/commands.cpp
-#, kde-format
 msgid "unknown (not set by Glowzone yet)"
 msgstr "不明（Glowzone でまだ設定されていません）"
 
@@ -112,6 +102,16 @@ msgstr "不明（Glowzone でまだ設定されていません）"
 msgctxt "@info fan position: description"
 msgid "%1: %2"
 msgstr "%1：%2"
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "Computer: %1"
+msgstr "コンピューター：%1"
+
+#: src/cli/commands.cpp
+#, kde-format
+msgid "Fans (as last set by Glowzone – the controller can’t be read back):"
+msgstr "ファン（Glowzone が最後に設定した状態。コントローラーからは読み取れません）："
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -186,14 +186,14 @@ msgstr "不明な位置「%1」です。次から選んでください：%2"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgctxt "@item fan (position)"
-msgid "%1 (%2)"
-msgstr "%1（%2）"
+msgid "The fans were changed, but the state could not be saved: %1"
+msgstr "ファンは変更されましたが、状態を保存できませんでした：%1"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "The fans were changed, but the state could not be saved: %1"
-msgstr "ファンは変更されましたが、状態を保存できませんでした：%1"
+msgctxt "@item fan (position)"
+msgid "%1 (%2)"
+msgstr "%1（%2）"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -550,7 +550,7 @@ msgstr "%1 は破損しており、%2 に退避できませんでした。"
 msgid "%1 was saved by a newer version of Glowzone and is left as it is."
 msgstr "%1 は新しいバージョンの Glowzone で保存されたため、変更しません。"
 
-#: src/core/fanstate.cpp
+#: src/core/fanstate.cpp src/core/profiles.cpp
 #, kde-format
 msgid "Could not read %1: %2"
 msgstr "%1 を読み込めませんでした：%2"
@@ -694,13 +694,13 @@ msgstr ""
 
 #: src/core/profiles.cpp
 #, kde-format
-msgid "Could not create the directory %1."
-msgstr "ディレクトリ %1 を作成できませんでした。"
+msgid "Could not save the profile to %1: %2"
+msgstr "プロファイルを %1 に保存できませんでした：%2"
 
 #: src/core/profiles.cpp
 #, kde-format
-msgid "Could not save the profile to %1: %2"
-msgstr "プロファイルを %1 に保存できませんでした：%2"
+msgid "Could not create the directory %1."
+msgstr "ディレクトリ %1 を作成できませんでした。"
 
 #: src/core/profiles.cpp
 #, kde-format

@@ -15,6 +15,8 @@
 #include <QMenu>
 #include <QMessageBox>
 
+#include <utility>
+
 namespace Glowzone::Gui
 {
 
@@ -43,6 +45,9 @@ void App::start(bool background)
 
 void App::showWindow()
 {
+    if (std::exchange(m_quitting, false)) {
+        disconnect(m_quitWhenIdle); // started again while finishing: stay
+    }
     if (!m_window) {
         m_window = new MainWindow(m_lighting, this);
         m_window->setAttribute(Qt::WA_DeleteOnClose);
@@ -70,6 +75,7 @@ void App::toggleWindow()
 
 void App::windowClosed()
 {
+    m_lighting->windowClosed();
     updateTray();
     if (!m_quitting && !m_keepRunning) {
         quit();
@@ -88,7 +94,7 @@ void App::quit()
     updateTray(); // removes it
     // Don't lose a change made in the last moment: idle() follows once
     // everything is sent (at once if nothing is pending).
-    connect(m_lighting, &Lighting::idle, qApp, &QApplication::quit, Qt::QueuedConnection);
+    m_quitWhenIdle = connect(m_lighting, &Lighting::idle, qApp, &QApplication::quit, Qt::QueuedConnection);
     m_lighting->finish();
 }
 

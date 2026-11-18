@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 
     QCommandLineParser parser;
     about.setupCommandLine(&parser);
-    Glowzone::Cli::addOptions(parser);
+    Glowzone::Cli::addOptions(parser, app->arguments());
     parser.process(*app);
     about.processCommandLine(&parser);
     return Glowzone::Cli::run(parser);

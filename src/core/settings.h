@@ -27,9 +27,10 @@ void setTemperatureRange(TemperatureRange range);
 QString currentProfile();
 void setCurrentProfile(const QString &name);
 
-// Window size, restored on the next start (empty if never stored).
-QSize windowSize();
-void setWindowSize(QSize size);
+// QWidget::saveGeometry(), restored on the next start (empty if never
+// stored). Written only when it changes.
+QByteArray windowGeometry();
+void setWindowGeometry(const QByteArray &geometry);
 
 // Closing the window keeps Glowzone running in the system tray, so fans
 // following the CPU temperature keep changing colour. Off by default.

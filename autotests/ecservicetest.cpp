@@ -245,6 +245,18 @@ private Q_SLOTS:
         QCOMPARE(acpi.setCalls(), 0); // read-only
     }
 
+    // The fan layout is read on its own: one call, whatever the lights report.
+    void fanLayoutDoesNotNeedTheLights()
+    {
+        FakeAcpi acpi;
+        acpi.presence = "0x0";
+        EcService service(legion, acpi);
+        const EcService::LayoutResult r = service.layout();
+        QCOMPARE(r.error, 0);
+        QCOMPARE(r.layout, 0x0b);
+        QCOMPARE(acpi.commands, QList<QByteArray>{"\\WMI2.WMG0 0 0x0a 0"});
+    }
+
     void variantRoundTrip()
     {
         const QList<EcLightState> in{{1, 2, 3}, {2, 5, 1}};

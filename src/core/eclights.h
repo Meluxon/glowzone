@@ -30,9 +30,18 @@ inline constexpr quint8 ModeOff = 1;
 inline constexpr quint8 MinBrightness = 1;
 
 // Blocking calls to the root helper, for the CLI (the window uses LightApplier).
-// Errors are translated.
+// Errors are translated. set() records the lights' new state in stateFilePath().
 std::optional<QList<EcLightState>> status(QString *error);
 std::optional<QList<EcLightState>> set(const QList<EcRequest> &requests, QString *error);
+
+// ~/.local/state/glowzone/lights.json: the case lights as the command line
+// last set them, so a running window can take that over without asking the
+// root helper. Only the command line writes it; it is only a hint, as the
+// window may have changed the lights since.
+QString stateFilePath();
+void saveState(const QList<EcLightState> &lights); // best effort: see set()
+// Only lights, modes and levels the model offers; nullopt if there is nothing usable.
+std::optional<QList<EcLightState>> loadState(const ModelProfile &model);
 std::optional<int> layout(QString *error); // fan layout as the BIOS detects it now (see FanLayoutDef)
 
 // "0x0b"

@@ -70,7 +70,7 @@ MainWindow::MainWindow(Lighting *lighting, App *app)
     addAction(quit);
 
     connect(m_lighting, &Lighting::changed, this, &MainWindow::refresh);
-    connect(m_lighting, &Lighting::savedChanged, this, &MainWindow::reloadCurrentProfile);
+    connect(m_lighting, &Lighting::savedChanged, this, &MainWindow::reloadProfiles); // e.g. a profile applied by the CLI
     connect(m_lighting, &Lighting::temperatureChanged, this, &MainWindow::refreshTemperature);
     connect(m_app, &App::backgroundChanged, this, &MainWindow::updateBackgroundMessage);
     connect(m_lighting, &Lighting::problemsChanged, this, &MainWindow::updateProblems);
@@ -86,14 +86,14 @@ MainWindow::MainWindow(Lighting *lighting, App *app)
     connect(m_sidebar, &Sidebar::renameRequested, this, &MainWindow::renameProfile);
     connect(m_sidebar, &Sidebar::deleteRequested, this, &MainWindow::deleteProfile);
 
-    m_currentProfile = Settings::currentProfile();
     reloadProfiles();
     m_sidebar->selectFirst();
     updateProblems(); // found before this window was opened
     updateBackgroundMessage();
 
-    const QSize stored = Settings::windowSize();
-    resize(stored.isValid() ? stored : QSize(fontMetrics().averageCharWidth() * 125, fontMetrics().height() * 36));
+    if (!restoreGeometry(Settings::windowGeometry())) {
+        resize(fontMetrics().averageCharWidth() * 125, fontMetrics().height() * 36);
+    }
 }
 
 MainWindow::~MainWindow() = default;
@@ -294,13 +294,6 @@ void MainWindow::refreshTemperature()
     }
 }
 
-// The command line changed the fans – maybe by applying a profile.
-void MainWindow::reloadCurrentProfile()
-{
-    m_currentProfile = Settings::currentProfile();
-    reloadProfiles();
-}
-
 void MainWindow::updateBackgroundMessage()
 {
     if (m_lighting->followsCpuTemperature() && !m_app->keepsRunning() && !m_backgroundMessageDismissed) {
@@ -315,17 +308,15 @@ void MainWindow::updateBackgroundMessage()
 void MainWindow::reloadProfiles()
 {
     m_profiles = Profiles::loadAll(m_model);
-    if (!currentProfile()) {
-        m_currentProfile.clear(); // deleted or renamed elsewhere
-    }
-    m_sidebar->setProfiles(m_profiles, m_currentProfile);
+    m_sidebar->setProfiles(m_profiles, m_lighting->currentProfile());
     updateBanner();
 }
 
 std::optional<Profile> MainWindow::currentProfile() const
 {
+    const QString name = m_lighting->currentProfile();
     for (const Profile &p : m_profiles) {
-        if (!m_currentProfile.isEmpty() && p.name.compare(m_currentProfile, Qt::CaseInsensitive) == 0) {
+        if (!name.isEmpty() && p.name.compare(name, Qt::CaseInsensitive) == 0) {
             return p;
         }
     }
@@ -365,9 +356,8 @@ void MainWindow::applyProfile(const QString &name)
 {
     for (const Profile &p : std::as_const(m_profiles)) {
         if (p.name == name) {
-            m_currentProfile = p.name;
             m_lighting->apply(p); // also stores it as the current profile
-            m_sidebar->setProfiles(m_profiles, m_currentProfile);
+            m_sidebar->setProfiles(m_profiles, p.name);
             updateBanner();
             return;
         }
@@ -427,7 +417,6 @@ void MainWindow::saveNewProfile()
         showError(error);
         return;
     }
-    m_currentProfile = name;
     m_lighting->setCurrentProfile(name);
     reloadProfiles();
 }
@@ -449,9 +438,8 @@ void MainWindow::renameProfile(const QString &name)
         showError(error);
         return;
     }
-    if (m_currentProfile.compare(name, Qt::CaseInsensitive) == 0) {
-        m_currentProfile = Profiles::cleanName(raw);
-        m_lighting->setCurrentProfile(m_currentProfile);
+    if (m_lighting->currentProfile().compare(name, Qt::CaseInsensitive) == 0) {
+        m_lighting->setCurrentProfile(Profiles::cleanName(raw));
     }
     reloadProfiles();
 }
@@ -471,8 +459,7 @@ void MainWindow::deleteProfile(const QString &name)
         showError(error);
         return;
     }
-    if (m_currentProfile.compare(name, Qt::CaseInsensitive) == 0) {
-        m_currentProfile.clear();
+    if (m_lighting->currentProfile().compare(name, Qt::CaseInsensitive) == 0) {
         m_lighting->setCurrentProfile({});
     }
     reloadProfiles();
@@ -504,32 +491,11 @@ void MainWindow::showError(const QString &text)
     showMessage(m_errorMessage);
 }
 
-// Coming back to the window: pick up what the CLI (e.g. a profile shortcut)
-// changed meanwhile. Not more often than every few seconds – reading the
-// case lights is a call to the root helper. Not while closing: on Wayland the
-// window can report itself active once more after the close event, and the
-// call would then reach KAuth after the window is gone.
-void MainWindow::changeEvent(QEvent *event)
-{
-    QMainWindow::changeEvent(event);
-    if (event->type() != QEvent::ActivationChange || m_closing || !isActiveWindow() || m_lighting->isBusy()) {
-        return;
-    }
-    if (m_lastReload.isValid() && m_lastReload.elapsed() < 5000) {
-        return;
-    }
-    m_lastReload.start();
-    m_currentProfile = Settings::currentProfile();
-    m_lighting->reloadFromDisk();
-    reloadProfiles();
-}
-
 // Whether Glowzone goes on in the tray or quits is the app's decision; the
 // lighting state outlives this window either way.
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    Settings::setWindowSize(size());
-    m_closing = true;
+    Settings::setWindowGeometry(saveGeometry());
     event->accept();
     Q_EMIT closed();
 }

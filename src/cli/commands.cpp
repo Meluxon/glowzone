@@ -216,6 +216,26 @@ int nameWidth(const ModelProfile &model)
     return w + 2;
 }
 
+// One fan's settings, or each LED's when they differ.
+QString describeFan(const FanDef &fan, const FanState::Headers &headers)
+{
+    QStringList perLed;
+    for (const LedDef &led : fan.leds) {
+        if (!headers.contains(led.header)) {
+            return i18n("unknown (not set by Glowzone yet)");
+        }
+        perLed << describe(headers.value(led.header));
+    }
+    if (perLed.count(perLed.constFirst()) == perLed.size()) {
+        return perLed.constFirst();
+    }
+    QStringList named;
+    for (int i = 0; i < perLed.size(); ++i) {
+        named << i18nc("@info fan position: description", "%1: %2", fan.leds.at(i).name.toString(), perLed.at(i));
+    }
+    return named.join(QLatin1String("; "));
+}
+
 void printLights(const ModelProfile &model, const QList<EcLightState> &lights, int width)
 {
     for (const EcLightState &s : lights) {
@@ -235,28 +255,7 @@ int cmdStatus(const ModelProfile &model)
     out() << i18n("Fans (as last set by Glowzone – the controller can’t be read back):") << Qt::endl;
     const FanState::Headers saved = FanState::load(model);
     for (const FanDef &fan : model.fans) {
-        QStringList perLed;
-        bool known = true;
-        for (const LedDef &led : fan.leds) {
-            if (!saved.contains(led.header)) {
-                known = false;
-                break;
-            }
-            perLed << describe(saved.value(led.header));
-        }
-        QString text;
-        if (!known) {
-            text = i18n("unknown (not set by Glowzone yet)");
-        } else if (perLed.size() > 1 && perLed.count(perLed.constFirst()) != perLed.size()) {
-            QStringList named;
-            for (int i = 0; i < perLed.size(); ++i) {
-                named << i18nc("@info fan position: description", "%1: %2", fan.leds.at(i).name.toString(), perLed.at(i));
-            }
-            text = named.join(QLatin1String("; "));
-        } else {
-            text = perLed.constFirst();
-        }
-        out() << QLatin1String("  ") << fan.name.toString().leftJustified(width) << text << Qt::endl;
+        out() << QLatin1String("  ") << fan.name.toString().leftJustified(width) << describeFan(fan, saved) << Qt::endl;
     }
     if (model.cpuTemperature && anyFollowsTemperature(saved)) {
         QString error;
@@ -357,16 +356,15 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
     // is taken first, so a running Glowzone can't change them before they're
     // sent and saved.
     const FanState::Lock lock;
-    const FanState::Headers saved = FanState::load(model);
+    FanState::Headers state = FanState::load(model);
     QList<HeaderSetting> settings;
-    QStringList labels; // one per setting, for the summary
     for (const FanDef *fan : std::as_const(fans)) {
         for (const LedDef &led : fan->leds) {
             if (onlyLed && &led != onlyLed) {
                 continue;
             }
             const quint8 h = led.header;
-            HeaderSetting s = saved.value(h, initialSetting(h));
+            HeaderSetting s = state.value(h, initialSetting(h));
             s.header = h;
             s.mode = mode->mode;
             if (speed) {
@@ -379,10 +377,7 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
                 s.colour = *colour;
             }
             settings << s;
-            labels << (onlyLed ? i18nc("@item fan (position)", "%1 (%2)", fan->name.toString(), led.name.toString()) : fan->name.toString());
-            if (!onlyLed && fan->isDouble() && led.header != fan->leds.constLast().header) {
-                labels.last().clear(); // a linked pair is reported once, on its last LED
-            }
+            state.insert(h, s);
         }
     }
 
@@ -404,14 +399,14 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
         Settings::setLinked(QLatin1String(fans.constFirst()->id), false);
     }
 
-    int width = nameWidth(model);
-    for (const QString &label : std::as_const(labels)) {
-        width = std::max(width, int(label.size()) + 2);
+    if (onlyLed) {
+        const QString label = i18nc("@item fan (position)", "%1 (%2)", fans.constFirst()->name.toString(), onlyLed->name.toString());
+        out() << QLatin1String("  ") << label << QLatin1String("  ") << describe(settings.constFirst()) << Qt::endl;
+        return ExitOk;
     }
-    for (int i = 0; i < settings.size(); ++i) {
-        if (!labels.at(i).isEmpty()) {
-            out() << QLatin1String("  ") << labels.at(i).leftJustified(width) << describe(settings.at(i)) << Qt::endl;
-        }
+    const int width = nameWidth(model);
+    for (const FanDef *fan : std::as_const(fans)) {
+        out() << QLatin1String("  ") << fan->name.toString().leftJustified(width) << describeFan(*fan, state) << Qt::endl;
     }
     return ExitOk;
 }
@@ -552,8 +547,7 @@ int cmdProfileApply(const ModelProfile &model, const QString &name)
     if (profile->temperatureRange && exitCode == ExitOk) {
         Settings::setTemperatureRange(*profile->temperatureRange);
     }
-    // A running Glowzone reads the fans and the current profile again a moment
-    // after they change: both should be there before the slower case lights.
+    // Recorded first, and put back if anything fails.
     const QString previous = Settings::currentProfile();
     if (exitCode == ExitOk) {
         Settings::setCurrentProfile(profile->name);
@@ -811,12 +805,16 @@ static QString helpText()
     return text + table(values);
 }
 
-void addOptions(QCommandLineParser &parser)
+void addOptions(QCommandLineParser &parser, const QStringList &arguments)
 {
-    parser.setApplicationDescription(helpText());
     parser.addOptions({colourOption(), speedOption(), brightnessOption(), ledOption(), rangeOption(), purgeOption()});
     parser.addPositionalArgument(QStringLiteral("command"), i18n("status, fan, light, reset or profile"), QStringLiteral("<command>"));
     parser.addPositionalArgument(QStringLiteral("arguments"), i18n("Arguments of the command"), QStringLiteral("[arguments...]"));
+    // The help text reads the hardware: only when it is shown.
+    parser.parse(arguments);
+    if (parser.isSet(QStringLiteral("help")) || parser.isSet(QStringLiteral("help-all")) || parser.positionalArguments().isEmpty()) {
+        parser.setApplicationDescription(helpText());
+    }
 }
 
 int run(QCommandLineParser &parser)

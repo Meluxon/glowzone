@@ -5,9 +5,13 @@
 // and what the window is told.
 
 #include "core/appliers.h"
+#include "core/eclights.h"
+#include "testmodel.h"
 
+#include <QFile>
 #include <QPointer>
 #include <QSignalSpy>
+#include <QStandardPaths>
 #include <QTest>
 
 using namespace Glowzone;
@@ -96,6 +100,11 @@ private:
     };
 
 private Q_SLOTS:
+    void initTestCase()
+    {
+        QStandardPaths::setTestModeEnabled(true);
+    }
+
     void refreshReportsState()
     {
         FakeHelper helper;
@@ -191,6 +200,56 @@ private Q_SLOTS:
         QCOMPARE(failed.count(), 1);
         QVERIFY(f.helper.running());
         QCOMPARE(f.helper.running()->kind, HelperCall::Status);
+    }
+
+    // Quitting: what is queued goes out, nothing is read back.
+    void finishReadsNothingBack()
+    {
+        FakeHelper helper;
+        LightApplier applier(helper, nullptr);
+        applier.refresh();      // the first read, running
+        applier.readLayout();   // waiting
+        applier.queue({1, 2, 3});
+        QSignalSpy idle(&applier, &LightApplier::idle);
+        applier.finish();
+        helper.answer();        // the read
+        QCOMPARE(helper.running()->kind, HelperCall::Set);
+        helper.answer(false);   // a failed change would be read back otherwise
+        QVERIFY(!helper.running());
+        QCOMPARE(idle.count(), 1);
+    }
+
+    // Lights the command line set: a request for that state is dropped.
+    void knownStateIsNotSentAgain()
+    {
+        Fixture f;
+        f.applier.setKnown({{1, 2, 3}});
+        f.applier.queue({1, 2, 3});
+        QTest::qWait(50);
+        QVERIFY(!f.helper.running());
+        f.applier.forget();
+        f.applier.queue({1, 2, 3});
+        QTRY_VERIFY(f.helper.running());
+    }
+
+    // What the command line records for a running window.
+    void commandLineStateRoundTrip()
+    {
+        EcLights::saveState({{1, 2, 3}, {2, 5, 1}});
+        QCOMPARE(EcLights::loadState(legionModel()), (QList<EcLightState>{{1, 2, 3}, {2, 5, 1}}));
+
+        // Only lights, modes and levels the model has.
+        QFile f(EcLights::stateFilePath());
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(R"({"version": 1, "lights": {"1": {"mode": 258, "brightness": 3}, "2": {"mode": 2, "brightness": 1}, "7": {"mode": 2, "brightness": 1}}})");
+        f.close();
+        QCOMPARE(EcLights::loadState(legionModel()), (QList<EcLightState>{{2, 2, 1}}));
+
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(R"({"version": 2, "lights": {"1": {"mode": 2, "brightness": 1}}})");
+        f.close();
+        QVERIFY(!EcLights::loadState(legionModel()));
+        QFile::remove(EcLights::stateFilePath());
     }
 };
 

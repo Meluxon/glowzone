@@ -57,6 +57,7 @@ private:
     QString m_trayToolTip; // as last sent
     bool m_keepRunning = false;
     bool m_quitting = false;
+    QMetaObject::Connection m_quitWhenIdle;
 };
 
 } // namespace Glowzone::Gui

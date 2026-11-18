@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 cmake_minimum_required(VERSION 3.22)
-project(glowzone VERSION 0.9.5 LANGUAGES CXX)
+project(glowzone VERSION 0.9.6 LANGUAGES CXX)
 
 set(QT_MIN_VERSION "6.7.0")   # 6.7: QStandardPaths::StateLocation
 set(KF_MIN_VERSION "6.0.0")

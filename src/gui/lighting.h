@@ -38,8 +38,11 @@ public:
     // follow it, window or not. If that failed, each new window tries again.
     // With a window, the case lights are read too, and the window is the
     // parent for a polkit dialog, should one ever be needed. Without one
-    // (started in the background) the root helper isn't used at all.
+    // (in the tray) the root helper isn't used at all.
     void start(QWindow *window);
+    // The case lights are forgotten: the tray doesn't read them, the next
+    // window does.
+    void windowClosed();
 
     // What is missing right now (a window opened later shows it too); each
     // problem goes away once its part works.
@@ -49,7 +52,7 @@ public:
     const ModelProfile &model() const { return m_model; }
 
     // --- fans
-    bool fansAvailable() const { return m_fansAvailable; }
+    bool fansAvailable() const;
     bool isKnown(quint8 header) const { return m_fans.contains(header); }
     Ite8297::HeaderSetting led(quint8 header) const; // a default if unknown
     bool isLinked(const FanDef &fan) const;
@@ -86,8 +89,9 @@ public:
     void setLight(quint8 index, quint8 mode, quint8 brightness);
 
     // --- profiles
-    // The profile applied last, as glowzone.conf records it; the window sets
-    // it through here, so a change made elsewhere can be told apart.
+    // The profile applied last, as glowzone.conf records it (the command line
+    // may change it too). Empty if none.
+    QString currentProfile() const { return m_currentProfile; }
     void setCurrentProfile(const QString &name);
     Profile current() const;
     // Does the lighting match what the profile contains?
@@ -95,11 +99,6 @@ public:
     void apply(const Profile &profile);
 
     void turnAllOff();
-
-    // Reads again what the CLI may have changed meanwhile: the fan state, the
-    // split choices, the temperature range and the case lights. Skipped while
-    // a change is being sent.
-    void reloadFromDisk();
 
     // Send anything still pending; idle() follows when done.
     bool isBusy() const;
@@ -115,14 +114,17 @@ Q_SIGNALS:
     void idle();
 
 private:
+    enum ErrorSource { NoErrors, FanErrors, LightErrors, SaveErrors };
+
     void checkFanLayout();
     void loadFans();
     void loadTemperatureRange();
     void saveTemperatureRange(); // now, instead of when m_rangeSave runs out
     void reloadSaved();
+    void takeCommandLineLights();
     void setProblem(QString &problem, const QString &text);
-    void setError(const QString &text, int source);
-    void clearError(int source);
+    void setError(const QString &text, ErrorSource source);
+    void clearError(ErrorSource source);
 
     const ModelProfile &m_model;
     FanState::Headers m_fans;
@@ -131,18 +133,17 @@ private:
     QTimer m_rangeSave;
     QMap<quint8, EcLightState> m_lights;
     QString m_currentProfile;
-    bool m_fansAvailable = true; // until opening the controller fails
+    bool m_windowOpen = false;
     bool m_lightsLoaded = false;
     bool m_lightsFailed = false;
-    bool m_lightsStale = false; // a profile was applied elsewhere: being read again
+    QDateTime m_lightsStamp; // the command line's lights.json, as last seen
     int m_fanLayout = -1;
     bool m_layoutChecked = false;
     QString m_fanProblem;
     QString m_lightProblem;
     QString m_layoutProblem;
     QString m_temperatureError;
-    int m_errorSource = 0;  // which queue the shown error came from (0: none)
-    QDateTime m_stateStamp; // fans.json as last read or saved by us
+    ErrorSource m_errorSource = NoErrors; // where the shown error came from
     bool m_settingsChanged = false; // glowzone.conf or the profiles, since the last reload
     QTimer m_savedReload;
     std::unique_ptr<KAuthHelperCalls> m_helper;
