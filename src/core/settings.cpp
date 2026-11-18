@@ -24,77 +24,88 @@ QString filePath()
 }
 
 // The file is opened per call: the window and the CLI may both change it.
+static QSettings file()
+{
+    return QSettings(filePath(), QSettings::IniFormat);
+}
+
+// Written only when the value changes: each write makes a running Glowzone
+// read the settings again. (The file stores text: compare as the value's type.)
+static void store(const QString &key, const QVariant &value)
+{
+    QSettings s = file();
+    QVariant stored = s.value(key);
+    if (!stored.isValid() || !stored.convert(value.metaType()) || stored != value) {
+        s.setValue(key, value);
+    }
+}
+
+static constexpr auto LinksGroup = "links/"_L1;
+static constexpr auto CoolestKey = "cpuTemperature/coolest"_L1;
+static constexpr auto HottestKey = "cpuTemperature/hottest"_L1;
+static constexpr auto CurrentProfileKey = "profiles/current"_L1;
+static constexpr auto WindowGeometryKey = "window/geometry"_L1;
+static constexpr auto KeepRunningKey = "background/keepRunning"_L1;
 
 std::optional<bool> linked(const QString &fanId)
 {
-    const QSettings s(filePath(), QSettings::IniFormat);
-    const QVariant v = s.value("links/"_L1 + fanId);
-    return v.isValid() ? std::optional<bool>(v.toBool()) : std::nullopt;
+    const QVariant v = file().value(LinksGroup + fanId);
+    return v.isValid() ? std::optional(v.toBool()) : std::nullopt;
 }
 
 void setLinked(const QString &fanId, bool isLinked)
 {
-    QSettings s(filePath(), QSettings::IniFormat);
-    s.setValue("links/"_L1 + fanId, isLinked);
+    store(LinksGroup + fanId, isLinked);
 }
 
 TemperatureRange temperatureRange(const CpuTemperatureDef &def)
 {
-    const QSettings s(filePath(), QSettings::IniFormat);
+    const QSettings s = file();
     bool okCoolest = false;
     bool okHottest = false;
-    const int coolest = s.value("cpuTemperature/coolest"_L1).toInt(&okCoolest);
-    const int hottest = s.value("cpuTemperature/hottest"_L1).toInt(&okHottest);
+    const int coolest = s.value(CoolestKey).toInt(&okCoolest);
+    const int hottest = s.value(HottestKey).toInt(&okHottest);
     return okCoolest && okHottest ? TemperatureRange{coolest, hottest} : def.defaultRange;
 }
 
 void setTemperatureRange(TemperatureRange range)
 {
-    QSettings s(filePath(), QSettings::IniFormat);
-    s.setValue("cpuTemperature/coolest"_L1, range.coolest);
-    s.setValue("cpuTemperature/hottest"_L1, range.hottest);
+    store(CoolestKey, range.coolest);
+    store(HottestKey, range.hottest);
 }
 
 QString currentProfile()
 {
-    const QSettings s(filePath(), QSettings::IniFormat);
-    return s.value("profiles/current"_L1).toString();
+    return file().value(CurrentProfileKey).toString();
 }
 
 void setCurrentProfile(const QString &name)
 {
-    QSettings s(filePath(), QSettings::IniFormat);
     if (name.isEmpty()) {
-        s.remove("profiles/current"_L1);
+        file().remove(CurrentProfileKey);
     } else {
-        s.setValue("profiles/current"_L1, name);
+        store(CurrentProfileKey, name);
     }
 }
 
 QByteArray windowGeometry()
 {
-    const QSettings s(filePath(), QSettings::IniFormat);
-    return s.value("window/geometry"_L1).toByteArray();
+    return file().value(WindowGeometryKey).toByteArray();
 }
 
 void setWindowGeometry(const QByteArray &geometry)
 {
-    QSettings s(filePath(), QSettings::IniFormat);
-    if (s.value("window/geometry"_L1).toByteArray() != geometry) {
-        s.setValue("window/geometry"_L1, geometry);
-    }
+    store(WindowGeometryKey, geometry);
 }
 
 bool keepRunning()
 {
-    const QSettings s(filePath(), QSettings::IniFormat);
-    return s.value("background/keepRunning"_L1, false).toBool();
+    return file().value(KeepRunningKey, false).toBool();
 }
 
 void setKeepRunning(bool on)
 {
-    QSettings s(filePath(), QSettings::IniFormat);
-    s.setValue("background/keepRunning"_L1, on);
+    store(KeepRunningKey, on);
 }
 
 QString autostartPath()

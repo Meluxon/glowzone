@@ -39,7 +39,7 @@ private:
 };
 
 // Replaces the given headers in the saved state and keeps every other entry.
-// Takes the lock to show it is held.
+// Only while the lock is held, which the parameter shows.
 bool merge(const Lock &lock, const QList<Ite8297::HeaderSetting> &changed, QString *error);
 
 // {"0x13": {"mode": "rainbow", "speed": 1, "brightness": 2, "colour": "#158ddd"}, ...}
@@ -48,9 +48,9 @@ QJsonObject headersToJson(const Headers &headers);
 Headers headersFromJson(const QJsonObject &headers, const ModelProfile &model);
 bool fitsModel(const ModelProfile &model, Ite8297::HeaderSetting setting);
 
-// Link toggle default when nothing is stored: linked unless the saved state
-// shows the LEDs of a double fan differ.
-bool defaultLinked(const FanDef &fan, const Headers &saved);
+// Are the LEDs of a double fan set together? As the user chose (glowzone.conf);
+// never chosen: linked unless the saved state shows they differ.
+bool linked(const FanDef &fan, const Headers &saved);
 
 } // namespace FanState
 } // namespace Glowzone

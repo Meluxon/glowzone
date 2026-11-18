@@ -46,6 +46,7 @@ Q_SIGNALS:
     void backgroundChanged();
 
 private:
+    void changeStartAtLogin(bool on); // without telling: the caller does
     void windowClosed();
     void updateTray();
     void updateTrayToolTip();

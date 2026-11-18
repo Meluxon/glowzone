@@ -3,9 +3,9 @@
 #include "aboutdialog.h"
 #include "lighting.h"
 
-#include "config-glowzone.h"
 #include "core/eclights.h"
 
+#include <KAboutData>
 #include <KCoreAddons>
 #include <KLocalizedString>
 #include <QApplication>
@@ -20,6 +20,9 @@
 
 using namespace Qt::StringLiterals;
 
+static constexpr int IconSize = 64;       // device-independent pixels
+static constexpr double TitleScale = 1.4; // the name and version, next to the icon
+
 namespace Glowzone::Gui
 {
 
@@ -33,13 +36,15 @@ AboutDialog::AboutDialog(const Lighting *lighting, QWidget *parent)
 
     auto *top = new QHBoxLayout;
     auto *icon = new QLabel(this);
-    icon->setPixmap(QApplication::windowIcon().pixmap(64, 64));
+    icon->setPixmap(QApplication::windowIcon().pixmap(IconSize, IconSize));
     auto *title = new QLabel(this);
     QFont big = title->font();
-    big.setPointSizeF(big.pointSizeF() * 1.4);
+    big.setPointSizeF(big.pointSizeF() * TitleScale);
     title->setFont(big);
-    title->setText(i18nc("@title app name and version", "Glowzone %1", QStringLiteral(GLOWZONE_VERSION_STRING)));
-    auto *subtitle = new QLabel(i18n("Lighting control for supported Lenovo desktops"), this);
+    const KAboutData about = KAboutData::applicationData();
+    title->setText(i18nc("@title app name and version", "Glowzone %1", about.version()));
+    auto *subtitle = new QLabel(about.shortDescription(), this);
+    subtitle->setWordWrap(true);
     auto *titles = new QVBoxLayout;
     titles->addWidget(title);
     titles->addWidget(subtitle);
@@ -75,10 +80,7 @@ AboutDialog::AboutDialog(const Lighting *lighting, QWidget *parent)
         detection = {i18nc("@info BIOS fan detection, %1 layout code", "Unusual layout %1 – see the message in the window", EcLights::layoutCode(layoutCode)),
                      EcLights::layoutCode(layoutCode) + ", normally "_L1 + EcLights::layoutCode(model.normalFanLayout)};
     }
-    const QString usbId = u"%1:%2"_s
-                              .arg(model.usbVendorId, 4, 16, u'0')
-                              .arg(model.usbProductId, 4, 16, u'0')
-                              .toUpper();
+    const QString usbId = model.usbId();
 
     auto *form = new QFormLayout;
     form->setLabelAlignment(Qt::AlignRight);
@@ -94,12 +96,12 @@ AboutDialog::AboutDialog(const Lighting *lighting, QWidget *parent)
         addRow(i18nc("@label", "Case lights:"), lights.shown);
     }
     addRow(i18nc("@label BIOS fan detection", "Fan detection:"), detection.shown);
-    addRow(i18nc("@label", "Licence:"), u"GPL-2.0-or-later"_s);
-    addRow(i18nc("@label", "Copyright:"), i18n("© 2026 Meluxon"));
+    addRow(i18nc("@label", "Licence:"), about.licenses().constFirst().spdx());
+    addRow(i18nc("@label", "Copyright:"), about.copyrightStatement());
     layout->addLayout(form);
 
     m_report = QStringList{
-        u"Glowzone "_s + QStringLiteral(GLOWZONE_VERSION_STRING),
+        u"Glowzone "_s + about.version(),
         u"Computer: %1 (board %2)"_s.arg(model.displayName(), QLatin1String(model.boardName)),
         u"Fan controller: USB %1 – %2"_s.arg(usbId, fans.report),
         u"Case lights: "_s + lights.report,

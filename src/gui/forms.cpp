@@ -20,11 +20,10 @@ using namespace Ite8297;
 static constexpr double SmallFontScale = 0.9;
 static constexpr int SliderWidthInChars = 28;
 
-QFont smallFont(const QWidget *widget)
+QFont smallFont(QFont font)
 {
-    QFont f = widget->font();
-    f.setPointSizeF(f.pointSizeF() * SmallFontScale);
-    return f;
+    font.setPointSizeF(font.pointSizeF() * SmallFontScale);
+    return font;
 }
 
 int sliderWidth(const QWidget *widget)
@@ -49,7 +48,7 @@ LevelSlider::LevelSlider(int min, int max, const QString &minText, const QString
     auto *minLabel = new QLabel(minText, this);
     auto *maxLabel = new QLabel(maxText, this);
     for (QLabel *l : {minLabel, maxLabel}) {
-        l->setFont(smallFont(l));
+        l->setFont(smallFont(l->font()));
     }
     ends->addWidget(minLabel);
     ends->addStretch();
@@ -114,7 +113,7 @@ void LedForm::setTemperature(std::optional<double> celsius, const QString &error
 HeaderSetting LedForm::values() const
 {
     HeaderSetting s;
-    s.mode = m_mode->currentIndex() >= 0 ? Mode(m_mode->currentData().toInt()) : Mode::Off;
+    s.mode = Mode(m_mode->currentData().toInt());
     s.speed = quint8(m_speed->slider()->value());
     s.brightness = quint8(m_brightness->slider()->value());
     s.colour = m_colour->colour();
@@ -167,22 +166,22 @@ QLabel *sectionHeading(const QString &text, QWidget *parent)
     return l;
 }
 
-QWidget *centredForm(QFormLayout **form, QWidget *parent)
+CentredForm centredForm(QWidget *parent)
 {
     auto *page = new QWidget(parent);
     auto *outer = new QVBoxLayout(page);
     auto *row = new QHBoxLayout;
     auto *inner = new QWidget(page);
-    *form = new QFormLayout(inner);
-    (*form)->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    (*form)->setFieldGrowthPolicy(QFormLayout::FieldsStayAtSizeHint);
-    (*form)->setFormAlignment(Qt::AlignHCenter | Qt::AlignTop);
+    auto *form = new QFormLayout(inner);
+    form->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    form->setFieldGrowthPolicy(QFormLayout::FieldsStayAtSizeHint);
+    form->setFormAlignment(Qt::AlignHCenter | Qt::AlignTop);
     row->addStretch();
     row->addWidget(inner);
     row->addStretch();
     outer->addLayout(row);
     outer->addStretch();
-    return page;
+    return {page, form};
 }
 
 } // namespace Glowzone::Gui

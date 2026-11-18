@@ -26,9 +26,8 @@ static constexpr int SavedReloadDelayMs = 300;
 Lighting::Lighting(const ModelProfile &model, QObject *parent)
     : QObject(parent)
     , m_model(model)
-    , m_helper(std::make_unique<KAuthHelperCalls>())
     , m_fanApplier(new FanApplier(model, this))
-    , m_lightApplier(new LightApplier(*m_helper, this))
+    , m_lightApplier(new LightApplier(m_helper, this))
 {
     loadTemperatureRange();
     loadFans();
@@ -136,7 +135,7 @@ void Lighting::start(QWindow *window)
         Q_EMIT changed();
     }
     m_windowOpen = m_windowOpen || window;
-    m_helper->setWindow(window);
+    m_helper.setWindow(window);
     if (window && !m_model.ecLights.isEmpty() && !m_lightsLoaded && !m_lightApplier->isBusy()) {
         m_lightsFailed = false; // try again with this window
         m_lightApplier->refresh();
@@ -196,12 +195,17 @@ const TemperatureScale *Lighting::temperatureScale() const
     return t ? &t->scale() : nullptr;
 }
 
+std::optional<TemperatureRange> Lighting::temperatureRange() const
+{
+    const CpuTemperature *t = m_fanApplier->temperature();
+    return t ? std::optional(t->range()) : std::nullopt;
+}
+
 void Lighting::setTemperatureRange(TemperatureRange range)
 {
-    if (!m_temperatureRange || *m_temperatureRange == range) {
-        return;
+    if (temperatureRange().value_or(range) == range) {
+        return; // the same, or no such mode
     }
-    m_temperatureRange = range;
     m_fanApplier->setTemperatureRange(range);
     m_rangeSave.start();
     Q_EMIT changed();
@@ -210,16 +214,15 @@ void Lighting::setTemperatureRange(TemperatureRange range)
 void Lighting::loadTemperatureRange()
 {
     if (m_model.cpuTemperature) {
-        m_temperatureRange = Settings::temperatureRange(*m_model.cpuTemperature);
-        m_fanApplier->setTemperatureRange(*m_temperatureRange);
+        m_fanApplier->setTemperatureRange(Settings::temperatureRange(*m_model.cpuTemperature));
     }
 }
 
 void Lighting::saveTemperatureRange()
 {
     m_rangeSave.stop();
-    if (m_temperatureRange) {
-        Settings::setTemperatureRange(*m_temperatureRange);
+    if (const auto range = temperatureRange()) {
+        Settings::setTemperatureRange(*range);
     }
 }
 
@@ -234,7 +237,7 @@ void Lighting::reloadSaved()
     m_currentProfile = Settings::currentProfile();
     const FanState::Headers before = m_fans;
     const QMap<QString, bool> linksBefore = m_links;
-    const auto rangeBefore = m_temperatureRange;
+    const auto rangeBefore = temperatureRange();
     const QMap<quint8, EcLightState> lightsBefore = m_lights;
     if (!m_rangeSave.isActive()) { // otherwise ours is newer
         loadTemperatureRange();
@@ -244,7 +247,7 @@ void Lighting::reloadSaved()
     if (std::exchange(m_settingsChanged, false)) {
         Q_EMIT savedChanged();
     }
-    if (m_fans != before || m_links != linksBefore || m_temperatureRange != rangeBefore || m_lights != lightsBefore) {
+    if (m_fans != before || m_links != linksBefore || temperatureRange() != rangeBefore || m_lights != lightsBefore) {
         Q_EMIT changed();
     }
 }
@@ -286,7 +289,7 @@ bool Lighting::isUndetected(const FanDef &fan) const
 
 HeaderSetting Lighting::led(quint8 header) const
 {
-    return m_fans.value(header, initialSetting(header));
+    return m_fans.value(header, {.header = header});
 }
 
 bool Lighting::isLinked(const FanDef &fan) const
@@ -349,7 +352,7 @@ Profile Lighting::current() const
     Profile p;
     p.fans = m_fans;
     p.links = m_links;
-    p.temperatureRange = m_temperatureRange;
+    p.temperatureRange = temperatureRange();
     if (m_lightsLoaded) {
         p.lights = m_lights;
     }
@@ -372,8 +375,8 @@ bool Lighting::matches(const Profile &profile) const
     }
     // Compared as used: values past a limit count as the limit.
     const TemperatureScale *scale = temperatureScale();
-    if (const auto &def = m_model.cpuTemperature; def && scale && profile.temperatureRange && m_temperatureRange) {
-        if (usableRange(*def, *profile.temperatureRange, scale->top()) != usableRange(*def, *m_temperatureRange, scale->top())) {
+    if (const auto &def = m_model.cpuTemperature; def && scale && profile.temperatureRange) {
+        if (usableRange(*def, *profile.temperatureRange, scale->top()) != scale->range()) {
             return false;
         }
     }
@@ -396,8 +399,7 @@ void Lighting::apply(const Profile &profile)
     // With the profile's fans queued, a new range only recolours the following
     // LEDs it leaves alone (a moment later); the queued ones go out with the
     // new colour below.
-    if (profile.temperatureRange && m_temperatureRange) {
-        m_temperatureRange = profile.temperatureRange;
+    if (profile.temperatureRange && temperatureRange()) {
         m_fanApplier->setTemperatureRange(*profile.temperatureRange);
         saveTemperatureRange();
     }
@@ -409,7 +411,7 @@ void Lighting::apply(const Profile &profile)
     }
     for (const EcLightState &l : profile.lights) {
         m_lights.insert(l.index, l);
-        m_lightApplier->queue({l.index, l.mode, l.brightness});
+        m_lightApplier->queue(l);
     }
     setCurrentProfile(profile.name);
     Q_EMIT changed();
@@ -438,7 +440,7 @@ void Lighting::turnAllOff()
     if (m_lightsLoaded) {
         for (EcLightState &l : m_lights) {
             l.mode = EcLights::ModeOff;
-            m_lightApplier->queue({l.index, l.mode, l.brightness});
+            m_lightApplier->queue(l);
         }
     }
     Q_EMIT changed();
@@ -452,18 +454,11 @@ bool Lighting::isBusy() const
 // What the LEDs show: the saved state, and what was sent but couldn't be saved.
 void Lighting::loadFans()
 {
-    FanState::Headers saved = FanState::load(m_model);
-    saved.insert(m_fanApplier->unsaved());
-    m_fans.clear();
+    m_fans = FanState::load(m_model);
+    m_fans.insert(m_fanApplier->unsaved());
     for (const FanDef &fan : m_model.fans) {
-        for (const LedDef &led : fan.leds) {
-            if (saved.contains(led.header)) {
-                m_fans.insert(led.header, saved.value(led.header));
-            }
-        }
         if (fan.isDouble()) {
-            const QString id = QLatin1String(fan.id);
-            m_links.insert(id, Settings::linked(id).value_or(FanState::defaultLinked(fan, saved)));
+            m_links.insert(QLatin1String(fan.id), FanState::linked(fan, m_fans));
         }
     }
     m_fanApplier->setCurrent(m_fans);

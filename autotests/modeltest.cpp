@@ -6,6 +6,7 @@
 #include "core/fanstate.h"
 #include "core/ite8297.h"
 #include "model/modelprofile.h"
+#include "testmodel.h"
 
 #include <QFile>
 #include <QTest>
@@ -43,23 +44,22 @@ private Q_SLOTS:
 
     void legionLayout()
     {
-        const ModelProfile *m = matchModel({u"LENOVO"_s, u"Legion T5 26IOB6"_s, u"3733"_s});
-        QVERIFY(m);
-        QCOMPARE(m->fan(u"top"_s)->headers(), (QList<quint8>{0x39, 0x12}));
-        QCOMPARE(m->fan(u"front"_s)->headers(), (QList<quint8>{0x3a, 0x38}));
-        QVERIFY(!m->fan(u"cpu"_s)->isDouble());
-        QVERIFY(m->fan(u"top"_s)->isDouble());
+        const ModelProfile &m = legionModel();
+        QCOMPARE(m.fan(u"top"_s)->headers(), (QList<quint8>{0x39, 0x12}));
+        QCOMPARE(m.fan(u"front"_s)->headers(), (QList<quint8>{0x3a, 0x38}));
+        QVERIFY(!m.fan(u"cpu"_s)->isDouble());
+        QVERIFY(m.fan(u"top"_s)->isDouble());
         // Physical positions, confirmed on the hardware
-        QCOMPARE(m->fan(u"front"_s)->led(u"upper"_s)->header, quint8(0x3a));
-        QCOMPARE(m->fan(u"front"_s)->led(u"lower"_s)->header, quint8(0x38));
-        QCOMPARE(m->fan(u"top"_s)->led(u"front"_s)->header, quint8(0x39));
-        QCOMPARE(m->fan(u"top"_s)->led(u"rear"_s)->header, quint8(0x12));
-        QCOMPARE(m->fan(u"top"_s)->led(u"2"_s)->header, quint8(0x12));
-        QVERIFY(!m->fan(u"top"_s)->led(u"3"_s));
-        QVERIFY(!m->fan(u"top"_s)->led(u"upper"_s));
-        QVERIFY(!m->fan(u"cpu"_s)->led(u"front"_s));
-        QCOMPARE(m->ecLight(u"ambient"_s)->index, quint8(2));
-        QVERIFY(!m->fan(u"gpu"_s));
+        QCOMPARE(m.fan(u"front"_s)->led(u"upper"_s)->header, quint8(0x3a));
+        QCOMPARE(m.fan(u"front"_s)->led(u"lower"_s)->header, quint8(0x38));
+        QCOMPARE(m.fan(u"top"_s)->led(u"front"_s)->header, quint8(0x39));
+        QCOMPARE(m.fan(u"top"_s)->led(u"rear"_s)->header, quint8(0x12));
+        QCOMPARE(m.fan(u"top"_s)->led(u"2"_s)->header, quint8(0x12));
+        QVERIFY(!m.fan(u"top"_s)->led(u"3"_s));
+        QVERIFY(!m.fan(u"top"_s)->led(u"upper"_s));
+        QVERIFY(!m.fan(u"cpu"_s)->led(u"front"_s));
+        QCOMPARE(m.ecLight(u"ambient"_s)->index, quint8(2));
+        QVERIFY(!m.fan(u"gpu"_s));
     }
 
     // Every profile may only offer what the protocol code can encode, must
@@ -90,8 +90,8 @@ private Q_SLOTS:
             QVERIFY2(m.fanLevels >= Ite8297::MinLevel, name.constData());
             for (const FanDef &f : m.fans) {
                 for (quint8 h : f.headers()) {
-                    QVERIFY2(Ite8297::isKnownHeader(h), name.constData());
-                    QVERIFY2(FanState::fitsModel(m, Ite8297::initialSetting(h)), name.constData()); // e.g. its brightness
+                    QVERIFY2(Ite8297::groupOf(h), name.constData());
+                    QVERIFY2(FanState::fitsModel(m, {.header = h}), name.constData()); // e.g. its brightness
                 }
             }
 

@@ -20,20 +20,15 @@
 namespace Glowzone::Gui
 {
 
-QString capitalised(const QString &s)
-{
-    return s.isEmpty() ? s : s.at(0).toUpper() + s.mid(1);
-}
-
 FanPage::FanPage(const FanDef &fan, Lighting *lighting, QWidget *parent)
     : QWidget(parent)
     , m_fan(fan)
     , m_lighting(lighting)
 {
-    QFormLayout *form = nullptr;
+    const auto [page, form] = centredForm(this);
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(centredForm(&form, this));
+    layout->addWidget(page);
 
     if (fan.isDouble()) {
         m_separately = new QCheckBox(i18nc("@option:check LEDs of a double fan", "Set separately"), this);
@@ -47,7 +42,7 @@ FanPage::FanPage(const FanDef &fan, Lighting *lighting, QWidget *parent)
     for (const LedDef &led : fan.leds) {
         QLabel *heading = nullptr;
         if (fan.isDouble()) {
-            heading = sectionHeading(capitalised(i18nc("@title one fan of a pair, %1 is its position", "%1 fan", led.name.toString())), this);
+            heading = sectionHeading(led.heading.toString(), this);
             form->addRow(heading);
         }
         auto *ledForm = new LedForm(m_lighting->model(), form, this);
@@ -122,7 +117,9 @@ LightPage::LightPage(const EcLightDef &light, Lighting *lighting, QWidget *paren
 {
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(centredForm(&m_form, this));
+    const CentredForm centred = centredForm(this);
+    m_form = centred.form;
+    layout->addWidget(centred.page);
 
     for (const EcLights::ModeInfo &m : EcLights::modesFor(lighting->model())) {
         m_mode->addItem(m.name.toString(), int(m.value));

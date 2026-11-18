@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Meluxon
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "ite8297.h"
+#include "model/find.h"
 
 #include <algorithm>
 
@@ -13,7 +14,7 @@ const QList<ModeInfo> &modes()
 {
     // To add a mode: a value in the Mode enum, a row here (fields: see ModeInfo),
     // and the value in the fanModes of every model that offers it.
-    // Each row: mode, id, name, uses colour, uses speed, follows the temperature.
+    // Each row: mode, id, name, uses colour, uses speed.
     static const QList<ModeInfo> list = {
         {Mode::Off, "off", kli18nc("@item fan LED mode", "Off"), false, false},
         {Mode::Static, "static", kli18nc("@item fan LED mode", "Static"), true, false},
@@ -41,22 +42,12 @@ QList<ModeInfo> modesFor(const ModelProfile &model)
 
 const ModeInfo *modeInfo(Mode mode)
 {
-    for (const ModeInfo &m : modes()) {
-        if (m.mode == mode) {
-            return &m;
-        }
-    }
-    return nullptr;
+    return findIf(modes(), [mode](const ModeInfo &m) { return m.mode == mode; });
 }
 
 const ModeInfo *modeInfo(const QString &id)
 {
-    for (const ModeInfo &m : modes()) {
-        if (id == QLatin1String(m.id)) {
-            return &m;
-        }
-    }
-    return nullptr;
+    return findIf(modes(), [&id](const ModeInfo &m) { return id == QLatin1String(m.id); });
 }
 
 std::optional<Rgb> parseRgb(const QString &text)
@@ -102,11 +93,6 @@ HeaderSetting resolve(HeaderSetting setting, Rgb temperatureColour)
     return setting;
 }
 
-HeaderSetting initialSetting(quint8 header)
-{
-    return {header, Mode::Off, MinLevel, 2, Rgb{0xff, 0xff, 0xff}};
-}
-
 // Group A: headers 0x10–0x13, commit 0x28 with mask 0x0F (bit n = header 0x10+n).
 // Group B: headers 0x38–0x3A, commit 0x2D with mask 0x07 (bit n = header 0x38+n).
 // Like Vantage, always commit with the full mask of the group.
@@ -119,11 +105,6 @@ std::optional<Group> groupOf(quint8 header)
         return Group::B;
     }
     return std::nullopt;
-}
-
-bool isKnownHeader(quint8 header)
-{
-    return groupOf(header).has_value();
 }
 
 static QByteArray emptyReport()

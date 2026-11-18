@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Meluxon
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "eclights.h"
+#include "model/find.h"
 
 #include "helpercall.h"
 
@@ -43,30 +44,12 @@ QList<ModeInfo> modesFor(const ModelProfile &model)
 
 const ModeInfo *modeInfo(quint8 value)
 {
-    for (const ModeInfo &m : modes()) {
-        if (m.value == value) {
-            return &m;
-        }
-    }
-    return nullptr;
+    return findIf(modes(), [value](const ModeInfo &m) { return m.value == value; });
 }
 
 const ModeInfo *modeInfo(const QString &id)
 {
-    for (const ModeInfo &m : modes()) {
-        if (id == QLatin1String(m.id)) {
-            return &m;
-        }
-    }
-    return nullptr;
-}
-
-std::optional<QList<EcLightState>> status(QString *error)
-{
-    KAuthHelperCalls calls;
-    HelperResult r = runToEnd(calls, HelperCall::Status);
-    *error = r.error;
-    return r.ok() ? std::optional(r.lights) : std::nullopt;
+    return findIf(modes(), [&id](const ModeInfo &m) { return id == QLatin1String(m.id); });
 }
 
 static constexpr int StateFormatVersion = 1;
@@ -116,24 +99,14 @@ std::optional<QList<EcLightState>> loadState(const ModelProfile &model)
     return lights.isEmpty() ? std::nullopt : std::optional(lights);
 }
 
-std::optional<QList<EcLightState>> set(const QList<EcRequest> &requests, QString *error)
+HelperResult call(HelperCall::Kind kind, const QList<EcRequest> &requests)
 {
     KAuthHelperCalls calls;
-    HelperResult r = runToEnd(calls, HelperCall::Set, requests);
-    *error = r.error;
-    if (!r.ok()) {
-        return std::nullopt;
+    const HelperResult r = runToEnd(calls, kind, requests);
+    if (kind == HelperCall::Set && r.ok()) {
+        saveState(r.lights);
     }
-    saveState(r.lights);
-    return r.lights;
-}
-
-std::optional<int> layout(QString *error)
-{
-    KAuthHelperCalls calls;
-    HelperResult r = runToEnd(calls, HelperCall::Layout);
-    *error = r.error;
-    return r.ok() ? std::optional(r.layout) : std::nullopt;
+    return r;
 }
 
 QString layoutCode(int code)

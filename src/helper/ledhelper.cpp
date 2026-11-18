@@ -43,9 +43,7 @@ public Q_SLOTS:
         EcService service(DmiInfo::readSystem(), acpi);
         const EcService::LayoutResult result = service.layout();
         if (result.error) {
-            ActionReply reply = ActionReply::HelperErrorReply(result.error);
-            reply.setErrorDescription(result.detail);
-            return reply;
+            return errorReply(result.error, result.detail);
         }
         ActionReply reply = ActionReply::SuccessReply();
         reply.setData({{QLatin1String(HelperProtocol::KeyLayout), result.layout}});
@@ -53,16 +51,20 @@ public Q_SLOTS:
     }
 
 private:
+    static ActionReply errorReply(int error, const QString &detail)
+    {
+        ActionReply reply = ActionReply::HelperErrorReply(error);
+        reply.setErrorDescription(detail);
+        return reply;
+    }
+
     static ActionReply toReply(const EcService::Result &result)
     {
         if (result.error) {
-            ActionReply reply = ActionReply::HelperErrorReply(result.error);
-            reply.setErrorDescription(result.detail);
-            reply.setData({{QLatin1String(HelperProtocol::KeyDetail), result.detail}});
-            return reply;
+            return errorReply(result.error, result.detail);
         }
         ActionReply reply = ActionReply::SuccessReply();
-        reply.setData(HelperProtocol::statesToVariant(result.lights));
+        reply.setData(HelperProtocol::lightsToVariant(result.lights));
         return reply;
     }
 };

@@ -4,11 +4,11 @@
 
 #include "model/modelprofile.h"
 
-#include <QSize>
 #include <QString>
 #include <optional>
 
-// ~/.config/glowzone/glowzone.conf, shared by the window and the CLI.
+// ~/.config/glowzone/glowzone.conf, shared by the window and the CLI. A value
+// is written only when it changes.
 namespace Glowzone::Settings
 {
 
@@ -27,8 +27,7 @@ void setTemperatureRange(TemperatureRange range);
 QString currentProfile();
 void setCurrentProfile(const QString &name);
 
-// QWidget::saveGeometry(), restored on the next start (empty if never
-// stored). Written only when it changes.
+// QWidget::saveGeometry(), restored on the next start (empty if never stored).
 QByteArray windowGeometry();
 void setWindowGeometry(const QByteArray &geometry);
 

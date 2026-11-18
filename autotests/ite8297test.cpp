@@ -57,10 +57,10 @@ private Q_SLOTS:
     void unknownHeaderIsNeverSent()
     {
         QVERIFY(reportsFor({{0x20, Mode::Static, 1, 2, Rgb{}}}).isEmpty());
-        QVERIFY(!isKnownHeader(0x14));
-        QVERIFY(!isKnownHeader(0x37));
-        QVERIFY(isKnownHeader(0x10));
-        QVERIFY(isKnownHeader(0x3a));
+        QVERIFY(!groupOf(0x14));
+        QVERIFY(!groupOf(0x37));
+        QVERIFY(groupOf(0x10));
+        QVERIFY(groupOf(0x3a));
     }
 
     // Glowzone's own mode value must never reach the controller...

@@ -91,9 +91,15 @@ struct Reader {
         --n;
         return *p++;
     }
+    // Low byte first. One byte per statement: the order of the reads inside one
+    // expression isn't specified.
     quint32 word()
     {
-        return quint32(byte()) | quint32(byte()) << 8 | quint32(byte()) << 16 | quint32(byte()) << 24;
+        quint32 w = byte();
+        w |= quint32(byte()) << 8;
+        w |= quint32(byte()) << 16;
+        w |= quint32(byte()) << 24;
+        return w;
     }
     QString key()
     {
@@ -110,7 +116,10 @@ struct Reader {
         case 2:
             return word();
         case 3:
-            return qint64(word()) << 32 | word();
+        {
+            const qint64 high = word();
+            return high << 32 | word();
+        }
         case 4:
             return double(int(word())) / 7.0;
         case 5:

@@ -9,6 +9,8 @@
 namespace Glowzone::Gui
 {
 
+static constexpr QSize SwatchSize(32, 16); // device-independent pixels
+
 static QColor toQColor(Ite8297::Rgb c)
 {
     return QColor(c.r, c.g, c.b);
@@ -22,7 +24,7 @@ static Ite8297::Rgb fromQColor(const QColor &c)
 ColourButton::ColourButton(QWidget *parent)
     : QToolButton(parent)
 {
-    setIconSize(QSize(32, 16));
+    setIconSize(SwatchSize);
     setToolTip(i18nc("@info:tooltip", "Choose the colour"));
     connect(this, &QToolButton::clicked, this, &ColourButton::pick);
     updateIcon();

@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Meluxon
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "modelprofile.h"
+#include "find.h"
+
+using namespace Qt::StringLiterals;
 
 namespace Glowzone
 {
@@ -17,17 +20,17 @@ const QList<ModelProfile> &supportedModels()
             .usbVendorId = 0x17ef,
             .usbProductId = 0xc955,
             .fans = {
-                {"cpu", kli18nc("@item fan", "CPU fan"), {{0x13, nullptr, {}}}},
-                {"rear", kli18nc("@item fan", "Rear fan"), {{0x11, nullptr, {}}}},
+                {"cpu", kli18nc("@item fan", "CPU fan"), {{0x13, nullptr, {}, {}}}},
+                {"rear", kli18nc("@item fan", "Rear fan"), {{0x11, nullptr, {}, {}}}},
                 // Positions found by lighting each header in a different colour.
                 {"front",
                  kli18nc("@item fan", "Front fans"),
-                 {{0x3a, "upper", kli18nc("@item fan position", "upper")},
-                  {0x38, "lower", kli18nc("@item fan position", "lower")}}},
+                 {{0x3a, "upper", kli18nc("@item fan position", "Upper"), kli18nc("@title one fan of a pair", "Upper fan")},
+                  {0x38, "lower", kli18nc("@item fan position", "Lower"), kli18nc("@title one fan of a pair", "Lower fan")}}},
                 {"top",
                  kli18nc("@item fan", "Top fans"),
-                 {{0x39, "front", kli18nc("@item fan position", "front")},
-                  {0x12, "rear", kli18nc("@item fan position", "rear")}}},
+                 {{0x39, "front", kli18nc("@item fan position", "Front"), kli18nc("@title one fan of a pair", "Front fan")},
+                  {0x12, "rear", kli18nc("@item fan position", "Rear"), kli18nc("@title one fan of a pair", "Rear fan")}}},
             },
             .acpiGameZone = "\\WMI2.WMG0",
             .biosLedPresence = 0x3,
@@ -98,18 +101,18 @@ const LedDef *FanDef::led(const QString &idOrNumber) const
     if (isNumber) {
         return (n >= 1 && n <= leds.size()) ? &leds.at(n - 1) : nullptr;
     }
-    for (const LedDef &l : leds) {
-        if (l.id && idOrNumber == QLatin1String(l.id)) {
-            return &l;
-        }
-    }
-    return nullptr;
+    return findIf(leds, [&idOrNumber](const LedDef &l) { return l.id && idOrNumber == QLatin1String(l.id); });
 }
 
 bool ModelProfile::matches(const DmiInfo &dmi) const
 {
     return dmi.vendor == QLatin1String(vendor) && dmi.productVersion == QLatin1String(productVersion)
         && dmi.boardName == QLatin1String(boardName);
+}
+
+QString ModelProfile::usbId() const
+{
+    return u"%1:%2"_s.arg(usbVendorId, 4, 16, u'0').arg(usbProductId, 4, 16, u'0').toUpper();
 }
 
 QString ModelProfile::displayName() const
@@ -119,12 +122,7 @@ QString ModelProfile::displayName() const
 
 const FanDef *ModelProfile::fan(const QString &id) const
 {
-    for (const FanDef &f : fans) {
-        if (id == QLatin1String(f.id)) {
-            return &f;
-        }
-    }
-    return nullptr;
+    return findIf(fans, [&id](const FanDef &f) { return id == QLatin1String(f.id); });
 }
 
 QList<const FanDef *> ModelProfile::undetectedFans(int layout) const
@@ -144,32 +142,17 @@ QList<const FanDef *> ModelProfile::undetectedFans(int layout) const
 
 const EcLightDef *ModelProfile::ecLight(const QString &id) const
 {
-    for (const EcLightDef &l : ecLights) {
-        if (id == QLatin1String(l.id)) {
-            return &l;
-        }
-    }
-    return nullptr;
+    return findIf(ecLights, [&id](const EcLightDef &l) { return id == QLatin1String(l.id); });
 }
 
 const EcLightDef *ModelProfile::ecLightByIndex(quint8 index) const
 {
-    for (const EcLightDef &l : ecLights) {
-        if (l.index == index) {
-            return &l;
-        }
-    }
-    return nullptr;
+    return findIf(ecLights, [index](const EcLightDef &l) { return l.index == index; });
 }
 
 const ModelProfile *matchModel(const DmiInfo &dmi)
 {
-    for (const ModelProfile &m : supportedModels()) {
-        if (m.matches(dmi)) {
-            return &m;
-        }
-    }
-    return nullptr;
+    return findIf(supportedModels(), [&dmi](const ModelProfile &m) { return m.matches(dmi); });
 }
 
 } // namespace Glowzone

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 11:36+0100\n"
+"POT-Creation-Date: 2026-11-18 12:41+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: German\n"
@@ -244,20 +244,10 @@ msgstr "Verwendung: glowzone profile list | apply <Name> | save <Name> | rename 
 msgid "No profiles saved yet. Save one with “glowzone profile save <name>”."
 msgstr "Noch keine Profile gespeichert. Speichern Sie eines mit „glowzone profile save <Name>“."
 
-#: src/cli/commands.cpp src/core/profiles.cpp
-#, kde-format
-msgid "There is no profile called “%1”."
-msgstr "Es gibt kein Profil namens „%1“."
-
 #: src/cli/commands.cpp
 #, kde-format
 msgid "Applied profile “%1”."
 msgstr "Profil „%1“ angewendet."
-
-#: src/cli/commands.cpp src/core/profiles.cpp src/gui/mainwindow.cpp
-#, kde-format
-msgid "A profile name must be 1 to %1 characters long."
-msgstr "Ein Profilname muss 1 bis %1 Zeichen lang sein."
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -309,11 +299,6 @@ msgstr "%1 konnte nicht entfernt werden"
 msgid "No Glowzone user data found."
 msgstr "Keine Glowzone-Benutzerdaten gefunden."
 
-#: src/cli/commands.cpp src/cli/main.cpp
-#, kde-format
-msgid "Lighting control for supported Lenovo desktops: fan LEDs and case lights."
-msgstr "Beleuchtungssteuerung für unterstützte Lenovo-Desktop-PCs: Lüfter-LEDs und Gehäusebeleuchtung."
-
 #: src/cli/commands.cpp
 #, kde-format
 msgid "Commands:"
@@ -336,8 +321,8 @@ msgstr "Eine Gehäuseleuchte einstellen"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "Turn all lighting off"
-msgstr "Gesamte Beleuchtung ausschalten"
+msgid "Turn all lighting off and reset colours and levels"
+msgstr "Gesamte Beleuchtung ausschalten und Farben und Stufen zurücksetzen"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -449,7 +434,12 @@ msgstr "„reset“ erwartet keine Argumente."
 msgid "Glowzone"
 msgstr "Glowzone"
 
-#: src/cli/main.cpp src/gui/aboutdialog.cpp
+#: src/cli/main.cpp
+#, kde-format
+msgid "Lighting control for supported Lenovo desktops: fan LEDs and case lights."
+msgstr "Beleuchtungssteuerung für unterstützte Lenovo-Desktop-PCs: Lüfter-LEDs und Gehäusebeleuchtung."
+
+#: src/cli/main.cpp
 #, kde-format
 msgid "© 2026 Meluxon"
 msgstr "© 2026 Meluxon"
@@ -693,6 +683,16 @@ msgstr ""
 
 #: src/core/profiles.cpp
 #, kde-format
+msgid "A profile name must be 1 to %1 characters long."
+msgstr "Ein Profilname muss 1 bis %1 Zeichen lang sein."
+
+#: src/core/profiles.cpp
+#, kde-format
+msgid "There is no profile called “%1”."
+msgstr "Es gibt kein Profil namens „%1“."
+
+#: src/core/profiles.cpp
+#, kde-format
 msgid "Could not save the profile to %1: %2"
 msgstr "Das Profil konnte nicht in %1 gespeichert werden: %2"
 
@@ -738,11 +738,6 @@ msgstr "Über Glowzone"
 msgctxt "@title app name and version"
 msgid "Glowzone %1"
 msgstr "Glowzone %1"
-
-#: src/gui/aboutdialog.cpp
-#, kde-format
-msgid "Lighting control for supported Lenovo desktops"
-msgstr "Beleuchtungssteuerung für unterstützte Lenovo-Desktop-PCs"
 
 #: src/gui/aboutdialog.cpp
 #, kde-format
@@ -1143,12 +1138,6 @@ msgstr "LEDs:"
 
 #: src/gui/pages.cpp
 #, kde-format
-msgctxt "@title one fan of a pair, %1 is its position"
-msgid "%1 fan"
-msgstr "Lüfter %1"
-
-#: src/gui/pages.cpp
-#, kde-format
 msgctxt "@info"
 msgid "Reading the current state…"
 msgstr "Aktueller Zustand wird gelesen…"
@@ -1332,13 +1321,23 @@ msgstr "Frontlüfter"
 
 #: src/model/modelprofile.cpp
 msgctxt "@item fan position"
-msgid "upper"
-msgstr "oben"
+msgid "Upper"
+msgstr "Oben"
+
+#: src/model/modelprofile.cpp
+msgctxt "@title one fan of a pair"
+msgid "Upper fan"
+msgstr "Lüfter oben"
 
 #: src/model/modelprofile.cpp
 msgctxt "@item fan position"
-msgid "lower"
-msgstr "unten"
+msgid "Lower"
+msgstr "Unten"
+
+#: src/model/modelprofile.cpp
+msgctxt "@title one fan of a pair"
+msgid "Lower fan"
+msgstr "Lüfter unten"
 
 #: src/model/modelprofile.cpp
 msgctxt "@item fan"
@@ -1347,13 +1346,23 @@ msgstr "Deckellüfter"
 
 #: src/model/modelprofile.cpp
 msgctxt "@item fan position"
-msgid "front"
-msgstr "vorne"
+msgid "Front"
+msgstr "Vorne"
+
+#: src/model/modelprofile.cpp
+msgctxt "@title one fan of a pair"
+msgid "Front fan"
+msgstr "Lüfter vorne"
 
 #: src/model/modelprofile.cpp
 msgctxt "@item fan position"
-msgid "rear"
-msgstr "hinten"
+msgid "Rear"
+msgstr "Hinten"
+
+#: src/model/modelprofile.cpp
+msgctxt "@title one fan of a pair"
+msgid "Rear fan"
+msgstr "Lüfter hinten"
 
 #: src/model/modelprofile.cpp
 msgctxt "@item light"

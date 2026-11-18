@@ -6,6 +6,7 @@
 
 #include "core/appliers.h"
 #include "fakehid.h"
+#include "testmodel.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -23,13 +24,6 @@ using namespace Glowzone;
 using namespace Ite8297;
 using FakeHid::sent;
 
-
-static const ModelProfile &model()
-{
-    const ModelProfile *m = matchModel({u"LENOVO"_s, u"Legion T5 26IOB6"_s, u"3733"_s});
-    Q_ASSERT(m);
-    return *m;
-}
 
 // Reports for one header, as "rrggbb".
 static QStringList coloursFor(const QStringList &reports, const QString &header)
@@ -85,7 +79,7 @@ private Q_SLOTS:
     // the current colour – no flash of an old one.
     void followingStartsWithTheCurrentColour()
     {
-        FanApplier fans(model(), nullptr, m_hwmon.path());
+        FanApplier fans(legionModel(), nullptr, m_hwmon.path());
         QString error;
         QVERIFY(fans.open(&error));
         fans.queue({follows(0x13)});
@@ -94,14 +88,14 @@ private Q_SLOTS:
         QVERIFY(fans.followsTemperature());
         QVERIFY(fans.temperature()->isRunning());
         // Saved as the mode, not as the colour of the moment.
-        QCOMPARE(FanState::load(model()).value(0x13).mode, Mode::CpuTemperature);
+        QCOMPARE(FanState::load(legionModel()).value(0x13).mode, Mode::CpuTemperature);
     }
 
     // A new range sends to the following LEDs only if their colour changes,
     // a moment later: dragging a slider over several ranges sends once.
     void rangeSendsOnlyANewColour()
     {
-        FanApplier fans(model(), nullptr, m_hwmon.path());
+        FanApplier fans(legionModel(), nullptr, m_hwmon.path());
         QString error;
         QVERIFY(fans.open(&error));
         fans.queue({follows(0x13)});
@@ -122,7 +116,7 @@ private Q_SLOTS:
     // A new step: only the following LEDs, nothing saved.
     void newStepSendsOnlyFollowers()
     {
-        FanApplier fans(model(), nullptr, m_hwmon.path());
+        FanApplier fans(legionModel(), nullptr, m_hwmon.path());
         fans.setTemperatureInterval(10);
         QString error;
         QVERIFY(fans.open(&error));
@@ -153,7 +147,7 @@ private Q_SLOTS:
         const auto writable = [&dir](bool on) {
             return QFile::setPermissions(dir, QFileDevice::ReadOwner | QFileDevice::ExeOwner | (on ? QFileDevice::WriteOwner : QFileDevice::Permissions()));
         };
-        FanApplier fans(model(), nullptr, m_hwmon.path());
+        FanApplier fans(legionModel(), nullptr, m_hwmon.path());
         fans.setTemperatureInterval(10);
         QSignalSpy saveFailed(&fans, &FanApplier::saveFailed);
         QString error;
@@ -177,7 +171,7 @@ private Q_SLOTS:
         fans.queue({{0x12, Mode::Off, 1, 2, Rgb{}}});
         fans.flushNow();
         QVERIFY(fans.unsaved().isEmpty());
-        QCOMPARE(FanState::load(model()).value(0x13).mode, Mode::Static);
+        QCOMPARE(FanState::load(legionModel()).value(0x13).mode, Mode::Static);
     }
 
     // The command line switched an LED away from the temperature a moment ago,
@@ -185,7 +179,7 @@ private Q_SLOTS:
     // overwrite it.
     void commandLineChangeIsNotOverwritten()
     {
-        FanApplier fans(model(), nullptr, m_hwmon.path());
+        FanApplier fans(legionModel(), nullptr, m_hwmon.path());
         fans.setTemperatureInterval(10);
         QString error;
         QVERIFY(fans.open(&error));
@@ -210,7 +204,7 @@ private Q_SLOTS:
     // reading) gets the window's colour as soon as the window reads the state.
     void newFollowerGetsTheColourAtOnce()
     {
-        FanApplier fans(model(), nullptr, m_hwmon.path());
+        FanApplier fans(legionModel(), nullptr, m_hwmon.path());
         QString error;
         QVERIFY(fans.open(&error));
         fans.queue({follows(0x13)});
@@ -218,7 +212,7 @@ private Q_SLOTS:
         sent();
 
         QVERIFY(FanState::merge(FanState::Lock(), {follows(0x39)}, &error)); // as the CLI does
-        const FanState::Headers state = FanState::load(model());
+        const FanState::Headers state = FanState::load(legionModel());
         fans.setCurrent(state);
         QCOMPARE(sent(), (QStringList{u"39:00ff50"_s, u"commit"_s}));
         fans.setCurrent(state); // nothing new
@@ -228,7 +222,7 @@ private Q_SLOTS:
     // A queued change sends its own colour; the reading leaves that LED alone.
     void queuedChangeWins()
     {
-        FanApplier fans(model(), nullptr, m_hwmon.path());
+        FanApplier fans(legionModel(), nullptr, m_hwmon.path());
         fans.setTemperatureInterval(10);
         QString error;
         QVERIFY(fans.open(&error));
@@ -255,7 +249,7 @@ private Q_SLOTS:
     // that the controller works again, so the error can go.
     void followerSendIsRetried()
     {
-        FanApplier fans(model(), nullptr, m_hwmon.path());
+        FanApplier fans(legionModel(), nullptr, m_hwmon.path());
         fans.setTemperatureInterval(10);
         QSignalSpy failed(&fans, &FanApplier::failed);
         QSignalSpy applied(&fans, &FanApplier::applied);

@@ -5,8 +5,11 @@
 // that runs exactly that program (Desktop Entry spec quoting and escaping).
 
 #include "core/settings.h"
+#include "testmodel.h"
 
+#include <QDateTime>
 #include <QFile>
+#include <QFileInfo>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QTest>
@@ -65,17 +68,16 @@ private Q_SLOTS:
     {
         QStandardPaths::setTestModeEnabled(true);
         QFile::remove(Settings::filePath());
-        const ModelProfile *m = matchModel({u"LENOVO"_s, u"Legion T5 26IOB6"_s, u"3733"_s});
-        QVERIFY(m && m->cpuTemperature);
-        QCOMPARE(Settings::temperatureRange(*m->cpuTemperature), m->cpuTemperature->defaultRange); // never set
+        const CpuTemperatureDef &def = legionModel().cpuTemperature.value();
+        QCOMPARE(Settings::temperatureRange(def), def.defaultRange); // never set
         Settings::setTemperatureRange({40, 85});
-        QCOMPARE(Settings::temperatureRange(*m->cpuTemperature), (TemperatureRange{40, 85}));
+        QCOMPARE(Settings::temperatureRange(def), (TemperatureRange{40, 85}));
 
         // Hand-edited nonsense, or only half of it: the default.
         QSettings(Settings::filePath(), QSettings::IniFormat).setValue(u"cpuTemperature/hottest"_s, u"hot"_s);
-        QCOMPARE(Settings::temperatureRange(*m->cpuTemperature), m->cpuTemperature->defaultRange);
+        QCOMPARE(Settings::temperatureRange(def), def.defaultRange);
         QSettings(Settings::filePath(), QSettings::IniFormat).remove(u"cpuTemperature/hottest"_s);
-        QCOMPARE(Settings::temperatureRange(*m->cpuTemperature), m->cpuTemperature->defaultRange);
+        QCOMPARE(Settings::temperatureRange(def), def.defaultRange);
     }
 
     void startAtLogin()
@@ -88,6 +90,23 @@ private Q_SLOTS:
         QVERIFY2(Settings::setStartAtLogin(false, &error), qPrintable(error));
         QVERIFY(!Settings::startsAtLogin());
         QVERIFY(Settings::setStartAtLogin(false, &error)); // already off: fine
+    }
+
+    // Setting what is already stored doesn't touch the file: a running
+    // Glowzone reads it again on every change.
+    void sameValueIsNotWritten()
+    {
+        Settings::setKeepRunning(true);
+        Settings::setTemperatureRange({30, 90});
+        Settings::setLinked(u"front"_s, false);
+        const QDateTime written = QFileInfo(Settings::filePath()).lastModified();
+        QTest::qWait(20);
+        Settings::setKeepRunning(true);
+        Settings::setTemperatureRange({30, 90});
+        Settings::setLinked(u"front"_s, false);
+        QCOMPARE(QFileInfo(Settings::filePath()).lastModified(), written);
+        Settings::setKeepRunning(false);
+        QVERIFY(QFileInfo(Settings::filePath()).lastModified() != written);
     }
 };
 

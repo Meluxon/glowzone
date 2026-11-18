@@ -12,6 +12,7 @@
 #include "core/settings.h"
 #include "model/modelprofile.h"
 
+#include <KAboutData>
 #include <KLocalizedString>
 #include <QCommandLineParser>
 #include <QDir>
@@ -277,19 +278,18 @@ int cmdStatus(const ModelProfile &model)
     }
 
     out() << Qt::endl << i18n("Lights:") << Qt::endl;
-    QString error;
-    const auto lights = EcLights::status(&error);
-    if (!lights) {
-        out() << "  "_L1 << i18n("not available: %1", error) << Qt::endl;
+    const HelperResult lights = EcLights::call(HelperCall::Status);
+    if (!lights.ok()) {
+        out() << "  "_L1 << i18n("not available: %1", lights.error) << Qt::endl;
         return ExitFailed;
     }
-    printLights(model, *lights, width);
+    printLights(model, lights.lights, width);
 
-    if (const auto layout = EcLights::layout(&error)) {
-        const QString warning = EcLights::layoutWarning(model, *layout);
+    if (const HelperResult layout = EcLights::call(HelperCall::Layout); layout.ok()) {
+        const QString warning = EcLights::layoutWarning(model, layout.layout);
         out() << Qt::endl
               << i18n("Fan detection (BIOS): %1",
-                      warning.isEmpty() ? i18nc("@info", "all fans detected (layout %1)", EcLights::layoutCode(*layout)) : warning)
+                      warning.isEmpty() ? i18nc("@info", "all fans detected (layout %1)", EcLights::layoutCode(layout.layout)) : warning)
               << Qt::endl;
     }
     return ExitOk;
@@ -366,8 +366,7 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
                 continue;
             }
             const quint8 h = led.header;
-            HeaderSetting s = state.value(h, initialSetting(h));
-            s.header = h;
+            HeaderSetting s = state.value(h, {.header = h});
             s.mode = mode->mode;
             if (speed) {
                 s.speed = quint8(*speed);
@@ -453,13 +452,12 @@ int cmdLight(const ModelProfile &model, const QStringList &args, const QCommandL
         requests << EcRequest{l->index, modeValue, quint8(brightness.value_or(0))};
     }
 
-    QString error;
-    const auto result = EcLights::set(requests, &error);
-    if (!result) {
-        err() << error << Qt::endl;
+    const HelperResult result = EcLights::call(HelperCall::Set, requests);
+    if (!result.ok()) {
+        err() << result.error << Qt::endl;
         return ExitFailed;
     }
-    printLights(model, *result, nameWidth(model));
+    printLights(model, result.lights, nameWidth(model));
     return ExitOk;
 }
 
@@ -471,7 +469,7 @@ int cmdReset(const ModelProfile &model)
     QList<HeaderSetting> settings;
     for (const FanDef &fan : model.fans) {
         for (const quint8 h : fan.headers()) {
-            settings << initialSetting(h);
+            settings << HeaderSetting{.header = h};
         }
     }
     FanController controller(model);
@@ -493,10 +491,10 @@ int cmdReset(const ModelProfile &model)
     for (const EcLightDef &l : model.ecLights) {
         requests << EcRequest{l.index, EcLights::ModeOff, model.ecDefaultBrightness};
     }
-    if (EcLights::set(requests, &error)) {
+    if (const HelperResult r = EcLights::call(HelperCall::Set, requests); r.ok()) {
         out() << i18n("Case lights: off.") << Qt::endl;
     } else {
-        err() << i18n("Case lights: %1", error) << Qt::endl;
+        err() << i18n("Case lights: %1", r.error) << Qt::endl;
         exitCode = ExitFailed;
     }
     return exitCode;
@@ -526,13 +524,13 @@ int cmdProfileList(const ModelProfile &model)
 
 int cmdProfileApply(const ModelProfile &model, const QString &name)
 {
-    const auto profile = Profiles::find(model, name);
+    QString error;
+    const auto profile = Profiles::find(model, name, &error);
     if (!profile) {
-        err() << i18n("There is no profile called “%1”.", name) << Qt::endl;
+        err() << error << Qt::endl;
         return ExitFailed;
     }
     int exitCode = ExitOk;
-    QString error;
 
     if (!profile->fans.isEmpty()) {
         FanController controller(model);
@@ -555,12 +553,8 @@ int cmdProfileApply(const ModelProfile &model, const QString &name)
         Settings::setCurrentProfile(profile->name);
     }
     if (!profile->lights.isEmpty()) {
-        QList<EcRequest> requests;
-        for (const EcLightState &l : profile->lights) {
-            requests << EcRequest{l.index, l.mode, l.brightness};
-        }
-        if (!EcLights::set(requests, &error)) {
-            err() << i18n("Case lights: %1", error) << Qt::endl;
+        if (const HelperResult r = EcLights::call(HelperCall::Set, profile->lights.values()); !r.ok()) {
+            err() << i18n("Case lights: %1", r.error) << Qt::endl;
             exitCode = ExitFailed;
         }
     }
@@ -574,22 +568,20 @@ int cmdProfileApply(const ModelProfile &model, const QString &name)
 
 int cmdProfileSave(const ModelProfile &model, const QString &rawName)
 {
-    Profile p;
-    p.name = Profiles::cleanName(rawName);
-    if (p.name.isEmpty()) {
-        return usageError(i18n("A profile name must be 1 to %1 characters long.", Profiles::MaxNameLength));
+    // Before reading anything: the name must be usable.
+    QString error;
+    const auto name = Profiles::checkedName(rawName, &error);
+    if (!name) {
+        return usageError(error);
     }
+    Profile p;
+    p.name = *name;
 
     // The current state as Glowzone knows it.
-    const FanState::Headers saved = FanState::load(model);
+    p.fans = FanState::load(model);
     for (const FanDef &fan : model.fans) {
-        for (const LedDef &led : fan.leds) {
-            if (saved.contains(led.header)) {
-                p.fans.insert(led.header, saved.value(led.header));
-            }
-        }
         if (fan.isDouble()) {
-            p.links.insert(QLatin1String(fan.id), Settings::linked(QLatin1String(fan.id)).value_or(FanState::defaultLinked(fan, saved)));
+            p.links.insert(QLatin1String(fan.id), FanState::linked(fan, p.fans));
         }
     }
     if (model.cpuTemperature) {
@@ -599,17 +591,15 @@ int cmdProfileSave(const ModelProfile &model, const QString &rawName)
         err() << i18n("Note: Glowzone hasn’t set any fan yet, so the profile contains no fan settings.") << Qt::endl;
     }
     if (!model.ecLights.isEmpty()) {
-        QString error;
-        if (const auto lights = EcLights::status(&error)) {
-            for (const EcLightState &l : *lights) {
+        if (const HelperResult r = EcLights::call(HelperCall::Status); r.ok()) {
+            for (const EcLightState &l : r.lights) {
                 p.lights.insert(l.index, l);
             }
         } else {
-            err() << i18n("Note: the case lights could not be read and are not part of the profile: %1", error) << Qt::endl;
+            err() << i18n("Note: the case lights could not be read and are not part of the profile: %1", r.error) << Qt::endl;
         }
     }
 
-    QString error;
     if (!Profiles::save(model, p, &error)) {
         err() << error << Qt::endl;
         return ExitFailed;
@@ -638,8 +628,8 @@ int cmdProfileRename(const ModelProfile &model, const QString &oldName, const QS
 {
     const auto old = Profiles::find(model, oldName); // the name as stored, not as typed
     QString error;
-    if (!old || !Profiles::rename(model, oldName, newName, &error)) {
-        err() << (old ? error : i18n("There is no profile called “%1”.", oldName)) << Qt::endl;
+    if (!Profiles::rename(model, oldName, newName, &error)) {
+        err() << error << Qt::endl;
         return ExitFailed;
     }
     const QString clean = Profiles::cleanName(newName);
@@ -755,13 +745,13 @@ static QString helpText()
         return lines.join(u'\n');
     };
 
-    QString text = i18n("Lighting control for supported Lenovo desktops: fan LEDs and case lights.") + "\n\n"_L1
+    QString text = KAboutData::applicationData().shortDescription() + "\n\n"_L1
         + i18n("Commands:") + u'\n'
         + table({
             {u"status"_s, i18n("Show the current lighting")},
             {u"fan <fan> <mode>"_s, i18n("Set fan LEDs")},
             {u"light <light> [mode]"_s, i18n("Set a case light")},
-            {u"reset"_s, i18n("Turn all lighting off")},
+            {u"reset"_s, i18n("Turn all lighting off and reset colours and levels")},
             {u"profile list"_s, i18n("List saved profiles (* = applied last)")},
             {u"profile apply <name>"_s, i18n("Apply a profile")},
             {u"profile save <name>"_s, i18n("Save the current lighting as a profile")},

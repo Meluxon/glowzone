@@ -76,12 +76,15 @@ std::optional<Rgb> parseRgb(const QString &text);
 Rgb rgbFromValue(quint32 rrggbb); // 0xRRGGBB
 QString rgbToString(Rgb c); // "#rrggbb"
 
+// The defaults are what a header Glowzone hasn't set yet starts from: off, but
+// white and at the lowest speed, so choosing a lit mode shows something
+// sensible. HeaderSetting{.header = h} is that for header h.
 struct HeaderSetting {
     quint8 header = 0;
     Mode mode = Mode::Off;
-    quint8 speed = 1;
+    quint8 speed = MinLevel;
     quint8 brightness = 2;
-    Rgb colour;
+    Rgb colour{0xff, 0xff, 0xff};
     bool operator==(const HeaderSetting &) const = default;
 };
 
@@ -90,14 +93,9 @@ struct HeaderSetting {
 // anything else is returned as it is.
 HeaderSetting resolve(HeaderSetting setting, Rgb temperatureColour);
 
-// The values used for a header Glowzone hasn't set yet: off, but white and
-// at the lowest speed, so choosing a lit mode shows something sensible.
-HeaderSetting initialSetting(quint8 header);
-
 enum class Group { A, B };
 
 std::optional<Group> groupOf(quint8 header);
-bool isKnownHeader(quint8 header);
 
 QByteArray settingsReport(HeaderSetting s);
 QByteArray commitReport(Group g);

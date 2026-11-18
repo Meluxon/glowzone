@@ -262,9 +262,19 @@ private Q_SLOTS:
     void variantRoundTrip()
     {
         const QList<EcLightState> in{{1, 2, 3}, {2, 5, 1}};
-        const QList<EcLightState> out = HP::statesFromVariant(HP::statesToVariant(in));
-        QCOMPARE(out.size(), 2);
-        QCOMPARE(out.at(1).mode, quint8(5));
+        QCOMPARE(HP::lightsFromVariant(HP::lightsToVariant(in)), in);
+    }
+
+    // The contract: what the app sends is what the helper accepts.
+    void appRequestsReachTheHelper()
+    {
+        FakeAcpi acpi;
+        EcService service(legion, acpi);
+        const EcService::Result r = service.set(HP::lightsToVariant({{1, 2, 0}, {2, 0, 4}}));
+        QCOMPARE(r.error, 0);
+        QCOMPARE(acpi.setCalls(), 2);
+        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b01020000"));
+        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b02000400"));
     }
 };
 

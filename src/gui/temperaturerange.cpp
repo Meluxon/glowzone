@@ -84,7 +84,7 @@ int TemperatureStrip::stripHeight() const
 
 QSize TemperatureStrip::sizeHint() const
 {
-    const QFontMetrics small(smallFont(this));
+    const QFontMetrics small(smallFont(font()));
     return {m_alignWith->width(), stripTop() + stripHeight() + BracketHeight + small.height()};
 }
 
@@ -163,7 +163,7 @@ void TemperatureStrip::paintEvent(QPaintEvent *)
     p.drawPolyline(bracket, int(std::size(bracket)));
 
     // °C labels, inside the widget.
-    p.setFont(smallFont(this));
+    p.setFont(smallFont(font()));
     p.setPen(palette().color(QPalette::WindowText));
     const QFontMetrics small(p.font());
     const int baseline = int(strip.bottom()) + BracketHeight + small.ascent();
@@ -236,7 +236,7 @@ TemperatureRangeForm::TemperatureRangeForm(const CpuTemperatureDef &def, QFormLa
     m_hottestField = field(m_hottest, m_hottestValue);
 
     auto *note = new QLabel(i18nc("@info", "Shared by all fans in this mode."), parent);
-    note->setFont(smallFont(parent));
+    note->setFont(smallFont(parent->font()));
     KGuiItem::assign(m_defaults, KStandardGuiItem::defaults());
     m_defaults->setToolTip(i18nc("@info:tooltip %1 and %2 are temperatures", "Sets the range back to %1–%2 °C.", def.defaultRange.coolest, def.defaultRange.hottest));
     m_noteField = new QWidget(parent);

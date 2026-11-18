@@ -5,6 +5,7 @@
 // round-trip exactly and ignore anything it doesn't recognise.
 
 #include "core/fanstate.h"
+#include "testmodel.h"
 
 #include <QElapsedTimer>
 #include <QFile>
@@ -27,11 +28,6 @@ static QJsonObject entry(const char *mode, int speed)
             {u"speed"_s, speed},
             {u"brightness"_s, 2},
             {u"colour"_s, u"#ff0000"_s}};
-}
-
-static const ModelProfile &model()
-{
-    return supportedModels().constFirst();
 }
 
 static void writeState(int version, const QJsonObject &headers)
@@ -58,7 +54,7 @@ private Q_SLOTS:
 
     void emptyWhenNothingSaved()
     {
-        QVERIFY(FanState::load(model()).isEmpty());
+        QVERIFY(FanState::load(legionModel()).isEmpty());
     }
 
     void roundTrip()
@@ -67,7 +63,7 @@ private Q_SLOTS:
         const HeaderSetting cpu{0x13, Mode::Rainbow, 1, 2, Rgb{0x15, 0x8d, 0xdd}};
         const HeaderSetting front{0x3a, Mode::Static, 1, 3, Rgb{0xff, 0x3d, 0x9c}};
         QVERIFY2(FanState::merge(FanState::Lock(), {cpu, front}, &error), qPrintable(error));
-        const FanState::Headers loaded = FanState::load(model());
+        const FanState::Headers loaded = FanState::load(legionModel());
         QCOMPARE(loaded.size(), 2);
         QCOMPARE(loaded.value(0x13), cpu);
         QCOMPARE(loaded.value(0x3a), front);
@@ -79,10 +75,10 @@ private Q_SLOTS:
         QString error;
         const HeaderSetting cpu{0x13, Mode::CpuTemperature, 1, 3, Rgb{0x15, 0x8d, 0xdd}};
         QVERIFY2(FanState::merge(FanState::Lock(), {cpu}, &error), qPrintable(error));
-        QCOMPARE(FanState::load(model()).value(0x13), cpu);
+        QCOMPARE(FanState::load(legionModel()).value(0x13), cpu);
         QCOMPARE(FanState::headersToJson({{0x13, cpu}}).value("0x13"_L1).toObject().value("mode"_L1).toString(),
                  u"cpu-temperature"_s);
-        QVERIFY(FanState::fitsModel(model(), cpu));
+        QVERIFY(FanState::fitsModel(legionModel(), cpu));
     }
 
     void mergeKeepsOtherHeaders()
@@ -90,7 +86,7 @@ private Q_SLOTS:
         QString error;
         QVERIFY(FanState::merge(FanState::Lock(), {{0x13, Mode::Rainbow, 1, 2, Rgb{}}}, &error));
         QVERIFY(FanState::merge(FanState::Lock(), {{0x11, Mode::Off, 1, 2, Rgb{}}}, &error));
-        QCOMPARE(FanState::load(model()).size(), 2);
+        QCOMPARE(FanState::load(legionModel()).size(), 2);
     }
 
     void ignoresJunk()
@@ -100,7 +96,7 @@ private Q_SLOTS:
                     {u"0x20"_s, entry("static", 1)},   // unknown header
                     {u"0x11"_s, entry("laser", 1)},    // unknown mode
                     {u"0x12"_s, entry("static", 9)}}); // speed out of range
-        const FanState::Headers loaded = FanState::load(model());
+        const FanState::Headers loaded = FanState::load(legionModel());
         QCOMPARE(loaded.size(), 1);
         QVERIFY(loaded.contains(0x13));
     }
@@ -109,7 +105,7 @@ private Q_SLOTS:
     // the file is not shown or applied – but stays in the file.
     void dropsWhatTheModelDoesNotOffer()
     {
-        ModelProfile small = model();
+        ModelProfile small = legionModel();
         small.fans = {small.fans.constFirst()}; // the CPU fan (0x13) only
         small.fanModes = {0x00, 0x01, 0x09};    // off, static, rainbow
         small.fanLevels = 2;
@@ -122,12 +118,12 @@ private Q_SLOTS:
         QVERIFY(FanState::load(small).isEmpty());
         writeState(1, {{u"0x13"_s, entry("static", 3)}}); // level not offered
         QVERIFY(FanState::load(small).isEmpty());
-        QCOMPARE(FanState::load(model()).size(), 1);                   // fine for the full model
+        QCOMPARE(FanState::load(legionModel()).size(), 1);                   // fine for the full model
 
         QString error;
         QVERIFY(FanState::merge(FanState::Lock(), {{0x13, Mode::Off, 1, 1, Rgb{}}, {0x11, Mode::Off, 1, 1, Rgb{}}}, &error));
         QVERIFY(FanState::merge(FanState::Lock(), {{0x13, Mode::Static, 1, 1, Rgb{}}}, &error));
-        QCOMPARE(FanState::load(model()).size(), 2); // 0x11 kept by merge
+        QCOMPARE(FanState::load(legionModel()).size(), 2); // 0x11 kept by merge
     }
 
     // Entries this version doesn't understand stay in the file untouched.
@@ -167,7 +163,7 @@ private Q_SLOTS:
         QString error;
         QVERIFY(FanState::merge(FanState::Lock(), {{0x13, Mode::Off, 1, 2, Rgb{}}}, &error));
         QVERIFY(QFile::exists(FanState::filePath() + u".broken"_s));
-        QCOMPARE(FanState::load(model()).size(), 1);
+        QCOMPARE(FanState::load(legionModel()).size(), 1);
         QFile::remove(FanState::filePath() + u".broken"_s);
     }
 
@@ -181,7 +177,7 @@ private Q_SLOTS:
         QString error;
         QVERIFY2(FanState::merge(FanState::Lock(), {{0x13, Mode::Off, 1, 2, Rgb{}}}, &error), qPrintable(error));
         QVERIFY(QFile::exists(FanState::filePath() + u".broken"_s));
-        QCOMPARE(FanState::load(model()).keys(), QList<quint8>{0x13});
+        QCOMPARE(FanState::load(legionModel()).keys(), QList<quint8>{0x13});
         QFile::remove(FanState::filePath() + u".broken"_s);
     }
 
@@ -209,7 +205,7 @@ private Q_SLOTS:
         QVERIFY(copy.open(QIODevice::ReadOnly));
         QCOMPARE(copy.readAll(), content);
         copy.close();
-        QCOMPARE(FanState::load(model()).keys(), QList<quint8>{0x13});
+        QCOMPARE(FanState::load(legionModel()).keys(), QList<quint8>{0x13});
         QFile::remove(broken);
     }
 
@@ -274,7 +270,7 @@ private Q_SLOTS:
     void ignoresOtherVersions()
     {
         writeState(2, {{u"0x13"_s, entry("static", 1)}});
-        QVERIFY(FanState::load(model()).isEmpty());
+        QVERIFY(FanState::load(legionModel()).isEmpty());
     }
 
     // Two holders take turns (the second gives up after its short wait). The

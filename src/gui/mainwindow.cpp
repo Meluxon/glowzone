@@ -30,6 +30,11 @@
 
 using namespace Qt::StringLiterals;
 
+static constexpr double PageTitleScale = 1.3;
+static constexpr int HeaderHeightInLines = 3;
+static constexpr int DefaultWidthInChars = 125; // the first start
+static constexpr int DefaultHeightInLines = 36;
+
 namespace Glowzone::Gui
 {
 
@@ -42,13 +47,13 @@ static QFrame *line(Qt::Orientation orientation, QWidget *parent)
     return l;
 }
 
-// Header rows of the sidebar and the page share one height, like System Settings.
-static QWidget *headerRow(QWidget *parent, QHBoxLayout **layout)
+// Header rows of the sidebar and the page share one height, like System
+// Settings. On a new widget: parentWidget().
+static QHBoxLayout *headerRow(QWidget *parent)
 {
     auto *w = new QWidget(parent);
-    *layout = new QHBoxLayout(w);
-    w->setFixedHeight(w->fontMetrics().height() * 3);
-    return w;
+    w->setFixedHeight(w->fontMetrics().height() * HeaderHeightInLines);
+    return new QHBoxLayout(w);
 }
 
 MainWindow::MainWindow(Lighting *lighting, App *app)
@@ -94,7 +99,7 @@ MainWindow::MainWindow(Lighting *lighting, App *app)
     updateBackgroundMessage();
 
     if (!restoreGeometry(Settings::windowGeometry())) {
-        resize(fontMetrics().averageCharWidth() * 125, fontMetrics().height() * 36);
+        resize(fontMetrics().averageCharWidth() * DefaultWidthInChars, fontMetrics().height() * DefaultHeightInLines);
     }
 }
 
@@ -126,8 +131,8 @@ QWidget *MainWindow::buildSidebarPanel()
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
-    QHBoxLayout *header = nullptr;
-    QWidget *headerWidget = headerRow(panel, &header);
+    QHBoxLayout *header = headerRow(panel);
+    QWidget *headerWidget = header->parentWidget();
     auto *modelName = new QLabel(QLatin1String(m_model.productVersion), headerWidget);
     modelName->setToolTip(i18nc("@info:tooltip", "Controlling: %1", m_model.displayName()));
     auto *menuButton = new QToolButton(headerWidget);
@@ -179,11 +184,11 @@ QWidget *MainWindow::buildPagePanel()
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
-    QHBoxLayout *header = nullptr;
-    QWidget *headerWidget = headerRow(panel, &header);
+    QHBoxLayout *header = headerRow(panel);
+    QWidget *headerWidget = header->parentWidget();
     m_pageTitle = new QLabel(headerWidget);
     QFont f = m_pageTitle->font();
-    f.setPointSizeF(f.pointSizeF() * 1.3);
+    f.setPointSizeF(f.pointSizeF() * PageTitleScale);
     m_pageTitle->setFont(f);
     auto *allOff = new QPushButton(QIcon::fromTheme(u"system-shutdown-symbolic"_s), i18nc("@action:button", "Turn All Off"), headerWidget);
     allOff->setToolTip(i18nc("@info:tooltip", "Switch every fan LED and case light off. Colours and levels are kept."));
@@ -397,11 +402,13 @@ void MainWindow::saveNewProfile()
     if (!ok) {
         return;
     }
-    const QString name = Profiles::cleanName(raw);
-    if (name.isEmpty()) {
-        showError(i18n("A profile name must be 1 to %1 characters long.", Profiles::MaxNameLength));
+    QString error;
+    const auto checked = Profiles::checkedName(raw, &error);
+    if (!checked) {
+        showError(error);
         return;
     }
+    const QString &name = *checked;
     if (const auto existing = Profiles::find(m_model, name)) {
         const auto answer = QMessageBox::question(this,
                                                   i18nc("@title:window", "Replace Profile"),
@@ -414,7 +421,6 @@ void MainWindow::saveNewProfile()
     }
     Profile p = m_lighting->current();
     p.name = name;
-    QString error;
     if (!Profiles::save(m_model, p, &error)) {
         showError(error);
         return;

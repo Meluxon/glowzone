@@ -35,7 +35,8 @@ QString directory();
 
 // Profiles saved for this model, sorted by name.
 QList<Profile> loadAll(const ModelProfile &model);
-std::optional<Profile> find(const ModelProfile &model, const QString &name);
+// Not found: nullopt, and error (if given) says so.
+std::optional<Profile> find(const ModelProfile &model, const QString &name, QString *error = nullptr);
 
 // Replaces a profile of the same name. Errors are translated.
 bool save(const ModelProfile &model, const Profile &profile, QString *error);
@@ -45,6 +46,8 @@ bool rename(const ModelProfile &model, const QString &oldName, const QString &ne
 
 // Trimmed name, or empty if unusable.
 QString cleanName(const QString &name);
+// cleanName(), or nullopt and why it can't be used.
+std::optional<QString> checkedName(const QString &name, QString *error);
 
 } // namespace Profiles
 } // namespace Glowzone

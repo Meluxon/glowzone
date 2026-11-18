@@ -9,8 +9,6 @@
 #include <QObject>
 #include <QTimer>
 
-#include <memory>
-
 class QWindow;
 
 namespace Glowzone
@@ -75,6 +73,8 @@ public:
     // the model doesn't offer the mode).
     const TemperatureScale *temperatureScale() const;
     // Shared by all following LEDs; part of a profile. Takes effect at once.
+    // As set (nullopt if the model doesn't offer the mode).
+    std::optional<TemperatureRange> temperatureRange() const;
     void setTemperatureRange(TemperatureRange range);
 
     // --- case lights
@@ -129,7 +129,6 @@ private:
     const ModelProfile &m_model;
     FanState::Headers m_fans;
     QMap<QString, bool> m_links;
-    std::optional<TemperatureRange> m_temperatureRange; // as stored (nullopt: no such mode)
     QTimer m_rangeSave;
     QMap<quint8, EcLightState> m_lights;
     QString m_currentProfile;
@@ -146,7 +145,7 @@ private:
     ErrorSource m_errorSource = NoErrors; // where the shown error came from
     bool m_settingsChanged = false; // glowzone.conf or the profiles, since the last reload
     QTimer m_savedReload;
-    std::unique_ptr<KAuthHelperCalls> m_helper;
+    KAuthHelperCalls m_helper; // before the appliers: the light queue uses it
     FanApplier *m_fanApplier;
     LightApplier *m_lightApplier;
 };

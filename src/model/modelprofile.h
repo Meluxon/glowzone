@@ -14,9 +14,10 @@ namespace Glowzone
 
 // One LED of a fan, on its own ITE 8297 board header.
 struct LedDef {
-    quint8 header;             // ITE 8297 zone ID
-    const char *id;            // "upper", "rear", ... (nullptr for a single-LED fan)
-    KLazyLocalizedString name; // where it sits, shown to the user
+    quint8 header;                // ITE 8297 zone ID
+    const char *id;               // "upper", "rear", ... (nullptr for a single-LED fan)
+    KLazyLocalizedString name;    // where it sits, on its own: "Upper"
+    KLazyLocalizedString heading; // the fan of a pair: "Upper fan"
 };
 
 // One fan as the user sees it. A "double" fan has two LEDs on two board headers,
@@ -73,11 +74,11 @@ struct CpuTemperatureDef {
     const char *hwmonName;       // hwmon driver, e.g. "coretemp"
     const char *sensorLabel;     // tempN_label of the sensor to use, e.g. "Package id 0"
     double offset;               // °C added to the reading (the EC reads a little higher)
-    int averageSamples;          // readings averaged
+    int averageSamples;          // readings averaged (at least 1: modeltest)
     double maxChangePerSecond;   // °C the shown temperature may move per second
     int intervalMs;              // how often the sensor is read
     double hysteresis;           // °C below a step's start before going back down (Glowzone's own)
-    QList<quint32> colours;      // 0xRRGGBB, coolest first
+    QList<quint32> colours;      // 0xRRGGBB, coolest first (at least 2: modeltest)
     TemperatureRange defaultRange; // until the user sets one
     int darkAt;                  // °C where the fade below the range is darkest (the room, roughly)
     double darkest;              // brightness there, as seen (0–1)
@@ -121,6 +122,7 @@ struct ModelProfile {
 
     bool matches(const DmiInfo &dmi) const;
     QString displayName() const;   // vendor and product version, as DMI reports them
+    QString usbId() const;         // the fan controller's, e.g. "17EF:C955"
     const FanDef *fan(const QString &id) const;
     const EcLightDef *ecLight(const QString &id) const;
     const EcLightDef *ecLightByIndex(quint8 index) const;

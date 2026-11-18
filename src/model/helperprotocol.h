@@ -15,16 +15,11 @@ namespace Glowzone
 // Values as GameZone GetLED/SetLED use them (see EcLights::modes()).
 struct EcLightState {
     quint8 index = 0;      // EcLightDef::index
-    quint8 mode = 0;
-    quint8 brightness = 0;
+    quint8 mode = 0;       // in a request: 0 = leave unchanged
+    quint8 brightness = 0; // in a request: 0 = leave unchanged
     bool operator==(const EcLightState &) const = default;
 };
-
-struct EcRequest {
-    quint8 index = 0;
-    quint8 mode = 0;       // 0 = leave unchanged
-    quint8 brightness = 0; // 0 = leave unchanged
-};
+using EcRequest = EcLightState; // what a light should become
 
 namespace HelperProtocol
 {
@@ -39,7 +34,6 @@ inline constexpr const char *KeyLights = "lights";         // QVariantList of QV
 inline constexpr const char *KeyIndex = "index";           // EcLightDef::index
 inline constexpr const char *KeyMode = "mode";
 inline constexpr const char *KeyBrightness = "brightness";
-inline constexpr const char *KeyDetail = "detail";         // English detail on errors
 inline constexpr const char *KeyLayout = "layout";         // IsSupportLightingFeature result
 
 // Kept clear of KAuth's and KJob's own error codes.
@@ -52,9 +46,10 @@ enum Error {
     UnexpectedReply,         // reply could not be parsed or did not match
 };
 
-QVariantMap statesToVariant(const QList<EcLightState> &lights);
-QList<EcLightState> statesFromVariant(const QVariantMap &data);
-QVariantMap requestsToVariant(const QList<EcRequest> &requests);
+// Lights or requests: {"lights": [{"index", "mode", "brightness"}, ...]}.
+// An error reply carries an English detail as its error description.
+QVariantMap lightsToVariant(const QList<EcLightState> &lights);
+QList<EcLightState> lightsFromVariant(const QVariantMap &data);
 
 } // namespace HelperProtocol
 } // namespace Glowzone

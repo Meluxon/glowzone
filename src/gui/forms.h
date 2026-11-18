@@ -16,8 +16,9 @@ namespace Glowzone::Gui
 
 class ColourButton;
 
-// The words under a slider's ends and other notes: a little smaller than the text.
-QFont smallFont(const QWidget *widget);
+// The words under a slider's ends, the sidebar's subtitles and other notes: a
+// little smaller than the text (font).
+QFont smallFont(QFont font);
 // Sliders in forms have a fixed width, so they don't grow with the window.
 int sliderWidth(const QWidget *widget);
 
@@ -75,6 +76,10 @@ QLabel *sectionHeading(const QString &text, QWidget *parent);
 
 // A centred form like a System Settings page: labels right-aligned, fields at
 // their natural size, everything at the top.
-QWidget *centredForm(QFormLayout **form, QWidget *parent);
+struct CentredForm {
+    QWidget *page;
+    QFormLayout *form;
+};
+CentredForm centredForm(QWidget *parent);
 
 } // namespace Glowzone::Gui

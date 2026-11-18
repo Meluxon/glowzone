@@ -63,7 +63,4 @@ private:
     QLabel *m_waiting;
 };
 
-// "front" -> "Front"
-QString capitalised(const QString &s);
-
 } // namespace Glowzone::Gui

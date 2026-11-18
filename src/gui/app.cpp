@@ -107,8 +107,8 @@ void App::setKeepRunning(bool on)
     }
     m_keepRunning = on;
     Settings::setKeepRunning(on);
-    if (!on && Settings::startsAtLogin()) {
-        setStartAtLogin(false); // starting at login would only start and quit again
+    if (!on) {
+        changeStartAtLogin(false); // starting at login would only start and quit again
     }
     updateTray();
     Q_EMIT backgroundChanged();
@@ -121,14 +121,20 @@ bool App::startsAtLogin() const
 
 void App::setStartAtLogin(bool on)
 {
-    QString error;
-    if (!Settings::setStartAtLogin(on, &error)) {
-        QMessageBox::warning(m_window, i18nc("@title:window", "Start at Login"), error);
-    }
+    changeStartAtLogin(on);
     if (on && Settings::startsAtLogin() && !m_keepRunning) {
-        setKeepRunning(true);
+        setKeepRunning(true); // tells about both
+        return;
     }
     Q_EMIT backgroundChanged();
+}
+
+void App::changeStartAtLogin(bool on)
+{
+    QString error;
+    if (Settings::startsAtLogin() != on && !Settings::setStartAtLogin(on, &error)) {
+        QMessageBox::warning(m_window, i18nc("@title:window", "Start at Login"), error);
+    }
 }
 
 // The tray icon is there only while Glowzone keeps running in the background.

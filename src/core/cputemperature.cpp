@@ -105,7 +105,7 @@ TemperatureSmoother::TemperatureSmoother(const CpuTemperatureDef &def)
 double TemperatureSmoother::add(double reading, double secondsSinceLast)
 {
     m_readings.append(reading);
-    while (m_readings.size() > std::max(1, m_def.averageSamples)) {
+    while (m_readings.size() > m_def.averageSamples) {
         m_readings.removeFirst();
     }
     const double sum = std::accumulate(m_readings.cbegin(), m_readings.cend(), 0.0);
@@ -127,7 +127,7 @@ void TemperatureSmoother::reset()
 
 int minimumRangeWidth(const CpuTemperatureDef &def)
 {
-    return std::max(1, int(def.colours.size()));
+    return int(def.colours.size());
 }
 
 TemperatureRange usableRange(const CpuTemperatureDef &def, TemperatureRange range, int top)
@@ -170,11 +170,6 @@ TemperatureScale::TemperatureScale(const CpuTemperatureDef &def, TemperatureRang
     , m_range(usableRange(def, range, top))
     , m_top(std::max(top, m_range.hottest))
 {
-    if (def.colours.isEmpty()) {
-        m_starts << 0.0;
-        m_colours << Ite8297::Rgb{};
-        return;
-    }
     const auto add = [this](double start, Ite8297::Rgb colour) {
         if (!m_colours.isEmpty() && colour == m_colours.constLast()) {
             return; // a fade step that rounds to the same colour: no step

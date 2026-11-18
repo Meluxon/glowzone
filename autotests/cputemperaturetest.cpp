@@ -6,6 +6,7 @@
 // imitated EC smoothing, and reading hwmon (a fake tree).
 
 #include "core/cputemperature.h"
+#include "testmodel.h"
 
 #include <QDir>
 #include <QFile>
@@ -20,9 +21,7 @@ using Ite8297::Rgb;
 
 static const CpuTemperatureDef &def()
 {
-    const ModelProfile *m = matchModel({u"LENOVO"_s, u"Legion T5 26IOB6"_s, u"3733"_s});
-    Q_ASSERT(m && m->cpuTemperature);
-    return *m->cpuTemperature;
+    return legionModel().cpuTemperature.value();
 }
 
 static void writeFile(const QString &path, const QByteArray &data)
@@ -31,11 +30,6 @@ static void writeFile(const QString &path, const QByteArray &data)
     QFile f(path);
     QVERIFY(f.open(QIODevice::WriteOnly));
     f.write(data);
-}
-
-static Rgb rgb(quint32 c)
-{
-    return {quint8(c >> 16), quint8(c >> 8), quint8(c)};
 }
 
 class CpuTemperatureTest : public QObject
@@ -68,7 +62,7 @@ private Q_SLOTS:
         QFETCH(double, celsius);
         QFETCH(quint32, colour);
         const TemperatureScale scale(def(), def().defaultRange, 100);
-        QCOMPARE(scale.colourAt(celsius), rgb(colour));
+        QCOMPARE(scale.colourAt(celsius), Ite8297::rgbFromValue(colour));
     }
 
     // Going down needs a clear drop; going up doesn't wait.
@@ -85,22 +79,22 @@ private Q_SLOTS:
         QCOMPARE(s.step(50.0, at70), s.step(50.0)); // a big drop goes all the way
         const int at40 = s.step(40.0);
         QCOMPARE(s.step(39.5, at40), at40);
-        QCOMPARE(s.colour(s.step(38.5, at40)), rgb(0x0000ff));
+        QCOMPARE(s.colour(s.step(38.5, at40)), Ite8297::rgbFromValue(0x0000ff));
     }
 
     // The colours spread evenly over another range; outside it they fade.
     void range()
     {
         const TemperatureScale s(def(), {35, 80}, 100); // 45 °C / 13 colours ≈ 3.46 °C each
-        QCOMPARE(s.colourAt(35.0), rgb(0x0000ff));
-        QCOMPARE(s.colourAt(38.4), rgb(0x0000ff));
-        QCOMPARE(s.colourAt(38.5), rgb(0x0050ff));
-        QCOMPARE(s.colourAt(62.0), rgb(0x50ff00)); // 8th colour from 59.2 °C
-        QCOMPARE(s.colourAt(76.6), rgb(0xff0000));
-        QCOMPARE(s.colourAt(79.9), rgb(0xff0000));
+        QCOMPARE(s.colourAt(35.0), Ite8297::rgbFromValue(0x0000ff));
+        QCOMPARE(s.colourAt(38.4), Ite8297::rgbFromValue(0x0000ff));
+        QCOMPARE(s.colourAt(38.5), Ite8297::rgbFromValue(0x0050ff));
+        QCOMPARE(s.colourAt(62.0), Ite8297::rgbFromValue(0x50ff00)); // 8th colour from 59.2 °C
+        QCOMPARE(s.colourAt(76.6), Ite8297::rgbFromValue(0xff0000));
+        QCOMPARE(s.colourAt(79.9), Ite8297::rgbFromValue(0xff0000));
         // Above: towards white, one step per °C, white at the top.
-        QCOMPARE(s.colourAt(80.0), rgb(0xff0000));
-        QCOMPARE(s.colourAt(80.9), rgb(0xff0000));
+        QCOMPARE(s.colourAt(80.0), Ite8297::rgbFromValue(0xff0000));
+        QCOMPARE(s.colourAt(80.9), Ite8297::rgbFromValue(0xff0000));
         QCOMPARE(s.colourAt(81.0), (Rgb{255, 13, 13}));   // 1/20 of the way
         QCOMPARE(s.colourAt(90.5), (Rgb{255, 128, 128})); // half
         QCOMPARE(s.colourAt(99.0), (Rgb{255, 242, 242})); // 19/20
@@ -118,8 +112,8 @@ private Q_SLOTS:
         }
         // No fade where the range reaches the end.
         const TemperatureScale full(def(), {20, 100}, 100);
-        QCOMPARE(full.colourAt(10.0), rgb(0x0000ff));
-        QCOMPARE(full.colourAt(120.0), rgb(0xff0000));
+        QCOMPARE(full.colourAt(10.0), Ite8297::rgbFromValue(0x0000ff));
+        QCOMPARE(full.colourAt(120.0), Ite8297::rgbFromValue(0xff0000));
     }
 
     void usableRanges_data()
@@ -232,14 +226,14 @@ private Q_SLOTS:
         t.setInterval(20);
         t.start();
         QCOMPARE(colours.size(), 1);
-        QCOMPARE(colours.at(0).at(0).value<Rgb>(), rgb(0x00ff50)); // 61 °C
+        QCOMPARE(colours.at(0).at(0).value<Rgb>(), Ite8297::rgbFromValue(0x00ff50)); // 61 °C
         QCOMPARE(t.temperature(), std::optional<double>(61.0));
 
         QVERIFY(QTest::qWaitFor([&] { return updates.size() >= 4; }));
         QCOMPARE(colours.size(), 1); // same step: nothing new
 
         writeFile(input, "35000\n"); // cooling down – the smoothing takes its time
-        QVERIFY(QTest::qWaitFor([&] { return t.colour() == rgb(0x0000ff); }, 15000));
+        QVERIFY(QTest::qWaitFor([&] { return t.colour() == Ite8297::rgbFromValue(0x0000ff); }, 15000));
         QVERIFY(colours.size() > 2); // walked through the steps in between
 
         t.stop();
@@ -262,14 +256,14 @@ private Q_SLOTS:
         t.setInterval(60000);
         t.start();
         QCOMPARE(colours.size(), 1);
-        QCOMPARE(t.colour(), rgb(0x00ff50)); // 61 °C
+        QCOMPARE(t.colour(), Ite8297::rgbFromValue(0x00ff50)); // 61 °C
 
         t.setRange({35, 60}); // 61 °C is above it now
         QCOMPARE(colours.size(), 2);
         QCOMPARE(t.colour(), (Rgb{255, 6, 6})); // 1/40 of the way to white
         t.setRange({35, 61});
         QCOMPARE(colours.size(), 3);
-        QCOMPARE(t.colour(), rgb(0xff0000)); // the last colour, up to hottest
+        QCOMPARE(t.colour(), Ite8297::rgbFromValue(0xff0000)); // the last colour, up to hottest
         t.setRange({34, 61}); // still the same colour
         QCOMPARE(colours.size(), 3);
         QCOMPARE(t.scale().top(), 100);
@@ -289,15 +283,15 @@ private Q_SLOTS:
         QSignalSpy updates(&t, &CpuTemperature::updated);
         t.setInterval(20);
         t.start();
-        QCOMPARE(t.colour(), rgb(0x50ff00));
+        QCOMPARE(t.colour(), Ite8297::rgbFromValue(0x50ff00));
         writeFile(input, "68800\n"); // a little below 70, within the hysteresis
         QVERIFY(QTest::qWaitFor([&] { return updates.size() >= 4; }));
         QVERIFY(*t.temperature() < 70.0);
-        QCOMPARE(t.colour(), rgb(0x50ff00)); // held
+        QCOMPARE(t.colour(), Ite8297::rgbFromValue(0x50ff00)); // held
         t.setRange(def().defaultRange);
-        QCOMPARE(t.colour(), rgb(0x50ff00)); // still held
+        QCOMPARE(t.colour(), Ite8297::rgbFromValue(0x50ff00)); // still held
         t.setRange({35, 120}); // other numbers, the same range once limited to the top
-        QCOMPARE(t.colour(), rgb(0x50ff00));
+        QCOMPARE(t.colour(), Ite8297::rgbFromValue(0x50ff00));
     }
 
     // A sensor found again with another limit changes the colours, and says so.
@@ -335,7 +329,7 @@ private Q_SLOTS:
         t.start();
         QVERIFY(QTest::qWaitFor([&] { return updates.size() >= 3; }));
         QCOMPARE(failed.size(), 1);
-        QCOMPARE(t.colour(), rgb(0x0000ff)); // the coolest while nothing is known
+        QCOMPARE(t.colour(), Ite8297::rgbFromValue(0x0000ff)); // the coolest while nothing is known
         QVERIFY(!t.temperature());
     }
 };

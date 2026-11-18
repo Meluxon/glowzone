@@ -15,7 +15,6 @@
 #include <QWindow>
 
 #include <chrono>
-#include <memory>
 #include <utility>
 
 using namespace Qt::StringLiterals;
@@ -83,6 +82,7 @@ using namespace std::chrono_literals;
 // and a time limit in case a call never finishes all the same.
 constexpr auto LockWait = 30s; // another Glowzone may be in the middle of a slow SetLED
 constexpr auto CallLimit = 60s;
+constexpr auto ActionTimeout = 30s; // KAuth's own limit for an answer
 
 // The user's runtime directory (Qt makes a private one if XDG_RUNTIME_DIR is unset).
 QString lockPath()
@@ -98,9 +98,8 @@ public:
         , m_kind(kind)
         , m_requests(requests)
         , m_window(window)
-        , m_lock(std::make_unique<QLockFile>(lockPath()))
     {
-        m_lock->setStaleLockTime(2 * CallLimit);
+        m_lock.setStaleLockTime(2 * CallLimit);
         m_watchdog.setSingleShot(true);
         connect(&m_watchdog, &QTimer::timeout, this, [this] {
             // KAuth's ExecuteJob can't be killed (no doKill()): detach from it
@@ -122,7 +121,7 @@ public:
 private:
     void tryStart()
     {
-        if (!m_lock->tryLock(0)) {
+        if (!m_lock.tryLock(0)) {
             if (m_waiting.durationElapsed() > LockWait) {
                 finish({i18n("Another Glowzone window or command is using the case lights. Try again in a moment."), {}, -1});
             } else {
@@ -135,9 +134,9 @@ private:
         KAuth::Action action(QLatin1String(GLOWZONE_HELPER_ID ".") + QLatin1String(slot));
         action.setHelperId(QStringLiteral(GLOWZONE_HELPER_ID));
         if (m_kind == Set) {
-            action.setArguments(HP::requestsToVariant(m_requests));
+            action.setArguments(HP::lightsToVariant(m_requests));
         }
-        action.setTimeout(30000);
+        action.setTimeout(int(std::chrono::milliseconds(ActionTimeout).count()));
         if (m_window) {
             action.setParentWindow(m_window);
         }
@@ -162,7 +161,7 @@ private:
                 r.error = errorMessage(HP::UnexpectedReply, {});
             }
         } else {
-            r.lights = HP::statesFromVariant(job->data());
+            r.lights = HP::lightsFromVariant(job->data());
         }
         return r;
     }
@@ -174,7 +173,7 @@ private:
         }
         m_done = true;
         m_watchdog.stop();
-        m_lock->unlock();
+        m_lock.unlock();
         Q_EMIT finished(result);
         deleteLater();
     }
@@ -182,7 +181,7 @@ private:
     Kind m_kind;
     QList<EcRequest> m_requests;
     QPointer<QWindow> m_window;
-    std::unique_ptr<QLockFile> m_lock;
+    QLockFile m_lock{lockPath()};
     QElapsedTimer m_waiting;
     QTimer m_watchdog;
     KAuth::ExecuteJob *m_job = nullptr;

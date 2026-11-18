@@ -36,6 +36,21 @@ QString cleanName(const QString &name)
     return (n.isEmpty() || n.size() > MaxNameLength) ? QString() : n;
 }
 
+std::optional<QString> checkedName(const QString &name, QString *error)
+{
+    const QString clean = cleanName(name);
+    if (clean.isEmpty()) {
+        *error = i18n("A profile name must be 1 to %1 characters long.", MaxNameLength);
+        return std::nullopt;
+    }
+    return clean;
+}
+
+static QString notFound(const QString &name)
+{
+    return i18n("There is no profile called “%1”.", name);
+}
+
 struct Stored {
     Profile profile;
     QString path;
@@ -63,15 +78,7 @@ static std::optional<Profile> fromJson(const ModelProfile &model, const QJsonObj
         return std::nullopt;
     }
 
-    // Only headers this model actually has.
-    const FanState::Headers all = FanState::headersFromJson(root.value("fans"_L1).toObject(), model);
-    for (const FanDef &fan : model.fans) {
-        for (const LedDef &led : fan.leds) {
-            if (all.contains(led.header)) {
-                p.fans.insert(led.header, all.value(led.header));
-            }
-        }
-    }
+    p.fans = FanState::headersFromJson(root.value("fans"_L1).toObject(), model);
 
     const QJsonObject links = root.value("links"_L1).toObject();
     for (const FanDef &fan : model.fans) {
@@ -199,10 +206,13 @@ QList<Profile> loadAll(const ModelProfile &model)
     return out;
 }
 
-std::optional<Profile> find(const ModelProfile &model, const QString &name)
+std::optional<Profile> find(const ModelProfile &model, const QString &name, QString *error)
 {
     if (const auto s = findStored(model, name)) {
         return s->profile;
+    }
+    if (error) {
+        *error = notFound(name);
     }
     return std::nullopt;
 }
@@ -240,11 +250,11 @@ static bool writeFile(const QString &path, const QJsonObject &root, QString *err
 bool save(const ModelProfile &model, const Profile &profile, QString *error)
 {
     Profile p = profile;
-    p.name = cleanName(profile.name);
-    if (p.name.isEmpty()) {
-        *error = i18n("A profile name must be 1 to %1 characters long.", MaxNameLength);
+    const auto name = checkedName(profile.name, error);
+    if (!name) {
         return false;
     }
+    p.name = *name;
     if (!QDir().mkpath(directory())) {
         *error = i18n("Could not create the directory %1.", directory());
         return false;
@@ -257,7 +267,7 @@ bool remove(const ModelProfile &model, const QString &name, QString *error)
 {
     const auto existing = findStored(model, name);
     if (!existing) {
-        *error = i18n("There is no profile called “%1”.", name);
+        *error = notFound(name);
         return false;
     }
     if (!QFile::remove(existing->path)) {
@@ -271,14 +281,14 @@ bool rename(const ModelProfile &model, const QString &oldName, const QString &ne
 {
     const auto existing = findStored(model, oldName);
     if (!existing) {
-        *error = i18n("There is no profile called “%1”.", oldName);
+        *error = notFound(oldName);
         return false;
     }
-    const QString name = cleanName(newName);
-    if (name.isEmpty()) {
-        *error = i18n("A profile name must be 1 to %1 characters long.", MaxNameLength);
+    const auto checked = checkedName(newName, error);
+    if (!checked) {
         return false;
     }
+    const QString &name = *checked;
     const auto clash = findStored(model, name);
     if (clash && clash->path != existing->path) {
         *error = i18n("A profile called “%1” already exists.", clash->profile.name);

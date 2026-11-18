@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Meluxon
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "fanstate.h"
+#include "settings.h"
 
 #include <KLocalizedString>
 #include <QDir>
@@ -13,6 +14,7 @@
 #include <QStandardPaths>
 #include <QThread>
 
+#include <algorithm>
 #include <cerrno>
 #include <cstdio>
 #include <fcntl.h>
@@ -57,50 +59,42 @@ QJsonObject headersToJson(const Headers &headers)
     return h;
 }
 
-// Protocol-level check only: a header the controller has, a known mode, sane values.
-static Headers parseHeaders(const QJsonObject &headers)
-{
-    Headers result;
-    for (auto it = headers.begin(); it != headers.end(); ++it) {
-        bool ok = false;
-        const uint header = it.key().toUInt(&ok, 0);
-        if (!ok || header > 0xff || !Ite8297::isKnownHeader(quint8(header))) {
-            continue;
-        }
-        const QJsonObject o = it.value().toObject();
-        const Ite8297::ModeInfo *mode = Ite8297::modeInfo(o.value("mode"_L1).toString());
-        const auto colour = Ite8297::parseRgb(o.value("colour"_L1).toString());
-        const int speed = o.value("speed"_L1).toInt();
-        const int brightness = o.value("brightness"_L1).toInt();
-        if (!mode || !colour || speed < Ite8297::MinLevel || speed > 0xff || brightness < Ite8297::MinLevel || brightness > 0xff) {
-            continue;
-        }
-        result.insert(quint8(header), {quint8(header), mode->mode, quint8(speed), quint8(brightness), *colour});
-    }
-    return result;
-}
-
 bool fitsModel(const ModelProfile &model, Ite8297::HeaderSetting setting)
 {
-    bool ownHeader = false;
-    for (const FanDef &fan : model.fans) {
-        ownHeader = ownHeader || fan.headers().contains(setting.header);
-    }
+    const bool ownHeader = std::ranges::any_of(model.fans, [&setting](const FanDef &fan) {
+        return fan.headers().contains(setting.header);
+    });
     return ownHeader && model.hasFanMode(quint8(setting.mode)) && setting.speed >= Ite8297::MinLevel && setting.speed <= model.fanLevels
         && setting.brightness >= Ite8297::MinLevel && setting.brightness <= model.fanLevels;
 }
 
 Headers headersFromJson(const QJsonObject &headers, const ModelProfile &model)
 {
-    Headers result = parseHeaders(headers);
-    result.removeIf([&model](const auto &it) {
-        return !fitsModel(model, it.value());
-    });
+    Headers result;
+    for (auto it = headers.begin(); it != headers.end(); ++it) {
+        bool ok = false;
+        const uint header = it.key().toUInt(&ok, 0);
+        const QJsonObject o = it.value().toObject();
+        const Ite8297::ModeInfo *mode = Ite8297::modeInfo(o.value("mode"_L1).toString());
+        const auto colour = Ite8297::parseRgb(o.value("colour"_L1).toString());
+        const int speed = o.value("speed"_L1).toInt();
+        const int brightness = o.value("brightness"_L1).toInt();
+        if (!ok || header > 0xff || !mode || !colour || speed < 0 || speed > 0xff || brightness < 0 || brightness > 0xff) {
+            continue; // not even a value the controller could take
+        }
+        const Ite8297::HeaderSetting s{quint8(header), mode->mode, quint8(speed), quint8(brightness), *colour};
+        if (fitsModel(model, s)) {
+            result.insert(s.header, s);
+        }
+    }
     return result;
 }
 
-bool defaultLinked(const FanDef &fan, const Headers &saved)
+bool linked(const FanDef &fan, const Headers &saved)
 {
+    if (const auto chosen = Settings::linked(QLatin1String(fan.id))) {
+        return *chosen;
+    }
     QList<Ite8297::HeaderSetting> known;
     for (const LedDef &led : fan.leds) {
         if (saved.contains(led.header)) {

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Meluxon
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "sidebar.h"
+#include "forms.h"
 #include "lighting.h"
 #include "pages.h"
 
@@ -201,8 +202,7 @@ public:
                 p->drawText(textRect.adjusted(0, pad, 0, -textRect.height() / 2),
                             Qt::AlignLeft | Qt::AlignVCenter,
                             fm.elidedText(title, Qt::ElideRight, textRect.width()));
-                QFont small = opt.font;
-                small.setPointSizeF(small.pointSizeF() * 0.9);
+                const QFont small = smallFont(opt.font);
                 p->setFont(small);
                 p->setPen(muted);
                 p->drawText(textRect.adjusted(0, textRect.height() / 2, 0, -pad),
@@ -253,7 +253,7 @@ Sidebar::Sidebar(Lighting *lighting, QWidget *parent)
         item->setData(0, IndexRole, i);
         if (fan.isDouble()) {
             for (const LedDef &led : fan.leds) {
-                auto *child = new QTreeWidgetItem(item, {capitalised(led.name.toString())});
+                auto *child = new QTreeWidgetItem(item, {led.name.toString()});
                 child->setData(0, KindRole, Led);
                 child->setData(0, IndexRole, i);
                 child->setData(0, HeaderRole, int(led.header));
@@ -291,9 +291,7 @@ void Sidebar::fitWidth()
 {
     const ModelProfile &model = m_lighting->model();
     const QFontMetrics fm = fontMetrics();
-    QFont smallFont = font();
-    smallFont.setPointSizeF(smallFont.pointSizeF() * 0.9); // as the delegate draws subtitles
-    const QFontMetrics small(smallFont);
+    const QFontMetrics small(smallFont(font())); // as the delegate draws subtitles
     const int pad = fm.height() / 3; // the delegate's spacing
     const int rowOverhead = pad * 2 + fm.height() + pad * 2 + pad * 2; // margin, dot, gap, margin
 
@@ -318,7 +316,7 @@ void Sidebar::fitWidth()
             continue;
         }
         for (const LedDef &led : fan.leds) {
-            text = std::max(text, indentation() + fm.horizontalAdvance(capitalised(led.name.toString())) + pad * 3 + longestMode);
+            text = std::max(text, indentation() + fm.horizontalAdvance(led.name.toString()) + pad * 3 + longestMode);
         }
     }
     for (const EcLightDef &light : model.ecLights) {

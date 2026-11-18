@@ -121,6 +121,7 @@ public:
     // (colourChanged() if the colour is now another). A range that gives the
     // same colours as the current one changes nothing.
     void setRange(TemperatureRange range);
+    TemperatureRange range() const { return m_range; } // as set; the scale uses the usable part
     const TemperatureScale &scale() const { return m_scale; }
 
 Q_SIGNALS:

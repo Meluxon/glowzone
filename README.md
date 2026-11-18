@@ -81,7 +81,7 @@ glowzone fan top static -c 0000ff --led rear   # one LED of a double fan
 glowzone fan cpu cpu-temperature -r 35-80      # follows the CPU temperature, colours over 35–80 °C
 glowzone light logo on -b 1
 glowzone profile apply night
-glowzone reset                                 # everything off
+glowzone reset                                 # everything off, colours and levels reset
 glowzone --help                                # the fans, lights and modes of your machine
 ```
 

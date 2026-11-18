@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 11:36+0100\n"
+"POT-Creation-Date: 2026-11-18 12:41+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: Japanese\n"
@@ -245,20 +245,10 @@ msgstr "使い方：glowzone profile list | apply <名前> | save <名前> | ren
 msgid "No profiles saved yet. Save one with “glowzone profile save <name>”."
 msgstr "保存されたプロファイルはまだありません。「glowzone profile save <名前>」で保存できます。"
 
-#: src/cli/commands.cpp src/core/profiles.cpp
-#, kde-format
-msgid "There is no profile called “%1”."
-msgstr "「%1」という名前のプロファイルはありません。"
-
 #: src/cli/commands.cpp
 #, kde-format
 msgid "Applied profile “%1”."
 msgstr "プロファイル「%1」を適用しました。"
-
-#: src/cli/commands.cpp src/core/profiles.cpp src/gui/mainwindow.cpp
-#, kde-format
-msgid "A profile name must be 1 to %1 characters long."
-msgstr "プロファイル名は 1～%1 文字にしてください。"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -310,11 +300,6 @@ msgstr "%1 を削除できませんでした"
 msgid "No Glowzone user data found."
 msgstr "Glowzone のユーザーデータは見つかりませんでした。"
 
-#: src/cli/commands.cpp src/cli/main.cpp
-#, kde-format
-msgid "Lighting control for supported Lenovo desktops: fan LEDs and case lights."
-msgstr "対応する Lenovo デスクトップのライティング制御：ファン LED とケースライト。"
-
 #: src/cli/commands.cpp
 #, kde-format
 msgid "Commands:"
@@ -337,8 +322,8 @@ msgstr "ケースライトを設定"
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "Turn all lighting off"
-msgstr "すべてのライティングをオフ"
+msgid "Turn all lighting off and reset colours and levels"
+msgstr "すべてのライティングをオフにし、色とレベルを初期状態に戻す"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -450,7 +435,12 @@ msgstr "「reset」に引数は指定できません。"
 msgid "Glowzone"
 msgstr "Glowzone"
 
-#: src/cli/main.cpp src/gui/aboutdialog.cpp
+#: src/cli/main.cpp
+#, kde-format
+msgid "Lighting control for supported Lenovo desktops: fan LEDs and case lights."
+msgstr "対応する Lenovo デスクトップのライティング制御：ファン LED とケースライト。"
+
+#: src/cli/main.cpp
 #, kde-format
 msgid "© 2026 Meluxon"
 msgstr "© 2026 Meluxon"
@@ -694,6 +684,16 @@ msgstr ""
 
 #: src/core/profiles.cpp
 #, kde-format
+msgid "A profile name must be 1 to %1 characters long."
+msgstr "プロファイル名は 1～%1 文字にしてください。"
+
+#: src/core/profiles.cpp
+#, kde-format
+msgid "There is no profile called “%1”."
+msgstr "「%1」という名前のプロファイルはありません。"
+
+#: src/core/profiles.cpp
+#, kde-format
 msgid "Could not save the profile to %1: %2"
 msgstr "プロファイルを %1 に保存できませんでした：%2"
 
@@ -739,11 +739,6 @@ msgstr "Glowzone について"
 msgctxt "@title app name and version"
 msgid "Glowzone %1"
 msgstr "Glowzone %1"
-
-#: src/gui/aboutdialog.cpp
-#, kde-format
-msgid "Lighting control for supported Lenovo desktops"
-msgstr "対応する Lenovo デスクトップのライティング制御"
 
 #: src/gui/aboutdialog.cpp
 #, kde-format
@@ -1144,12 +1139,6 @@ msgstr "LED："
 
 #: src/gui/pages.cpp
 #, kde-format
-msgctxt "@title one fan of a pair, %1 is its position"
-msgid "%1 fan"
-msgstr "%1ファン"
-
-#: src/gui/pages.cpp
-#, kde-format
 msgctxt "@info"
 msgid "Reading the current state…"
 msgstr "現在の状態を読み取り中…"
@@ -1333,13 +1322,23 @@ msgstr "前面ファン"
 
 #: src/model/modelprofile.cpp
 msgctxt "@item fan position"
-msgid "upper"
+msgid "Upper"
 msgstr "上側"
 
 #: src/model/modelprofile.cpp
+msgctxt "@title one fan of a pair"
+msgid "Upper fan"
+msgstr "上側ファン"
+
+#: src/model/modelprofile.cpp
 msgctxt "@item fan position"
-msgid "lower"
+msgid "Lower"
 msgstr "下側"
+
+#: src/model/modelprofile.cpp
+msgctxt "@title one fan of a pair"
+msgid "Lower fan"
+msgstr "下側ファン"
 
 #: src/model/modelprofile.cpp
 msgctxt "@item fan"
@@ -1348,13 +1347,23 @@ msgstr "天面ファン"
 
 #: src/model/modelprofile.cpp
 msgctxt "@item fan position"
-msgid "front"
+msgid "Front"
 msgstr "前側"
 
 #: src/model/modelprofile.cpp
+msgctxt "@title one fan of a pair"
+msgid "Front fan"
+msgstr "前側ファン"
+
+#: src/model/modelprofile.cpp
 msgctxt "@item fan position"
-msgid "rear"
+msgid "Rear"
 msgstr "後側"
+
+#: src/model/modelprofile.cpp
+msgctxt "@title one fan of a pair"
+msgid "Rear fan"
+msgstr "後側ファン"
 
 #: src/model/modelprofile.cpp
 msgctxt "@item light"

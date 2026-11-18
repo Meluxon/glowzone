@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
+#include "helpercall.h"
 #include "model/helperprotocol.h"
 #include "model/modelprofile.h"
 
@@ -29,20 +30,20 @@ inline constexpr quint8 ModeOff = 1;
 // Brightness starts at 1; the top level is per model (ModelProfile::ecBrightnessLevels).
 inline constexpr quint8 MinBrightness = 1;
 
-// Blocking calls to the root helper, for the CLI (the window uses LightApplier).
-// Errors are translated. set() records the lights' new state in stateFilePath().
-std::optional<QList<EcLightState>> status(QString *error);
-std::optional<QList<EcLightState>> set(const QList<EcRequest> &requests, QString *error);
+// One blocking call to the root helper, for the CLI (the window uses
+// LightApplier). Errors are translated. A Set records the lights' new state
+// in stateFilePath(); Layout reads the fan layout as the BIOS detects it now
+// (see FanLayoutDef).
+HelperResult call(HelperCall::Kind kind, const QList<EcRequest> &requests = {});
 
 // ~/.local/state/glowzone/lights.json: the case lights as the command line
 // last set them, so a running window can take that over without asking the
 // root helper. Only the command line writes it; it is only a hint, as the
 // window may have changed the lights since.
 QString stateFilePath();
-void saveState(const QList<EcLightState> &lights); // best effort: see set()
+void saveState(const QList<EcLightState> &lights); // best effort: see call()
 // Only lights, modes and levels the model offers; nullopt if there is nothing usable.
 std::optional<QList<EcLightState>> loadState(const ModelProfile &model);
-std::optional<int> layout(QString *error); // fan layout as the BIOS detects it now (see FanLayoutDef)
 
 // "0x0b"
 QString layoutCode(int code);
