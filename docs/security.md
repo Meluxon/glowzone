@@ -28,7 +28,9 @@ BIOS fan layout – and on every call it:
 
 It builds every ACPI call itself and only ever calls four GameZone methods:
 `0x0A` (fan layout), `0x0E` (lights fitted?), `0x0F` (GetLED) and `0x10`
-(SetLED). `modprobe` is run with a fixed path, a fixed argument and an empty
+(SetLED). SetLED makes the BIOS pause the whole machine for a moment, so it is
+only called for a light whose mode or brightness would actually change.
+`modprobe` is run with a fixed path, a fixed argument and an empty
 environment.
 
 How that is checked:

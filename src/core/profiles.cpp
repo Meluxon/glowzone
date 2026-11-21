@@ -7,11 +7,13 @@
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
+#include <QLockFile>
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QStandardPaths>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <limits>
 
@@ -247,8 +249,37 @@ static bool writeFile(const QString &path, const QJsonObject &root, QString *err
     return true;
 }
 
+QString lockFilePath()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + "/glowzone-profiles.lock"_L1;
+}
+
+// Saving, renaming and deleting read the directory, choose a file and change
+// it; the window and the command line may do that at the same moment. One at
+// a time: QLockFile also notices a holder that died. Holders take
+// milliseconds, so waiting longer means something is wrong.
+class ChangeLock
+{
+public:
+    explicit ChangeLock(QString *error)
+    {
+        if (!m_file.tryLock(Wait)) {
+            *error = i18n("Another Glowzone window or command is changing the profiles. Try again in a moment.");
+        }
+    }
+    explicit operator bool() const { return m_file.isLocked(); }
+
+private:
+    static constexpr std::chrono::milliseconds Wait = std::chrono::seconds(2);
+    QLockFile m_file{lockFilePath()};
+};
+
 bool save(const ModelProfile &model, const Profile &profile, QString *error)
 {
+    const ChangeLock lock(error);
+    if (!lock) {
+        return false;
+    }
     Profile p = profile;
     const auto name = checkedName(profile.name, error);
     if (!name) {
@@ -265,6 +296,10 @@ bool save(const ModelProfile &model, const Profile &profile, QString *error)
 
 bool remove(const ModelProfile &model, const QString &name, QString *error)
 {
+    const ChangeLock lock(error);
+    if (!lock) {
+        return false;
+    }
     const auto existing = findStored(model, name);
     if (!existing) {
         *error = notFound(name);
@@ -279,6 +314,10 @@ bool remove(const ModelProfile &model, const QString &name, QString *error)
 
 bool rename(const ModelProfile &model, const QString &oldName, const QString &newName, QString *error)
 {
+    const ChangeLock lock(error);
+    if (!lock) {
+        return false;
+    }
     const auto existing = findStored(model, oldName);
     if (!existing) {
         *error = notFound(oldName);

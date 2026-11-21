@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 12:41+0100\n"
+"POT-Creation-Date: 2026-11-21 02:07+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: Japanese\n"
@@ -522,6 +522,11 @@ msgstr "ファン LED コントローラー %1 が見つからないか、アク
 
 #: src/core/fancontroller.cpp
 #, kde-format
+msgid "%1 of %2 bytes sent"
+msgstr "%2 バイト中 %1 バイトを送信"
+
+#: src/core/fancontroller.cpp
+#, kde-format
 msgid "Sending to the fan LED controller failed: %1"
 msgstr "ファン LED コントローラーへの送信に失敗しました：%1"
 
@@ -696,6 +701,11 @@ msgstr "「%1」という名前のプロファイルはありません。"
 #, kde-format
 msgid "Could not save the profile to %1: %2"
 msgstr "プロファイルを %1 に保存できませんでした：%2"
+
+#: src/core/profiles.cpp
+#, kde-format
+msgid "Another Glowzone window or command is changing the profiles. Try again in a moment."
+msgstr "別の Glowzone ウィンドウまたはコマンドがプロファイルを変更中です。少し待ってからもう一度お試しください。"
 
 #: src/core/profiles.cpp
 #, kde-format

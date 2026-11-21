@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Meluxon
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "ecservice.h"
+#include "model/find.h"
 
 #include <QSet>
 
@@ -266,7 +267,22 @@ EcService::Result EcService::set(const QVariantMap &args)
         return r;
     }
 
-    for (const EcRequest &req : *requests) {
+    // Only what changes: SetLED makes the BIOS pause the whole machine (SMI),
+    // sometimes for seconds, while GetLED reads without one.
+    Result before;
+    if (!readAll(&before)) {
+        return before;
+    }
+    QList<EcRequest> changes = *requests;
+    changes.removeIf([&before](const EcRequest &req) {
+        const EcLightState *now = findIf(before.lights, [&req](const EcLightState &l) { return l.index == req.index; });
+        return (req.mode == 0 || req.mode == now->mode) && (req.brightness == 0 || req.brightness == now->brightness);
+    });
+    if (changes.isEmpty()) {
+        return before;
+    }
+
+    for (const EcRequest &req : std::as_const(changes)) {
         // SetLED takes a 4-byte buffer: index, mode, brightness, 0.
         const QByteArray buffer = "b" + hex2(req.index) + hex2(req.mode) + hex2(req.brightness) + "00";
         const auto reply = m_acpi.call(gameZoneCall(MethodSetLed, buffer), &r.detail);

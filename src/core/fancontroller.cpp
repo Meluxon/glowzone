@@ -77,8 +77,9 @@ bool FanController::apply(const QList<Ite8297::HeaderSetting> &settings, QString
     }
     for (const QByteArray &report : Ite8297::reportsFor(settings)) {
         const int sent = hid_send_feature_report(m_dev, reinterpret_cast<const unsigned char *>(report.constData()), size_t(report.size()));
-        if (sent < 0) {
-            *error = i18n("Sending to the fan LED controller failed: %1", hidError(m_dev));
+        if (sent != report.size()) { // an error, or only part of the report
+            const QString reason = sent < 0 ? hidError(m_dev) : i18n("%1 of %2 bytes sent", sent, report.size());
+            *error = i18n("Sending to the fan LED controller failed: %1", reason);
             // Unplugged or reset? Reopen on the next call.
             hid_close(m_dev);
             m_dev = nullptr;

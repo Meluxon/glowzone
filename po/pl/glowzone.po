@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 12:41+0100\n"
+"POT-Creation-Date: 2026-11-21 02:07+0100\n"
 "PO-Revision-Date: 2026-11-15 01:03+0100\n"
 "Last-Translator: Claude (vibecoded draft – please review)\n"
 "Language-Team: Polish\n"
@@ -521,6 +521,11 @@ msgstr "Nie znaleziono sterownika diod wentylatorów %1 albo brak do niego dost�
 
 #: src/core/fancontroller.cpp
 #, kde-format
+msgid "%1 of %2 bytes sent"
+msgstr "Wysłano %1 z %2 bajtów"
+
+#: src/core/fancontroller.cpp
+#, kde-format
 msgid "Sending to the fan LED controller failed: %1"
 msgstr "Wysyłanie do sterownika diod wentylatorów nie powiodło się: %1"
 
@@ -695,6 +700,11 @@ msgstr "Nie ma profilu o nazwie „%1”."
 #, kde-format
 msgid "Could not save the profile to %1: %2"
 msgstr "Nie udało się zapisać profilu w %1: %2"
+
+#: src/core/profiles.cpp
+#, kde-format
+msgid "Another Glowzone window or command is changing the profiles. Try again in a moment."
+msgstr "Inne okno lub polecenie Glowzone zmienia właśnie profile. Spróbuj ponownie za chwilę."
 
 #: src/core/profiles.cpp
 #, kde-format

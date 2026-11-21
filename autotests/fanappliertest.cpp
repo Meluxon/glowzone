@@ -279,6 +279,28 @@ private Q_SLOTS:
         QCOMPARE(coloursFor(sent(), u"13"_s).constLast(), u"a0ff00"_s);
         QCOMPARE(saved.size(), 1); // following saves nothing
     }
+
+    // A report the controller didn't take whole counts as failed: the retry
+    // sends everything again, and a change that never got through isn't saved.
+    void shortWriteIsAFailure()
+    {
+        FanApplier fans(legionModel(), nullptr, m_hwmon.path());
+        QSignalSpy failed(&fans, &FanApplier::failed);
+        QString error;
+        QVERIFY(fans.open(&error));
+        FakeHid::shortWrites = 1;
+        fans.queue({{0x11, Mode::Static, 1, 2, Rgb{0xff, 0, 0}}});
+        fans.flushNow();
+        QCOMPARE(failed.size(), 0);
+        QCOMPARE(sent(), (QStringList{u"11:ff0000"_s, u"commit"_s}));
+
+        FakeHid::shortWrites = 2;
+        fans.queue({{0x11, Mode::Static, 1, 2, Rgb{0, 0xff, 0}}});
+        fans.flushNow();
+        QCOMPARE(failed.size(), 1);
+        QVERIFY(failed.constFirst().constFirst().toString().contains("63 of 64"_L1));
+        QCOMPARE(FanState::load(legionModel()).value(0x11).colour, (Rgb{0xff, 0, 0}));
+    }
 };
 
 QTEST_GUILESS_MAIN(FanApplierTest)

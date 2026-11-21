@@ -46,9 +46,23 @@ public:
             return layoutReply;
         }
         if (command.startsWith("\\WMI2.WMG0 0 0x10 ")) {
+            if (setReply == "0x0") {
+                set(command.mid(command.indexOf(" b") + 2));
+            }
             return setReply;
         }
         return QByteArray("Error: unexpected command");
+    }
+
+    // As the EC does: GetLED reports what SetLED set; 0 leaves a value as it is.
+    void set(const QByteArray &buffer)
+    {
+        const int index = buffer.mid(0, 2).toInt(nullptr, 16);
+        const QList<QByteArray> now = led.value(index).mid(1, led.value(index).size() - 2).split(',');
+        const int mode = buffer.mid(2, 2).toInt(nullptr, 16);
+        const int brightness = buffer.mid(4, 2).toInt(nullptr, 16);
+        led[index] = "{0x0" + QByteArray::number(index) + ", " + (mode ? "0x0" + QByteArray::number(mode) : now.at(1).trimmed()) + ", "
+            + (brightness ? "0x0" + QByteArray::number(brightness) : now.at(2).trimmed()) + ", 0x00}";
     }
 
     int setCalls() const
@@ -127,6 +141,30 @@ private Q_SLOTS:
         QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b01020300"));
         QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b02050100"));
         QCOMPARE(r.lights.size(), 2); // state read back afterwards
+    }
+
+    // SetLED pauses the machine: a request for what a light already shows
+    // makes none, and nothing is read twice.
+    void setSkipsWhatIsAlreadyTrue()
+    {
+        FakeAcpi acpi;
+        EcService service(legion, acpi);
+        const EcService::Result r = service.set(request({light(1, 1, 3), light(2, 2, 0)}));
+        QCOMPARE(r.error, 0);
+        QCOMPARE(acpi.setCalls(), 0);
+        QCOMPARE(r.lights, (QList<EcLightState>{{1, 1, 3}, {2, 2, 1}}));
+        QCOMPARE(acpi.commands.count("\\WMI2.WMG0 0 0x0f 1"), 1);
+    }
+
+    void setSendsOnlyWhatChanges()
+    {
+        FakeAcpi acpi;
+        EcService service(legion, acpi);
+        const EcService::Result r = service.set(request({light(1, 1, 3), light(2, 5, 0)}));
+        QCOMPARE(r.error, 0);
+        QCOMPARE(acpi.setCalls(), 1);
+        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b02050000"));
+        QCOMPARE(r.lights, (QList<EcLightState>{{1, 1, 3}, {2, 5, 1}})); // read back afterwards
     }
 
     void rejectsAnythingOutsideTheWhitelist_data()

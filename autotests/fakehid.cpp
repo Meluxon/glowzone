@@ -14,12 +14,14 @@ namespace FakeHid
 {
 QList<QByteArray> reports;
 int failures = 0;
+int shortWrites = 0;
 bool missing = false;
 
 void reset()
 {
     reports.clear();
     failures = 0;
+    shortWrites = 0;
     missing = false;
 }
 
@@ -87,6 +89,10 @@ int hid_send_feature_report(hid_device *, const unsigned char *data, size_t leng
     if (FakeHid::failures > 0) {
         --FakeHid::failures;
         return -1;
+    }
+    if (FakeHid::shortWrites > 0) {
+        --FakeHid::shortWrites;
+        return int(length) - 1;
     }
     FakeHid::reports << QByteArray(reinterpret_cast<const char *>(data), int(length));
     return int(length);

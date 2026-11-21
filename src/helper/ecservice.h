@@ -22,12 +22,13 @@ public:
     struct Result {
         int error = 0;              // 0 or HelperProtocol::Error
         QString detail;             // English, for logs and bug reports
-        QList<EcLightState> lights; // state after the operation
+        QList<EcLightState> lights; // state after the operation (none on an error)
     };
 
     EcService(const DmiInfo &dmi, AcpiBackend &acpi);
 
     Result status();
+    // Calls SetLED only for requests that differ from what GetLED reports.
     Result set(const QVariantMap &args);
     // Fan layout code as the BIOS reports it (0x0A). Read-only, no SMI.
     struct LayoutResult {

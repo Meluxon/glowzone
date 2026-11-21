@@ -32,6 +32,8 @@ namespace Profiles
 inline constexpr int MaxNameLength = 64;
 
 QString directory();
+// Saving, renaming and deleting hold this lock (in the runtime directory).
+QString lockFilePath();
 
 // Profiles saved for this model, sorted by name.
 QList<Profile> loadAll(const ModelProfile &model);

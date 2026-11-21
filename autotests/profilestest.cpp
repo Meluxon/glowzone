@@ -6,11 +6,16 @@
 #include "testmodel.h"
 
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLockFile>
 #include <QStandardPaths>
 #include <QTest>
+
+#include <chrono>
+#include <thread>
 
 using namespace Qt::StringLiterals;
 
@@ -215,6 +220,45 @@ private Q_SLOTS:
         QVERIFY(Profiles::remove(legionModel(), u"night"_s, &error));
         QCOMPARE(fileCount(), 0);
         QVERIFY(!Profiles::remove(legionModel(), u"night"_s, &error));
+    }
+
+    // Saving, renaming and deleting wait for another process doing the same
+    // (here a second lock, released by another thread a moment later).
+    void changesTakeTurns()
+    {
+        QLockFile other(Profiles::lockFilePath());
+        QVERIFY(other.lock());
+        std::thread release([&other] {
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            other.unlock();
+        });
+        QElapsedTimer waited;
+        waited.start();
+        QString error;
+        const bool saved = Profiles::save(legionModel(), sample(u"Night"_s), &error);
+        const qint64 ms = waited.elapsed();
+        release.join();
+        QVERIFY2(saved, qPrintable(error));
+        QVERIFY(ms >= 250);
+        QVERIFY(Profiles::rename(legionModel(), u"Night"_s, u"Late"_s, &error));
+        QVERIFY(Profiles::remove(legionModel(), u"Late"_s, &error));
+    }
+
+    // A holder that doesn't let go: the change fails and touches nothing.
+    void heldLockChangesNothing()
+    {
+        QString error;
+        QVERIFY(Profiles::save(legionModel(), sample(u"Night"_s), &error));
+        QLockFile other(Profiles::lockFilePath());
+        QVERIFY(other.lock());
+        QVERIFY(!Profiles::save(legionModel(), sample(u"Day"_s), &error));
+        QVERIFY(!error.isEmpty());
+        QVERIFY(!Profiles::rename(legionModel(), u"Night"_s, u"Late"_s, &error));
+        QVERIFY(!Profiles::remove(legionModel(), u"Night"_s, &error));
+        other.unlock();
+        const QList<Profile> all = Profiles::loadAll(legionModel());
+        QCOMPARE(all.size(), 1);
+        QCOMPARE(all.constFirst().name, u"Night"_s);
     }
 };
 

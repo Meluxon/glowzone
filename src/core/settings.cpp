@@ -13,6 +13,9 @@
 #include <QSettings>
 #include <QStandardPaths>
 
+#include <initializer_list>
+#include <utility>
+
 using namespace Qt::StringLiterals;
 
 namespace Glowzone::Settings
@@ -29,14 +32,17 @@ static QSettings file()
     return QSettings(filePath(), QSettings::IniFormat);
 }
 
-// Written only when the value changes: each write makes a running Glowzone
-// read the settings again. (The file stores text: compare as the value's type.)
-static void store(const QString &key, const QVariant &value)
+// Written only when a value changes: each write makes a running Glowzone read
+// the settings again. Values that belong together go in one write, so nobody
+// reads half of them. (The file stores text: compare as the value's type.)
+static void store(std::initializer_list<std::pair<QString, QVariant>> values)
 {
     QSettings s = file();
-    QVariant stored = s.value(key);
-    if (!stored.isValid() || !stored.convert(value.metaType()) || stored != value) {
-        s.setValue(key, value);
+    for (const auto &[key, value] : values) {
+        QVariant stored = s.value(key);
+        if (!stored.isValid() || !stored.convert(value.metaType()) || stored != value) {
+            s.setValue(key, value);
+        }
     }
 }
 
@@ -55,7 +61,7 @@ std::optional<bool> linked(const QString &fanId)
 
 void setLinked(const QString &fanId, bool isLinked)
 {
-    store(LinksGroup + fanId, isLinked);
+    store({{LinksGroup + fanId, isLinked}});
 }
 
 TemperatureRange temperatureRange(const CpuTemperatureDef &def)
@@ -70,8 +76,7 @@ TemperatureRange temperatureRange(const CpuTemperatureDef &def)
 
 void setTemperatureRange(TemperatureRange range)
 {
-    store(CoolestKey, range.coolest);
-    store(HottestKey, range.hottest);
+    store({{CoolestKey, range.coolest}, {HottestKey, range.hottest}});
 }
 
 QString currentProfile()
@@ -84,7 +89,7 @@ void setCurrentProfile(const QString &name)
     if (name.isEmpty()) {
         file().remove(CurrentProfileKey);
     } else {
-        store(CurrentProfileKey, name);
+        store({{CurrentProfileKey, name}});
     }
 }
 
@@ -95,7 +100,7 @@ QByteArray windowGeometry()
 
 void setWindowGeometry(const QByteArray &geometry)
 {
-    store(WindowGeometryKey, geometry);
+    store({{WindowGeometryKey, geometry}});
 }
 
 bool keepRunning()
@@ -105,7 +110,7 @@ bool keepRunning()
 
 void setKeepRunning(bool on)
 {
-    store(KeepRunningKey, on);
+    store({{KeepRunningKey, on}});
 }
 
 QString autostartPath()

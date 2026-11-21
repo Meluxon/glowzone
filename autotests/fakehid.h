@@ -11,7 +11,8 @@
 namespace FakeHid
 {
 extern QList<QByteArray> reports;
-extern int failures; // the next sends fail
+extern int failures;    // the next sends fail
+extern int shortWrites; // the next sends take one byte less (and are not recorded)
 extern bool missing; // no controller: opening fails
 
 void reset();
