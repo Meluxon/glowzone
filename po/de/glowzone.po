@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 02:07+0100\n"
+"POT-Creation-Date: 2026-11-21 12:08+0100\n"
 "PO-Revision-Date: 2026-11-15 12:00+0100\n"
 "Last-Translator: Claude (AI draft)\n"
 "Language-Team: German\n"
@@ -251,13 +251,13 @@ msgstr "Profil „%1“ angewendet."
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "Note: Glowzone hasn’t set any fan yet, so the profile contains no fan settings."
-msgstr "Hinweis: Glowzone hat noch keinen Lüfter eingestellt, daher enthält das Profil keine Lüftereinstellungen."
+msgid "Note: Glowzone hasn’t set any fan yet, so the profile keeps the fan settings it had, if any."
+msgstr "Hinweis: Glowzone hat noch keinen Lüfter eingestellt, daher behält das Profil seine bisherigen Lüftereinstellungen, falls es welche hat."
 
 #: src/cli/commands.cpp
 #, kde-format
-msgid "Note: the case lights could not be read and are not part of the profile: %1"
-msgstr "Hinweis: Die Gehäusebeleuchtung konnte nicht gelesen werden und ist nicht Teil des Profils: %1"
+msgid "Note: the case lights could not be read, so the profile keeps the case-light settings it had, if any: %1"
+msgstr "Hinweis: Die Gehäusebeleuchtung konnte nicht gelesen werden, daher behält das Profil seine bisherigen Einstellungen dafür, falls es welche hat: %1"
 
 #: src/cli/commands.cpp
 #, kde-format
@@ -544,7 +544,7 @@ msgstr "%1 ist beschädigt und konnte nicht nach %2 verschoben werden."
 msgid "%1 was saved by a newer version of Glowzone and is left as it is."
 msgstr "%1 wurde von einer neueren Glowzone-Version gespeichert und bleibt unverändert."
 
-#: src/core/fanstate.cpp src/core/profiles.cpp
+#: src/core/fanstate.cpp
 #, kde-format
 msgid "Could not read %1: %2"
 msgstr "%1 konnte nicht gelesen werden: %2"
@@ -993,6 +993,17 @@ msgstr "%1 °C"
 msgctxt "@info CPU temperature not read yet"
 msgid "Reading…"
 msgstr "Wird gelesen…"
+
+#: src/gui/gui.cpp
+#, kde-format
+msgctxt "@title:window"
+msgid "Glowzone Is Not Responding"
+msgstr "Glowzone reagiert nicht"
+
+#: src/gui/gui.cpp
+#, kde-format
+msgid "Glowzone is already running (process %1), but it doesn’t respond. End that process – for example in System Monitor, or with “kill %1” – and start Glowzone again."
+msgstr "Glowzone läuft bereits (Prozess %1), reagiert aber nicht. Beenden Sie diesen Prozess – zum Beispiel in der Systemüberwachung oder mit „kill %1“ – und starten Sie Glowzone erneut."
 
 #: src/gui/gui.cpp
 #, kde-format

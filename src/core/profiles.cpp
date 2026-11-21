@@ -16,6 +16,7 @@
 #include <chrono>
 #include <cmath>
 #include <limits>
+#include <utility>
 
 using namespace Qt::StringLiterals;
 
@@ -56,6 +57,7 @@ static QString notFound(const QString &name)
 struct Stored {
     Profile profile;
     QString path;
+    QJsonObject root; // the whole file, also what this version doesn't read
 };
 
 // An int stored as a JSON number; nullopt for fractions, huge values and other types.
@@ -98,15 +100,7 @@ static std::optional<Profile> fromJson(const ModelProfile &model, const QJsonObj
         p.temperatureRange = coolest && hottest ? TemperatureRange{*coolest, *hottest} : model.cpuTemperature->defaultRange;
     }
 
-    const QJsonObject lights = root.value("lights"_L1).toObject();
-    for (const EcLightDef &light : model.ecLights) {
-        const QJsonObject o = lights.value(QLatin1String(light.id)).toObject();
-        const EcLights::ModeInfo *mode = EcLights::modeInfo(o.value("mode"_L1).toString());
-        const int brightness = o.value("brightness"_L1).toInt();
-        if (mode && model.hasEcLightMode(mode->value) && brightness >= EcLights::MinBrightness && brightness <= model.ecBrightnessLevels) {
-            p.lights.insert(light.index, {light.index, mode->value, quint8(brightness)});
-        }
-    }
+    p.lights = EcLights::lightsFromJson(model, root.value("lights"_L1).toObject());
     return p;
 }
 
@@ -116,28 +110,42 @@ static QJsonObject toJson(const ModelProfile &model, const Profile &p)
     for (auto it = p.links.cbegin(); it != p.links.cend(); ++it) {
         links.insert(it.key(), it.value());
     }
-    QJsonObject lights;
-    for (const EcLightState &s : p.lights) {
-        const EcLightDef *def = model.ecLightByIndex(s.index);
-        const EcLights::ModeInfo *mode = EcLights::modeInfo(s.mode);
-        if (def && mode) {
-            lights.insert(QLatin1String(def->id),
-                          QJsonObject{{"mode"_L1, QLatin1String(mode->id)}, {"brightness"_L1, s.brightness}});
-        }
-    }
     QJsonObject root{
         {"version"_L1, FormatVersion},
         {"name"_L1, p.name},
         {"model"_L1, QLatin1String(model.productVersion)},
         {"fans"_L1, FanState::headersToJson(p.fans)},
         {"links"_L1, links},
-        {"lights"_L1, lights},
+        {"lights"_L1, EcLights::lightsToJson(model, p.lights.values())},
     };
     if (p.temperatureRange) {
         root.insert("cpuTemperature"_L1,
                     QJsonObject{{"coolest"_L1, p.temperatureRange->coolest}, {"hottest"_L1, p.temperatureRange->hottest}});
     }
     return root;
+}
+
+// Digit runs by value, however long: without leading zeros, the longer one is
+// larger, otherwise the first differing digit decides.
+static int compareNumbers(QStringView a, QStringView b)
+{
+    const auto significant = [](QStringView s) {
+        while (s.size() > 1 && s.front().digitValue() == 0) {
+            s = s.sliced(1);
+        }
+        return s;
+    };
+    a = significant(a);
+    b = significant(b);
+    if (a.size() != b.size()) {
+        return a.size() < b.size() ? -1 : 1;
+    }
+    for (qsizetype i = 0; i < a.size(); ++i) {
+        if (const int d = a.at(i).digitValue() - b.at(i).digitValue(); d != 0) {
+            return d;
+        }
+    }
+    return 0;
 }
 
 // "Profile 2" before "Profile 10"; letters compared case-insensitively and
@@ -150,22 +158,13 @@ static bool naturalLess(const QString &a, const QString &b)
     while (ia.hasNext() && ib.hasNext()) {
         const QString ca = ia.next().captured();
         const QString cb = ib.next().captured();
-        const bool da = ca.at(0).isDigit();
-        const bool db = cb.at(0).isDigit();
-        if (da && db) {
-            const qulonglong na = ca.toULongLong();
-            const qulonglong nb = cb.toULongLong();
-            if (na != nb) {
-                return na < nb;
-            }
-        } else {
-            const int c = QString::localeAwareCompare(ca.toLower(), cb.toLower());
-            if (c != 0) {
-                return c < 0;
-            }
+        const int c = ca.at(0).isDigit() && cb.at(0).isDigit() ? compareNumbers(ca, cb)
+                                                               : QString::localeAwareCompare(ca.toLower(), cb.toLower());
+        if (c != 0) {
+            return c < 0;
         }
     }
-    return ia.hasNext() ? false : ib.hasNext();
+    return !ia.hasNext() && ib.hasNext();
 }
 
 static QList<Stored> loadStored(const ModelProfile &model)
@@ -178,8 +177,9 @@ static QList<Stored> loadStored(const ModelProfile &model)
         if (!f.open(QIODevice::ReadOnly)) {
             continue;
         }
-        if (auto p = fromJson(model, QJsonDocument::fromJson(f.readAll()).object())) {
-            out.append({*p, f.fileName()});
+        QJsonObject root = QJsonDocument::fromJson(f.readAll()).object();
+        if (auto p = fromJson(model, root)) {
+            out.append({*p, f.fileName(), std::move(root)});
         }
     }
     std::sort(out.begin(), out.end(), [](const Stored &a, const Stored &b) {
@@ -274,6 +274,28 @@ private:
     QLockFile m_file{lockFilePath()};
 };
 
+// What this version writes replaces what the file has – inside the objects it
+// writes (fans, lights, ...) entry by entry. Everything else stays: the
+// settings of LEDs and lights that aren't known now, and whatever another
+// version added.
+static QJsonObject merged(QJsonObject stored, const QJsonObject &ours)
+{
+    for (auto it = ours.constBegin(); it != ours.constEnd(); ++it) {
+        const QJsonValue old = stored.value(it.key());
+        if (!it->isObject() || !old.isObject()) {
+            stored.insert(it.key(), *it);
+            continue;
+        }
+        QJsonObject entries = old.toObject();
+        const QJsonObject mine = it->toObject();
+        for (auto e = mine.constBegin(); e != mine.constEnd(); ++e) {
+            entries.insert(e.key(), *e);
+        }
+        stored.insert(it.key(), entries);
+    }
+    return stored;
+}
+
 bool save(const ModelProfile &model, const Profile &profile, QString *error)
 {
     const ChangeLock lock(error);
@@ -290,73 +312,70 @@ bool save(const ModelProfile &model, const Profile &profile, QString *error)
         *error = i18n("Could not create the directory %1.", directory());
         return false;
     }
-    const auto existing = findStored(model, p.name);
-    return writeFile(existing ? existing->path : newFilePath(p.name), toJson(model, p), error);
+    const QJsonObject ours = toJson(model, p);
+    if (const auto existing = findStored(model, p.name)) {
+        return writeFile(existing->path, merged(existing->root, ours), error);
+    }
+    return writeFile(newFilePath(p.name), ours, error);
 }
 
-bool remove(const ModelProfile &model, const QString &name, QString *error)
+std::optional<QString> remove(const ModelProfile &model, const QString &name, QString *error)
 {
     const ChangeLock lock(error);
     if (!lock) {
-        return false;
+        return std::nullopt;
     }
     const auto existing = findStored(model, name);
     if (!existing) {
         *error = notFound(name);
-        return false;
+        return std::nullopt;
     }
     if (!QFile::remove(existing->path)) {
         *error = i18n("Could not delete %1.", existing->path);
-        return false;
+        return std::nullopt;
     }
-    return true;
+    return existing->profile.name;
 }
 
-bool rename(const ModelProfile &model, const QString &oldName, const QString &newName, QString *error)
+std::optional<QString> rename(const ModelProfile &model, const QString &oldName, const QString &newName, QString *error)
 {
     const ChangeLock lock(error);
     if (!lock) {
-        return false;
+        return std::nullopt;
     }
     const auto existing = findStored(model, oldName);
     if (!existing) {
         *error = notFound(oldName);
-        return false;
+        return std::nullopt;
     }
     const auto checked = checkedName(newName, error);
     if (!checked) {
-        return false;
+        return std::nullopt;
     }
     const QString &name = *checked;
     const auto clash = findStored(model, name);
     if (clash && clash->path != existing->path) {
         *error = i18n("A profile called “%1” already exists.", clash->profile.name);
-        return false;
+        return std::nullopt;
     }
     // Only the name changes: everything else in the file stays as it is,
     // including what this version doesn't read.
-    QFile f(existing->path);
-    if (!f.open(QIODevice::ReadOnly)) {
-        *error = i18n("Could not read %1: %2", existing->path, f.errorString());
-        return false;
-    }
-    QJsonObject root = QJsonDocument::fromJson(f.readAll()).object();
-    f.close();
+    QJsonObject root = existing->root;
     root.insert("name"_L1, name);
     if (clash) { // the same profile, only the case changes: rewrite it in place
-        return writeFile(existing->path, root, error);
+        return writeFile(existing->path, root, error) ? std::optional(existing->profile.name) : std::nullopt;
     }
     // Write the new file first, then remove the old one – never lose the profile.
     const QString path = newFilePath(name);
     if (!writeFile(path, root, error)) {
-        return false;
+        return std::nullopt;
     }
     if (!QFile::remove(existing->path)) {
         *error = i18n("Could not delete %1.", existing->path);
         QFile::remove(path); // undo: keep exactly one copy
-        return false;
+        return std::nullopt;
     }
-    return true;
+    return existing->profile.name;
 }
 
 } // namespace Profiles

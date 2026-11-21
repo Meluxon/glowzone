@@ -15,5 +15,7 @@ QString serviceName();
 
 // Is the window or the tray running for this user?
 bool isRunning();
+// Its process id; 0 if none is running (or the bus doesn't say).
+uint processId();
 
 } // namespace Glowzone::Instance

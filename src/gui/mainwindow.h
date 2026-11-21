@@ -7,6 +7,8 @@
 
 #include <QMainWindow>
 
+#include <functional>
+
 class KMessageWidget;
 class QLabel;
 class QVBoxLayout;
@@ -57,8 +59,11 @@ private:
     void applyProfile(const QString &name);
     void saveCurrentProfile();
     void saveNewProfile();
+    void saveAs(const QString &name);
     void renameProfile(const QString &name);
     void deleteProfile(const QString &name);
+    void askName(const QString &title, const QString &label, const QString &text, const std::function<void(const QString &)> &done);
+    void confirm(const QString &title, const QString &question, const std::function<void()> &yes);
     void updateBanner();
     void updateBackgroundMessage();
     void refreshTemperature();

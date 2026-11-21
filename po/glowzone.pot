@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: glowzone\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-21 02:07+0100\n"
+"POT-Creation-Date: 2026-11-21 12:09+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -265,14 +265,15 @@ msgstr ""
 #: src/cli/commands.cpp
 #, kde-format
 msgid ""
-"Note: Glowzone hasn’t set any fan yet, so the profile contains no fan "
-"settings."
+"Note: Glowzone hasn’t set any fan yet, so the profile keeps the fan settings "
+"it had, if any."
 msgstr ""
 
 #: src/cli/commands.cpp
 #, kde-format
 msgid ""
-"Note: the case lights could not be read and are not part of the profile: %1"
+"Note: the case lights could not be read, so the profile keeps the case-light "
+"settings it had, if any: %1"
 msgstr ""
 
 #: src/cli/commands.cpp
@@ -565,7 +566,7 @@ msgstr ""
 msgid "%1 was saved by a newer version of Glowzone and is left as it is."
 msgstr ""
 
-#: src/core/fanstate.cpp src/core/profiles.cpp
+#: src/core/fanstate.cpp
 #, kde-format
 msgid "Could not read %1: %2"
 msgstr ""
@@ -1021,6 +1022,20 @@ msgstr ""
 #, kde-format
 msgctxt "@info CPU temperature not read yet"
 msgid "Reading…"
+msgstr ""
+
+#: src/gui/gui.cpp
+#, kde-format
+msgctxt "@title:window"
+msgid "Glowzone Is Not Responding"
+msgstr ""
+
+#: src/gui/gui.cpp
+#, kde-format
+msgid ""
+"Glowzone is already running (process %1), but it doesn’t respond. End that "
+"process – for example in System Monitor, or with “kill %1” – and start "
+"Glowzone again."
 msgstr ""
 
 #: src/gui/gui.cpp

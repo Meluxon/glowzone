@@ -268,23 +268,28 @@ EcService::Result EcService::set(const QVariantMap &args)
     }
 
     // Only what changes: SetLED makes the BIOS pause the whole machine (SMI),
-    // sometimes for seconds, while GetLED reads without one.
+    // sometimes for seconds, while GetLED reads without one. A value the
+    // request leaves unchanged (0) goes to the BIOS as it is now, so SetLED
+    // only ever gets values it offers.
     Result before;
     if (!readAll(&before)) {
         return before;
     }
-    QList<EcRequest> changes = *requests;
-    changes.removeIf([&before](const EcRequest &req) {
-        const EcLightState *now = findIf(before.lights, [&req](const EcLightState &l) { return l.index == req.index; });
-        return (req.mode == 0 || req.mode == now->mode) && (req.brightness == 0 || req.brightness == now->brightness);
-    });
+    QList<EcLightState> changes;
+    for (const EcRequest &req : *requests) {
+        const EcLightState &now = *findIf(before.lights, [&req](const EcLightState &l) { return l.index == req.index; });
+        const EcLightState target{req.index, req.mode ? req.mode : now.mode, req.brightness ? req.brightness : now.brightness};
+        if (target != now) {
+            changes << target;
+        }
+    }
     if (changes.isEmpty()) {
         return before;
     }
 
-    for (const EcRequest &req : std::as_const(changes)) {
+    for (const EcLightState &target : std::as_const(changes)) {
         // SetLED takes a 4-byte buffer: index, mode, brightness, 0.
-        const QByteArray buffer = "b" + hex2(req.index) + hex2(req.mode) + hex2(req.brightness) + "00";
+        const QByteArray buffer = "b" + hex2(target.index) + hex2(target.mode) + hex2(target.brightness) + "00";
         const auto reply = m_acpi.call(gameZoneCall(MethodSetLed, buffer), &r.detail);
         if (!reply) {
             r.error = HP::AcpiCallFailed;

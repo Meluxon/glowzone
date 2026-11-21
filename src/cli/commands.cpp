@@ -278,14 +278,14 @@ int cmdStatus(const ModelProfile &model)
     }
 
     out() << Qt::endl << i18n("Lights:") << Qt::endl;
-    const HelperResult lights = EcLights::call(HelperCall::Status);
+    const HelperResult lights = EcLights::call(model, HelperCall::Status);
     if (!lights.ok()) {
         out() << "  "_L1 << i18n("not available: %1", lights.error) << Qt::endl;
         return ExitFailed;
     }
     printLights(model, lights.lights, width);
 
-    if (const HelperResult layout = EcLights::call(HelperCall::Layout); layout.ok()) {
+    if (const HelperResult layout = EcLights::call(model, HelperCall::Layout); layout.ok()) {
         const QString warning = EcLights::layoutWarning(model, layout.layout);
         out() << Qt::endl
               << i18n("Fan detection (BIOS): %1",
@@ -452,7 +452,7 @@ int cmdLight(const ModelProfile &model, const QStringList &args, const QCommandL
         requests << EcRequest{l->index, modeValue, quint8(brightness.value_or(0))};
     }
 
-    const HelperResult result = EcLights::call(HelperCall::Set, requests);
+    const HelperResult result = EcLights::call(model, HelperCall::Set, requests);
     if (!result.ok()) {
         err() << result.error << Qt::endl;
         return ExitFailed;
@@ -491,7 +491,7 @@ int cmdReset(const ModelProfile &model)
     for (const EcLightDef &l : model.ecLights) {
         requests << EcRequest{l.index, EcLights::ModeOff, model.ecDefaultBrightness};
     }
-    if (const HelperResult r = EcLights::call(HelperCall::Set, requests); r.ok()) {
+    if (const HelperResult r = EcLights::call(model, HelperCall::Set, requests); r.ok()) {
         out() << i18n("Case lights: off.") << Qt::endl;
     } else {
         err() << i18n("Case lights: %1", r.error) << Qt::endl;
@@ -530,40 +530,34 @@ int cmdProfileApply(const ModelProfile &model, const QString &name)
         err() << error << Qt::endl;
         return ExitFailed;
     }
-    int exitCode = ExitOk;
-
+    bool fansApplied = true;
     if (!profile->fans.isEmpty()) {
         FanController controller(model);
         const QList<HeaderSetting> settings = profile->fans.values();
         const FanState::Lock lock;
-        if (!controller.apply(resolveForNow(model, settings, profile->temperatureRange), &error) || !FanState::merge(lock, settings, &error)) {
+        fansApplied = controller.apply(resolveForNow(model, settings, profile->temperatureRange), &error) && FanState::merge(lock, settings, &error);
+        if (!fansApplied) {
             err() << i18n("Fans: %1", error) << Qt::endl;
-            exitCode = ExitFailed;
         }
     }
-    for (auto it = profile->links.cbegin(); it != profile->links.cend(); ++it) {
-        Settings::setLinked(it.key(), it.value());
+    // With the fans and before the case lights, which take seconds: a running
+    // Glowzone colours the following LEDs by this range.
+    if (fansApplied) {
+        Settings::setApplied(profile->links, profile->temperatureRange);
     }
-    if (profile->temperatureRange && exitCode == ExitOk) {
-        Settings::setTemperatureRange(*profile->temperatureRange);
-    }
-    // Recorded first, and put back if anything fails.
-    const QString previous = Settings::currentProfile();
-    if (exitCode == ExitOk) {
-        Settings::setCurrentProfile(profile->name);
-    }
+    bool lightsApplied = true;
     if (!profile->lights.isEmpty()) {
-        if (const HelperResult r = EcLights::call(HelperCall::Set, profile->lights.values()); !r.ok()) {
+        if (const HelperResult r = EcLights::call(model, HelperCall::Set, profile->lights.values()); !r.ok()) {
             err() << i18n("Case lights: %1", r.error) << Qt::endl;
-            exitCode = ExitFailed;
+            lightsApplied = false;
         }
     }
-    if (exitCode != ExitOk) {
-        Settings::setCurrentProfile(previous); // only partly applied
-        return exitCode;
+    if (!fansApplied || !lightsApplied) {
+        return ExitFailed; // only partly applied: not the current profile
     }
+    Settings::setCurrentProfile(profile->name);
     out() << i18n("Applied profile “%1”.", profile->name) << Qt::endl;
-    return exitCode;
+    return ExitOk;
 }
 
 int cmdProfileSave(const ModelProfile &model, const QString &rawName)
@@ -588,15 +582,15 @@ int cmdProfileSave(const ModelProfile &model, const QString &rawName)
         p.temperatureRange = Settings::temperatureRange(*model.cpuTemperature);
     }
     if (p.fans.isEmpty()) {
-        err() << i18n("Note: Glowzone hasn’t set any fan yet, so the profile contains no fan settings.") << Qt::endl;
+        err() << i18n("Note: Glowzone hasn’t set any fan yet, so the profile keeps the fan settings it had, if any.") << Qt::endl;
     }
     if (!model.ecLights.isEmpty()) {
-        if (const HelperResult r = EcLights::call(HelperCall::Status); r.ok()) {
+        if (const HelperResult r = EcLights::call(model, HelperCall::Status); r.ok()) {
             for (const EcLightState &l : r.lights) {
                 p.lights.insert(l.index, l);
             }
         } else {
-            err() << i18n("Note: the case lights could not be read and are not part of the profile: %1", r.error) << Qt::endl;
+            err() << i18n("Note: the case lights could not be read, so the profile keeps the case-light settings it had, if any: %1", r.error) << Qt::endl;
         }
     }
 
@@ -611,32 +605,32 @@ int cmdProfileSave(const ModelProfile &model, const QString &rawName)
 
 int cmdProfileDelete(const ModelProfile &model, const QString &name)
 {
-    const auto profile = Profiles::find(model, name);
     QString error;
-    if (!Profiles::remove(model, name, &error)) {
+    const auto stored = Profiles::remove(model, name, &error);
+    if (!stored) {
         err() << error << Qt::endl;
         return ExitFailed;
     }
-    if (profile && Settings::currentProfile().compare(profile->name, Qt::CaseInsensitive) == 0) {
+    if (Settings::currentProfile().compare(*stored, Qt::CaseInsensitive) == 0) {
         Settings::setCurrentProfile({});
     }
-    out() << i18n("Deleted profile “%1”.", profile ? profile->name : name) << Qt::endl;
+    out() << i18n("Deleted profile “%1”.", *stored) << Qt::endl;
     return ExitOk;
 }
 
 int cmdProfileRename(const ModelProfile &model, const QString &oldName, const QString &newName)
 {
-    const auto old = Profiles::find(model, oldName); // the name as stored, not as typed
     QString error;
-    if (!Profiles::rename(model, oldName, newName, &error)) {
+    const auto stored = Profiles::rename(model, oldName, newName, &error);
+    if (!stored) {
         err() << error << Qt::endl;
         return ExitFailed;
     }
     const QString clean = Profiles::cleanName(newName);
-    if (Settings::currentProfile().compare(old->name, Qt::CaseInsensitive) == 0) {
+    if (Settings::currentProfile().compare(*stored, Qt::CaseInsensitive) == 0) {
         Settings::setCurrentProfile(clean);
     }
-    out() << i18n("Renamed profile “%1” to “%2”.", old->name, clean) << Qt::endl;
+    out() << i18n("Renamed profile “%1” to “%2”.", *stored, clean) << Qt::endl;
     return ExitOk;
 }
 

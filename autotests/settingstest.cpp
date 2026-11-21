@@ -33,6 +33,11 @@ class SettingsTest : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void initTestCase()
+    {
+        QStandardPaths::setTestModeEnabled(true); // never the user's own files
+    }
+
     void autostartEntry_data()
     {
         QTest::addColumn<QString>("program");
@@ -66,7 +71,6 @@ private Q_SLOTS:
 
     void temperatureRange()
     {
-        QStandardPaths::setTestModeEnabled(true);
         QFile::remove(Settings::filePath());
         const CpuTemperatureDef &def = legionModel().cpuTemperature.value();
         QCOMPARE(Settings::temperatureRange(def), def.defaultRange); // never set
@@ -82,7 +86,6 @@ private Q_SLOTS:
 
     void startAtLogin()
     {
-        QStandardPaths::setTestModeEnabled(true);
         QString error;
         QVERIFY2(Settings::setStartAtLogin(true, &error), qPrintable(error));
         QVERIFY(Settings::startsAtLogin());

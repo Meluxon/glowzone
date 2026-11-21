@@ -19,7 +19,8 @@ struct Profile {
     QString name;
     FanState::Headers fans;
     QMap<QString, bool> links;          // fan id -> linked
-    // nullopt: the model has no CPU-temperature mode
+    // As given: check it with usableRange() before use (the limit is the
+    // CPU's, read at run time). nullopt: the model has no CPU-temperature mode.
     std::optional<TemperatureRange> temperatureRange;
     QMap<quint8, EcLightState> lights;  // light index -> state
 };
@@ -40,11 +41,14 @@ QList<Profile> loadAll(const ModelProfile &model);
 // Not found: nullopt, and error (if given) says so.
 std::optional<Profile> find(const ModelProfile &model, const QString &name, QString *error = nullptr);
 
-// Replaces a profile of the same name. Errors are translated.
+// Errors are translated. Saving over a profile of the same name replaces what
+// the new one contains and keeps the rest: the settings of LEDs and lights
+// that aren't known now.
 bool save(const ModelProfile &model, const Profile &profile, QString *error);
-bool remove(const ModelProfile &model, const QString &name, QString *error);
+// Both give the profile's name as it was stored (nullopt on error).
+std::optional<QString> remove(const ModelProfile &model, const QString &name, QString *error);
 // Fails if the new name is taken by another profile (case changes are fine).
-bool rename(const ModelProfile &model, const QString &oldName, const QString &newName, QString *error);
+std::optional<QString> rename(const ModelProfile &model, const QString &oldName, const QString &newName, QString *error);
 
 // Trimmed name, or empty if unusable.
 QString cleanName(const QString &name);

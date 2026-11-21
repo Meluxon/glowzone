@@ -29,7 +29,9 @@ BIOS fan layout – and on every call it:
 It builds every ACPI call itself and only ever calls four GameZone methods:
 `0x0A` (fan layout), `0x0E` (lights fitted?), `0x0F` (GetLED) and `0x10`
 (SetLED). SetLED makes the BIOS pause the whole machine for a moment, so it is
-only called for a light whose mode or brightness would actually change.
+only called for a light whose mode or brightness would actually change, and
+always with a complete, valid mode and brightness (a value the request leaves
+unchanged is taken from GetLED).
 `modprobe` is run with a fixed path, a fixed argument and an empty
 environment.
 
@@ -38,8 +40,8 @@ How that is checked:
 - unit tests run the helper's logic against a fake `acpi_call`, including
   requests with the wrong types, out-of-range values and repeated lights;
 - a fuzzer feeds it random requests for every supported model and stops at the
-  first ACPI call outside what that model allows (see
-  [development.md](development.md)).
+  first ACPI call outside what that model allows, and at a SetLED that changes
+  nothing or repeats a light (see [development.md](development.md)).
 
 KAuth's helper serves one call at a time and doesn't queue overlapping ones, so
 Glowzone's own calls – window and command line – take turns through a lock

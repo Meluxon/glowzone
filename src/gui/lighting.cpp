@@ -32,7 +32,9 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
     loadTemperatureRange();
     loadFans();
     m_currentProfile = Settings::currentProfile();
-    m_lightsStamp = QFileInfo(EcLights::stateFilePath()).lastModified(); // older than any window
+    if (const auto recorded = EcLights::loadState(model)) {
+        m_lightsSeen = recorded->written; // older than any window
+    }
     m_rangeSave.setSingleShot(true);
     m_rangeSave.setInterval(RangeSaveDelayMs);
     connect(&m_rangeSave, &QTimer::timeout, this, &Lighting::saveTemperatureRange);
@@ -52,7 +54,11 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
         return !QDir().mkpath(dir);
     });
     auto *watcher = new QFileSystemWatcher(dirs, this);
-    connect(watcher, &QFileSystemWatcher::directoryChanged, this, [this, stateDir](const QString &dir) {
+    connect(watcher, &QFileSystemWatcher::directoryChanged, this, [this, watcher, stateDir](const QString &dir) {
+        // A deleted directory is no longer watched: back it comes, empty.
+        if (!watcher->directories().contains(dir) && QDir().mkpath(dir)) {
+            watcher->addPath(dir);
+        }
         m_settingsChanged = m_settingsChanged || dir != stateDir;
         m_savedReload.start();
     });
@@ -136,7 +142,7 @@ void Lighting::start(QWindow *window)
     }
     m_windowOpen = m_windowOpen || window;
     m_helper.setWindow(window);
-    if (window && !m_model.ecLights.isEmpty() && !m_lightsLoaded && !m_lightApplier->isBusy()) {
+    if (window && !m_model.ecLights.isEmpty() && !m_lightsLoaded) {
         m_lightsFailed = false; // try again with this window
         m_lightApplier->refresh();
     }
@@ -254,21 +260,22 @@ void Lighting::reloadSaved()
 
 // The command line records the case lights after it sets them. A window that
 // knows them takes that over, without a call to the root helper.
+// A record taken over (or older than the window) isn't taken again: the window
+// may have changed the lights since.
 void Lighting::takeCommandLineLights()
 {
-    const QDateTime stamp = QFileInfo(EcLights::stateFilePath()).lastModified();
-    if (stamp == m_lightsStamp) {
+    const auto recorded = EcLights::loadState(m_model);
+    if (!recorded || recorded->written == m_lightsSeen) {
         return;
     }
-    m_lightsStamp = stamp;
-    const auto lights = m_lightsLoaded ? EcLights::loadState(m_model) : std::nullopt;
-    if (!lights) {
+    m_lightsSeen = recorded->written;
+    if (!m_lightsLoaded) {
         return; // without a window they're read when one opens
     }
-    for (const EcLightState &l : *lights) {
+    for (const EcLightState &l : recorded->lights) {
         m_lights.insert(l.index, l);
     }
-    m_lightApplier->setKnown(*lights);
+    m_lightApplier->setKnown(recorded->lights);
 }
 
 // Read-only: tells whether the BIOS currently sees every fan. Never changes
@@ -396,24 +403,23 @@ void Lighting::apply(const Profile &profile)
         m_fans.insert(s.header, s);
     }
     m_fanApplier->queue(profile.fans.values());
-    // With the profile's fans queued, a new range only recolours the following
-    // LEDs it leaves alone (a moment later); the queued ones go out with the
-    // new colour below.
+    // With the profile's fans queued, the new range's colour goes out with
+    // them: the queued LEDs in the batch, the other following ones just before.
     if (profile.temperatureRange && temperatureRange()) {
         m_fanApplier->setTemperatureRange(*profile.temperatureRange);
-        saveTemperatureRange();
     }
     m_fanApplier->flushNow();
 
     for (auto it = profile.links.cbegin(); it != profile.links.cend(); ++it) {
         m_links.insert(it.key(), it.value());
-        Settings::setLinked(it.key(), it.value());
     }
     for (const EcLightState &l : profile.lights) {
         m_lights.insert(l.index, l);
         m_lightApplier->queue(l);
     }
-    setCurrentProfile(profile.name);
+    m_rangeSave.stop(); // the range goes with the rest, in one write
+    m_currentProfile = profile.name;
+    Settings::setApplied(profile.links, temperatureRange(), profile.name);
     Q_EMIT changed();
 }
 

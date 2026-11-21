@@ -8,14 +8,17 @@
 #include "gui/lighting.h"
 
 #include "core/fanstate.h"
+#include "core/settings.h"
 #include "fakehid.h"
 #include "testmodel.h"
 
+#include <QDir>
 #include <QFileInfo>
 #include <QSignalSpy>
 #include <QStandardPaths>
 #include <QTest>
 
+#include <sys/inotify.h>
 #include <unistd.h>
 
 using namespace Qt::StringLiterals;
@@ -25,6 +28,41 @@ using namespace Glowzone::Ite8297;
 
 static constexpr Rgb Red{0xff, 0, 0};
 static constexpr Rgb Green{0, 0xff, 0};
+
+// Counts the times a file is replaced: QSaveFile and QSettings write a new
+// file and rename it. Counted by the temporary names, which are unique – the
+// kernel merges repeated identical events for the file itself.
+class Replacements
+{
+public:
+    explicit Replacements(const QString &file)
+        : m_prefix(QFile::encodeName(QFileInfo(file).fileName()) + '.')
+        , m_fd(inotify_init1(IN_NONBLOCK | IN_CLOEXEC))
+    {
+        inotify_add_watch(m_fd, QFile::encodeName(QFileInfo(file).absolutePath()).constData(), IN_MOVED_FROM);
+    }
+    ~Replacements()
+    {
+        ::close(m_fd);
+    }
+    int count()
+    {
+        alignas(inotify_event) char buffer[4096];
+        for (ssize_t n; (n = ::read(m_fd, buffer, sizeof buffer)) > 0;) {
+            for (char *p = buffer; p < buffer + n;) {
+                const auto *e = reinterpret_cast<const inotify_event *>(p);
+                m_count += e->len && QByteArray(e->name).startsWith(m_prefix);
+                p += sizeof(inotify_event) + e->len;
+            }
+        }
+        return m_count;
+    }
+
+private:
+    QByteArray m_prefix;
+    int m_fd;
+    int m_count = 0;
+};
 
 static HeaderSetting staticColour(quint8 header, Rgb colour)
 {
@@ -116,6 +154,42 @@ private Q_SLOTS:
         const FanState::Headers saved = FanState::load(m_model);
         QCOMPARE(saved.value(0x11), staticColour(0x11, Green));
         QCOMPARE(saved.value(0x13), staticColour(0x13, Red));
+    }
+
+    // The state directory deleted while Glowzone runs (by hand): changes
+    // the command line makes afterwards still reach the window.
+    void deletedDirectoryIsWatchedAgain()
+    {
+        Gui::Lighting lighting(m_model, nullptr);
+        lighting.start(nullptr);
+        QVERIFY(QDir(stateDir()).removeRecursively());
+        QTest::qWait(500);
+        QString error;
+        QVERIFY2(FanState::merge(FanState::Lock(), {staticColour(0x13, Red)}, &error), qPrintable(error));
+        QTRY_COMPARE(lighting.led(0x13), staticColour(0x13, Red));
+    }
+
+    // Applying a profile records the split choices, the range and the name in
+    // one write: each write makes another Glowzone read the settings again.
+    void applyWritesTheSettingsOnce()
+    {
+        Gui::Lighting lighting(m_model, nullptr);
+        lighting.start(nullptr);
+        QFile::remove(Settings::filePath()); // nothing stored by an earlier run
+        Settings::setCurrentProfile(u"Day"_s);
+        Profile p;
+        p.name = u"Night"_s;
+        p.fans.insert(0x13, staticColour(0x13, Red));
+        p.links = {{u"front"_s, false}, {u"top"_s, false}};
+        p.temperatureRange = TemperatureRange{40, 90};
+        Replacements writes(Settings::filePath());
+        lighting.apply(p);
+        QCOMPARE(writes.count(), 1);
+        QCOMPARE(Settings::currentProfile(), u"Night"_s);
+        QCOMPARE(Settings::linked(u"top"_s), std::optional(false));
+        QCOMPARE(Settings::temperatureRange(*m_model.cpuTemperature), (TemperatureRange{40, 90}));
+        QTest::qWait(600); // past the range's own delayed save
+        QCOMPARE(writes.count(), 1);
     }
 
     // Choosing what an LED already shows sends and writes nothing.

@@ -25,11 +25,13 @@ keeps the install manifest in `/usr/share/glowzone/` for
 ```sh
 cmake -B build-fuzz -DCMAKE_CXX_COMPILER=clang++ -DGLOWZONE_FUZZ=ON
 cmake --build build-fuzz --target fuzz_setled
-build-fuzz/bin/fuzz_setled -max_total_time=300
+mkdir -p corpus && build-fuzz/bin/fuzz_setled -max_total_time=300 corpus fuzz/seeds
 ```
 
 It feeds random requests to the helper for every supported model and stops at
-the first ACPI call outside what that model allows.
+the first ACPI call outside what that model allows, and at a SetLED that changes
+nothing or repeats a light. The seeds are valid requests, so it reaches SetLED
+from the start; new inputs go to `corpus/`.
 
 ## Source layout
 

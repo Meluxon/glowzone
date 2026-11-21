@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <cstdio>
+#include <optional>
 #include <fcntl.h>
 #include <sys/file.h>
 #include <unistd.h>
@@ -82,6 +83,9 @@ Headers headersFromJson(const QJsonObject &headers, const ModelProfile &model)
         if (!ok || header > 0xff || !mode || !colour || speed < 0 || speed > 0xff || brightness < 0 || brightness > 0xff) {
             continue; // not even a value the controller could take
         }
+        if (it.key() != headerKey(quint8(header))) {
+            continue; // written another way ("19", "0X13"): merge() would never replace it
+        }
         const Ite8297::HeaderSetting s{quint8(header), mode->mode, quint8(speed), quint8(brightness), *colour};
         if (fitsModel(model, s)) {
             result.insert(s.header, s);
@@ -132,6 +136,7 @@ bool merge(const Lock &, const QList<Ite8297::HeaderSetting> &changed, QString *
     // No file: start empty. A file that can't be opened (permissions, I/O
     // error) is left alone, as replacing it would lose the other entries.
     QJsonObject headers;
+    std::optional<QJsonObject> stored; // a valid state file's headers, as read
     QFile current(path);
     if (current.open(QIODevice::ReadOnly)) {
         QJsonParseError parseError;
@@ -154,6 +159,7 @@ bool merge(const Lock &, const QList<Ite8297::HeaderSetting> &changed, QString *
             return false;
         } else {
             headers = root.value("headers"_L1).toObject();
+            stored = headers;
         }
     } else if (current.exists()) {
         *error = i18n("Could not read %1: %2", path, current.errorString());
@@ -161,6 +167,9 @@ bool merge(const Lock &, const QList<Ite8297::HeaderSetting> &changed, QString *
     }
     for (const Ite8297::HeaderSetting &s : changed) {
         headers.insert(headerKey(s.header), settingToJson(s));
+    }
+    if (headers == stored) {
+        return true; // the LEDs were set to what they had: nothing to write
     }
 
     const QByteArray data = QJsonDocument(QJsonObject{{"version"_L1, FormatVersion}, {"headers"_L1, headers}}).toJson();

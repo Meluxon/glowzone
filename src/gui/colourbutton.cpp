@@ -51,23 +51,24 @@ void ColourButton::updateIcon()
     setAccessibleName(i18nc("@info accessible name, colour value", "Colour %1", Ite8297::rgbToString(m_colour)));
 }
 
+// Opened, not exec()'d: the window may be closed from the tray meanwhile and
+// takes the dialog along. The colour shown last was sent already, and stays.
 void ColourButton::pick()
 {
-    const Ite8297::Rgb before = m_colour;
-    QColorDialog dialog(toQColor(before), window());
-    dialog.setWindowTitle(i18nc("@title:window", "Fan Colour"));
-    connect(&dialog, &QColorDialog::currentColorChanged, this, [this](const QColor &c) {
+    auto *dialog = new QColorDialog(toQColor(m_colour), window());
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->setWindowTitle(i18nc("@title:window", "Fan Colour"));
+    connect(dialog, &QColorDialog::currentColorChanged, this, [this](const QColor &c) {
         if (c.isValid()) {
             setColour(fromQColor(c));
             Q_EMIT colourEdited(m_colour);
         }
     });
-    if (dialog.exec() == QDialog::Accepted) {
-        setColour(fromQColor(dialog.selectedColor()));
-    } else {
-        setColour(before);
-    }
-    Q_EMIT colourEdited(m_colour);
+    connect(dialog, &QDialog::finished, this, [this, dialog, before = m_colour](int result) {
+        setColour(result == QDialog::Accepted ? fromQColor(dialog->selectedColor()) : before);
+        Q_EMIT colourEdited(m_colour);
+    });
+    dialog->open();
 }
 
 } // namespace Glowzone::Gui

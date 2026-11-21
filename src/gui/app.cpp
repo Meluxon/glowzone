@@ -133,7 +133,10 @@ void App::changeStartAtLogin(bool on)
 {
     QString error;
     if (Settings::startsAtLogin() != on && !Settings::setStartAtLogin(on, &error)) {
-        QMessageBox::warning(m_window, i18nc("@title:window", "Start at Login"), error);
+        // Opened, not exec()'d: the window may be closed from the tray meanwhile.
+        auto *box = new QMessageBox(QMessageBox::Warning, i18nc("@title:window", "Start at Login"), error, QMessageBox::Ok, m_window);
+        box->setAttribute(Qt::WA_DeleteOnClose);
+        box->open();
     }
 }
 

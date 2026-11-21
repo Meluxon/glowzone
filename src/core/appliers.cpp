@@ -128,6 +128,11 @@ void FanApplier::flushNow()
     if (m_pending.isEmpty()) {
         return;
     }
+    // A new range's colour is due: the following LEDs outside this batch get
+    // it now, the batch goes out in it below – and none of them again later.
+    if (m_rangeTimer.isActive()) {
+        sendFollowers();
+    }
     const QList<Ite8297::HeaderSetting> batch = m_pending.values();
     follow(batch);
     // The first LED to follow starts the reading, so the batch below goes out

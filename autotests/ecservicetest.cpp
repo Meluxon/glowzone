@@ -40,29 +40,37 @@ public:
             return presence;
         }
         if (command.startsWith("\\WMI2.WMG0 0 0x0f ")) {
-            return led.value(command.right(1).toInt(), "Error: AE_BAD_PARAMETER");
+            return led.value(command.mid(command.lastIndexOf(' ') + 1).toInt(nullptr, 0), "Error: AE_BAD_PARAMETER");
         }
         if (command == "\\WMI2.WMG0 0 0x0a 0") {
             return layoutReply;
         }
         if (command.startsWith("\\WMI2.WMG0 0 0x10 ")) {
-            if (setReply == "0x0") {
-                set(command.mid(command.indexOf(" b") + 2));
+            if (setReply != "0x0") {
+                return setReply;
             }
-            return setReply;
+            return set(command.mid(command.indexOf(" b") + 2)) ? setReply : QByteArray("Error: AE_BAD_PARAMETER");
         }
         return QByteArray("Error: unexpected command");
     }
 
-    // As the EC does: GetLED reports what SetLED set; 0 leaves a value as it is.
-    void set(const QByteArray &buffer)
+    // As the EC does: GetLED reports what SetLED set. The helper must send
+    // complete values: what a 0 does is up to the firmware.
+    bool set(const QByteArray &buffer)
     {
         const int index = buffer.mid(0, 2).toInt(nullptr, 16);
-        const QList<QByteArray> now = led.value(index).mid(1, led.value(index).size() - 2).split(',');
         const int mode = buffer.mid(2, 2).toInt(nullptr, 16);
         const int brightness = buffer.mid(4, 2).toInt(nullptr, 16);
-        led[index] = "{0x0" + QByteArray::number(index) + ", " + (mode ? "0x0" + QByteArray::number(mode) : now.at(1).trimmed()) + ", "
-            + (brightness ? "0x0" + QByteArray::number(brightness) : now.at(2).trimmed()) + ", 0x00}";
+        if (!led.contains(index) || mode == 0 || brightness == 0) {
+            return false;
+        }
+        led[index] = "{" + hex(index) + ", " + hex(mode) + ", " + hex(brightness) + ", 0x00}";
+        return true;
+    }
+
+    static QByteArray hex(int n)
+    {
+        return "0x" + QByteArray::number(n, 16).rightJustified(2, '0');
     }
 
     int setCalls() const
@@ -163,7 +171,7 @@ private Q_SLOTS:
         const EcService::Result r = service.set(request({light(1, 1, 3), light(2, 5, 0)}));
         QCOMPARE(r.error, 0);
         QCOMPARE(acpi.setCalls(), 1);
-        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b02050000"));
+        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b02050100"));
         QCOMPARE(r.lights, (QList<EcLightState>{{1, 1, 3}, {2, 5, 1}})); // read back afterwards
     }
 
@@ -209,12 +217,15 @@ private Q_SLOTS:
         QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b01020300"));
     }
 
-    void zeroMeansUnchanged()
+    // 0 in a request leaves a value as it is: SetLED gets the current one.
+    void zeroKeepsTheCurrentValue()
     {
         FakeAcpi acpi;
         EcService service(legion, acpi);
-        QCOMPARE(service.set(request({light(2, 0, 4)})).error, 0);
-        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b02000400"));
+        const EcService::Result r = service.set(request({light(2, 0, 4)}));
+        QCOMPARE(r.error, 0);
+        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b02020400"));
+        QCOMPARE(r.lights, (QList<EcLightState>{{1, 1, 3}, {2, 2, 4}}));
     }
 
     void firmwareError()
@@ -311,8 +322,8 @@ private Q_SLOTS:
         const EcService::Result r = service.set(HP::lightsToVariant({{1, 2, 0}, {2, 0, 4}}));
         QCOMPARE(r.error, 0);
         QCOMPARE(acpi.setCalls(), 2);
-        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b01020000"));
-        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b02000400"));
+        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b01020300"));
+        QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b02020400"));
     }
 };
 

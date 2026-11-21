@@ -5,7 +5,6 @@
 #include "core/helpercall.h"
 #include "core/profiles.h"
 
-#include <QDateTime>
 #include <QObject>
 #include <QTimer>
 
@@ -135,7 +134,7 @@ private:
     bool m_windowOpen = false;
     bool m_lightsLoaded = false;
     bool m_lightsFailed = false;
-    QDateTime m_lightsStamp; // the command line's lights.json, as last seen
+    QString m_lightsSeen; // the command line's last record of the lights we know of (lights.json)
     int m_fanLayout = -1;
     bool m_layoutChecked = false;
     QString m_fanProblem;

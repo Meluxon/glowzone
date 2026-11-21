@@ -5,6 +5,7 @@
 #include <QCoreApplication>
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
+#include <QDBusReply>
 
 #include <algorithm>
 
@@ -23,6 +24,16 @@ bool isRunning()
 {
     const QDBusConnection bus = QDBusConnection::sessionBus();
     return bus.isConnected() && bus.interface() && bus.interface()->isServiceRegistered(serviceName()).value();
+}
+
+uint processId()
+{
+    const QDBusConnection bus = QDBusConnection::sessionBus();
+    if (!bus.isConnected() || !bus.interface()) {
+        return 0;
+    }
+    const QDBusReply<uint> pid = bus.interface()->servicePid(serviceName());
+    return pid.isValid() ? pid.value() : 0;
 }
 
 } // namespace Glowzone::Instance

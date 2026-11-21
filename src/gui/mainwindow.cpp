@@ -161,7 +161,9 @@ QWidget *MainWindow::buildSidebarPanel()
     connect(startAtLogin, &QAction::triggered, m_app, &App::setStartAtLogin);
     menu->addSeparator();
     menu->addAction(QIcon::fromTheme(u"help-about"_s), i18nc("@action:inmenu", "About Glowzone"), this, [this] {
-        AboutDialog(m_lighting, this).exec();
+        auto *about = new AboutDialog(m_lighting, this);
+        about->setAttribute(Qt::WA_DeleteOnClose);
+        about->open();
     });
     menu->addSeparator();
     menu->addAction(QIcon::fromTheme(u"application-exit"_s), i18nc("@action:inmenu", "Quit"), this, &MainWindow::quitRequested);
@@ -379,9 +381,6 @@ void MainWindow::saveCurrentProfile()
     }
     Profile p = m_lighting->current();
     p.name = old->name;
-    if (!m_lighting->lightsAvailable()) {
-        p.lights = old->lights; // keep what was saved
-    }
     QString error;
     if (!Profiles::save(m_model, p, &error)) {
         showError(error);
@@ -392,35 +391,30 @@ void MainWindow::saveCurrentProfile()
 
 void MainWindow::saveNewProfile()
 {
-    bool ok = false;
-    const QString raw = QInputDialog::getText(this,
-                                              i18nc("@title:window", "Save Current Lighting"),
-                                              i18nc("@label:textbox", "Profile name:"),
-                                              QLineEdit::Normal,
-                                              QString(),
-                                              &ok);
-    if (!ok) {
-        return;
-    }
-    QString error;
-    const auto checked = Profiles::checkedName(raw, &error);
-    if (!checked) {
-        showError(error);
-        return;
-    }
-    const QString &name = *checked;
-    if (const auto existing = Profiles::find(m_model, name)) {
-        const auto answer = QMessageBox::question(this,
-                                                  i18nc("@title:window", "Replace Profile"),
-                                                  i18n("A profile called “%1” already exists. Replace it?", existing->name),
-                                                  QMessageBox::Yes | QMessageBox::Cancel,
-                                                  QMessageBox::Cancel);
-        if (answer != QMessageBox::Yes) {
+    askName(i18nc("@title:window", "Save Current Lighting"), i18nc("@label:textbox", "Profile name:"), QString(), [this](const QString &raw) {
+        QString error;
+        const auto name = Profiles::checkedName(raw, &error);
+        if (!name) {
+            showError(error);
             return;
         }
-    }
+        if (const auto existing = Profiles::find(m_model, *name)) {
+            confirm(i18nc("@title:window", "Replace Profile"),
+                    i18n("A profile called “%1” already exists. Replace it?", existing->name),
+                    [this, name = *name] {
+                        saveAs(name);
+                    });
+            return;
+        }
+        saveAs(*name);
+    });
+}
+
+void MainWindow::saveAs(const QString &name)
+{
     Profile p = m_lighting->current();
     p.name = name;
+    QString error;
     if (!Profiles::save(m_model, p, &error)) {
         showError(error);
         return;
@@ -431,46 +425,58 @@ void MainWindow::saveNewProfile()
 
 void MainWindow::renameProfile(const QString &name)
 {
-    bool ok = false;
-    const QString raw = QInputDialog::getText(this,
-                                              i18nc("@title:window", "Rename Profile"),
-                                              i18nc("@label:textbox", "New name:"),
-                                              QLineEdit::Normal,
-                                              name,
-                                              &ok);
-    if (!ok || raw == name) {
-        return;
-    }
-    QString error;
-    if (!Profiles::rename(m_model, name, raw, &error)) {
-        showError(error);
-        return;
-    }
-    if (m_lighting->currentProfile().compare(name, Qt::CaseInsensitive) == 0) {
-        m_lighting->setCurrentProfile(Profiles::cleanName(raw));
-    }
-    reloadProfiles();
+    askName(i18nc("@title:window", "Rename Profile"), i18nc("@label:textbox", "New name:"), name, [this, name](const QString &raw) {
+        if (raw == name) {
+            return;
+        }
+        QString error;
+        if (!Profiles::rename(m_model, name, raw, &error)) {
+            showError(error);
+            return;
+        }
+        if (m_lighting->currentProfile().compare(name, Qt::CaseInsensitive) == 0) {
+            m_lighting->setCurrentProfile(Profiles::cleanName(raw));
+        }
+        reloadProfiles();
+    });
 }
 
 void MainWindow::deleteProfile(const QString &name)
 {
-    const auto answer = QMessageBox::question(this,
-                                              i18nc("@title:window", "Delete Profile"),
-                                              i18n("Delete the profile “%1”? The lighting stays as it is.", name),
-                                              QMessageBox::Yes | QMessageBox::Cancel,
-                                              QMessageBox::Cancel);
-    if (answer != QMessageBox::Yes) {
-        return;
-    }
-    QString error;
-    if (!Profiles::remove(m_model, name, &error)) {
-        showError(error);
-        return;
-    }
-    if (m_lighting->currentProfile().compare(name, Qt::CaseInsensitive) == 0) {
-        m_lighting->setCurrentProfile({});
-    }
-    reloadProfiles();
+    confirm(i18nc("@title:window", "Delete Profile"), i18n("Delete the profile “%1”? The lighting stays as it is.", name), [this, name] {
+        QString error;
+        if (!Profiles::remove(m_model, name, &error)) {
+            showError(error);
+            return;
+        }
+        if (m_lighting->currentProfile().compare(name, Qt::CaseInsensitive) == 0) {
+            m_lighting->setCurrentProfile({});
+        }
+        reloadProfiles();
+    });
+}
+
+// Dialogs are opened, never exec()'d: the window may be closed from the tray
+// while one is open. It then takes the dialog along, and the answer with it –
+// no nested event loop returns into a deleted window.
+void MainWindow::askName(const QString &title, const QString &label, const QString &text, const std::function<void(const QString &)> &done)
+{
+    auto *dialog = new QInputDialog(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->setWindowTitle(title);
+    dialog->setLabelText(label);
+    dialog->setTextValue(text);
+    connect(dialog, &QInputDialog::textValueSelected, this, done);
+    dialog->open();
+}
+
+void MainWindow::confirm(const QString &title, const QString &question, const std::function<void()> &yes)
+{
+    auto *box = new QMessageBox(QMessageBox::Question, title, question, QMessageBox::Yes | QMessageBox::Cancel, this);
+    box->setAttribute(Qt::WA_DeleteOnClose);
+    box->setDefaultButton(QMessageBox::Cancel);
+    connect(box->button(QMessageBox::Yes), &QAbstractButton::clicked, this, yes);
+    box->open();
 }
 
 // --- messages and closing ----------------------------------------------------

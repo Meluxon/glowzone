@@ -504,18 +504,20 @@ void Sidebar::contextMenu(QPoint pos)
         return;
     }
     const QString name = item->data(0, NameRole).toString();
-    QMenu menu(this);
-    menu.addAction(QIcon::fromTheme(u"dialog-ok-apply"_s), i18nc("@action:inmenu", "Apply"), this, [this, name] {
+    // Popped up, not exec()'d: the window may be closed from the tray meanwhile.
+    auto *menu = new QMenu(this);
+    menu->setAttribute(Qt::WA_DeleteOnClose);
+    menu->addAction(QIcon::fromTheme(u"dialog-ok-apply"_s), i18nc("@action:inmenu", "Apply"), this, [this, name] {
         Q_EMIT profileActivated(name);
     });
-    menu.addAction(QIcon::fromTheme(u"edit-rename"_s), i18nc("@action:inmenu", "Rename…"), this, [this, name] {
+    menu->addAction(QIcon::fromTheme(u"edit-rename"_s), i18nc("@action:inmenu", "Rename…"), this, [this, name] {
         Q_EMIT renameRequested(name);
     });
-    menu.addSeparator();
-    menu.addAction(QIcon::fromTheme(u"edit-delete"_s), i18nc("@action:inmenu", "Delete…"), this, [this, name] {
+    menu->addSeparator();
+    menu->addAction(QIcon::fromTheme(u"edit-delete"_s), i18nc("@action:inmenu", "Delete…"), this, [this, name] {
         Q_EMIT deleteRequested(name);
     });
-    menu.exec(viewport()->mapToGlobal(pos));
+    menu->popup(viewport()->mapToGlobal(pos));
 }
 
 } // namespace Glowzone::Gui

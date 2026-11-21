@@ -7,6 +7,8 @@
 #include "model/modelprofile.h"
 
 #include <KLazyLocalizedString>
+#include <QJsonObject>
+#include <QMap>
 #include <optional>
 
 namespace Glowzone::EcLights
@@ -34,16 +36,27 @@ inline constexpr quint8 MinBrightness = 1;
 // LightApplier). Errors are translated. A Set records the lights' new state
 // in stateFilePath(); Layout reads the fan layout as the BIOS detects it now
 // (see FanLayoutDef).
-HelperResult call(HelperCall::Kind kind, const QList<EcRequest> &requests = {});
+HelperResult call(const ModelProfile &model, HelperCall::Kind kind, const QList<EcRequest> &requests = {});
+
+// {"logo": {"mode": "on", "brightness": 3}, ...}, keyed by the model's light
+// ids – in profiles and in stateFilePath().
+QJsonObject lightsToJson(const ModelProfile &model, const QList<EcLightState> &lights);
+// Only lights, modes and levels the model offers.
+QMap<quint8, EcLightState> lightsFromJson(const ModelProfile &model, const QJsonObject &json);
 
 // ~/.local/state/glowzone/lights.json: the case lights as the command line
 // last set them, so a running window can take that over without asking the
 // root helper. Only the command line writes it; it is only a hint, as the
-// window may have changed the lights since.
+// window may have changed the lights since. Every write gets a new id, so a
+// reader can tell a new record from one it has seen.
 QString stateFilePath();
-void saveState(const QList<EcLightState> &lights); // best effort: see call()
-// Only lights, modes and levels the model offers; nullopt if there is nothing usable.
-std::optional<QList<EcLightState>> loadState(const ModelProfile &model);
+void saveState(const ModelProfile &model, const QList<EcLightState> &lights); // best effort: see call()
+struct RecordedState {
+    QString written;            // new for every write
+    QList<EcLightState> lights; // only what the model offers
+};
+// nullopt if there is no record (of this format).
+std::optional<RecordedState> loadState(const ModelProfile &model);
 
 // "0x0b"
 QString layoutCode(int code);

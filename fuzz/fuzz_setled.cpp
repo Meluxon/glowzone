@@ -5,11 +5,14 @@
 // turned into a request map – known and unknown keys, every value type,
 // nesting – and passed to EcService::set() for every supported model.
 // It aborts if any ACPI call other than the allowed GameZone methods with
-// values the model allows would be made.
+// values the model allows would be made, and on a SetLED the helper promises
+// to avoid (each one pauses the machine): a second one for the same light in
+// one request, or one that sets what GetLED reported.
 
 #include "helper/ecservice.h"
 
 #include <QCoreApplication>
+#include <QSet>
 #include <cstdio>
 #include <cstdlib>
 
@@ -55,7 +58,7 @@ public:
             if (!ok || !m_model.ecLightByIndex(quint8(index))) {
                 fail(command);
             }
-            return QByteArray("{0x0") + QByteArray::number(index) + ", 0x01, 0x01, 0x00}";
+            return "{" + hex(index) + ", " + hex(CurrentMode) + ", " + hex(CurrentBrightness) + ", 0x00}";
         }
         // SetLED: "10 b" + index, mode, brightness, 00 as hex bytes
         if (rest.startsWith("10 b") && rest.size() == 12 && rest.endsWith("00")) {
@@ -63,19 +66,30 @@ public:
             const uint index = rest.mid(4, 2).toUInt(&ok1, 16);
             const uint mode = rest.mid(6, 2).toUInt(&ok2, 16);
             const uint brightness = rest.mid(8, 2).toUInt(&ok3, 16);
-            const bool valid = ok1 && ok2 && ok3 && m_model.ecLightByIndex(quint8(index))
-                && (mode == 0 || m_model.hasEcLightMode(quint8(mode))) && brightness <= m_model.ecBrightnessLevels
-                && (mode != 0 || brightness != 0);
-            if (!valid) {
+            const bool valid = ok1 && ok2 && ok3 && m_model.ecLightByIndex(quint8(index)) && m_model.hasEcLightMode(quint8(mode))
+                && brightness >= 1 && brightness <= m_model.ecBrightnessLevels;
+            const bool needed = (mode != CurrentMode || brightness != CurrentBrightness) && !m_set.contains(index);
+            if (!valid || !needed) {
                 fail(command);
             }
+            m_set.insert(index);
             return QByteArray("0x0");
         }
         fail(command);
     }
 
 private:
+    // What GetLED reports for every light.
+    static constexpr uint CurrentMode = 1;
+    static constexpr uint CurrentBrightness = 1;
+
+    static QByteArray hex(uint n)
+    {
+        return "0x" + QByteArray::number(n, 16).rightJustified(2, '0');
+    }
+
     const ModelProfile &m_model;
+    QSet<uint> m_set; // lights given a SetLED
 };
 
 // Reads the fuzzer's bytes as a sequence of choices.

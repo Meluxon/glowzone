@@ -13,6 +13,7 @@
 #include <QJsonObject>
 #include <QSaveFile>
 #include <QStandardPaths>
+#include <QUuid>
 
 using namespace Qt::StringLiterals;
 
@@ -52,59 +53,78 @@ const ModeInfo *modeInfo(const QString &id)
     return findIf(modes(), [&id](const ModeInfo &m) { return id == QLatin1String(m.id); });
 }
 
-static constexpr int StateFormatVersion = 1;
+QJsonObject lightsToJson(const ModelProfile &model, const QList<EcLightState> &lights)
+{
+    QJsonObject json;
+    for (const EcLightState &l : lights) {
+        const EcLightDef *def = model.ecLightByIndex(l.index);
+        const ModeInfo *mode = modeInfo(l.mode);
+        if (def && mode) {
+            json.insert(QLatin1String(def->id), QJsonObject{{"mode"_L1, QLatin1String(mode->id)}, {"brightness"_L1, l.brightness}});
+        }
+    }
+    return json;
+}
+
+QMap<quint8, EcLightState> lightsFromJson(const ModelProfile &model, const QJsonObject &json)
+{
+    QMap<quint8, EcLightState> lights;
+    for (const EcLightDef &def : model.ecLights) {
+        const QJsonObject o = json.value(QLatin1String(def.id)).toObject();
+        const ModeInfo *mode = modeInfo(o.value("mode"_L1).toString());
+        const int brightness = o.value("brightness"_L1).toInt();
+        if (mode && model.hasEcLightMode(mode->value) && brightness >= MinBrightness && brightness <= model.ecBrightnessLevels) {
+            lights.insert(def.index, {def.index, mode->value, quint8(brightness)});
+        }
+    }
+    return lights;
+}
+
+static constexpr int StateFormatVersion = 2;
 
 QString stateFilePath()
 {
     return QStandardPaths::writableLocation(QStandardPaths::StateLocation) + "/lights.json"_L1;
 }
 
-// {"version": 1, "lights": {"1": {"mode": 2, "brightness": 3}, ...}}. If it
-// can't be written, a running window shows what it read last.
-void saveState(const QList<EcLightState> &lights)
+// {"version": 2, "written": "<uuid>", "lights": {"logo": {"mode": "on", "brightness": 3}, ...}}.
+// If it can't be written, a running window shows what it read last.
+void saveState(const ModelProfile &model, const QList<EcLightState> &lights)
 {
-    QJsonObject entries;
-    for (const EcLightState &l : lights) {
-        entries.insert(QString::number(l.index), QJsonObject{{"mode"_L1, l.mode}, {"brightness"_L1, l.brightness}});
-    }
     const QString path = stateFilePath();
     QDir().mkpath(QFileInfo(path).absolutePath());
     QSaveFile f(path);
     if (f.open(QIODevice::WriteOnly)) {
-        f.write(QJsonDocument(QJsonObject{{"version"_L1, StateFormatVersion}, {"lights"_L1, entries}}).toJson());
+        f.write(QJsonDocument(QJsonObject{
+                                  {"version"_L1, StateFormatVersion},
+                                  {"written"_L1, QUuid::createUuid().toString(QUuid::WithoutBraces)},
+                                  {"lights"_L1, lightsToJson(model, lights)},
+                              })
+                    .toJson());
         f.commit();
     }
 }
 
-std::optional<QList<EcLightState>> loadState(const ModelProfile &model)
+std::optional<RecordedState> loadState(const ModelProfile &model)
 {
     QFile f(stateFilePath());
     if (!f.open(QIODevice::ReadOnly)) {
         return std::nullopt;
     }
     const QJsonObject root = QJsonDocument::fromJson(f.readAll()).object();
-    if (root.value("version"_L1).toInt() != StateFormatVersion) {
+    const QString written = root.value("written"_L1).toString();
+    if (root.value("version"_L1).toInt() != StateFormatVersion || written.isEmpty()) {
         return std::nullopt;
     }
-    QList<EcLightState> lights;
-    const QJsonObject entries = root.value("lights"_L1).toObject();
-    for (const EcLightDef &def : model.ecLights) {
-        const QJsonObject o = entries.value(QString::number(def.index)).toObject();
-        const int mode = o.value("mode"_L1).toInt();
-        const int brightness = o.value("brightness"_L1).toInt();
-        if (mode > 0 && mode <= 0xff && model.hasEcLightMode(quint8(mode)) && brightness >= MinBrightness && brightness <= model.ecBrightnessLevels) {
-            lights << EcLightState{def.index, quint8(mode), quint8(brightness)};
-        }
-    }
-    return lights.isEmpty() ? std::nullopt : std::optional(lights);
+    return RecordedState{written, lightsFromJson(model, root.value("lights"_L1).toObject()).values()};
 }
 
-HelperResult call(HelperCall::Kind kind, const QList<EcRequest> &requests)
+HelperResult call(const ModelProfile &model, HelperCall::Kind kind, const QList<EcRequest> &requests)
 {
     KAuthHelperCalls calls;
     const HelperResult r = runToEnd(calls, kind, requests);
     if (kind == HelperCall::Set && r.ok()) {
-        saveState(r.lights);
+        saveState(model, r.lights);
     }
     return r;
 }

@@ -15,6 +15,8 @@
 #include <QStandardPaths>
 #include <QTest>
 
+#include <sys/stat.h>
+
 #include <unistd.h>
 
 using namespace Qt::StringLiterals;
@@ -99,6 +101,34 @@ private Q_SLOTS:
         const FanState::Headers loaded = FanState::load(legionModel());
         QCOMPARE(loaded.size(), 1);
         QVERIFY(loaded.contains(0x13));
+    }
+
+    // Only the form merge() writes counts: a hand-edited "19" next to "0x13"
+    // would otherwise win on every load, and merge() would never replace it.
+    void onlyOneWayToWriteAHeader()
+    {
+        writeState(1, {{u"0x13"_s, entry("static", 1)}, {u"19"_s, entry("off", 1)}, {u"0X11"_s, entry("off", 1)}, {u"021"_s, entry("off", 1)}});
+        const FanState::Headers loaded = FanState::load(legionModel());
+        QCOMPARE(loaded.keys(), QList<quint8>{0x13});
+        QCOMPARE(loaded.value(0x13).mode, Mode::Static);
+    }
+
+    // Setting what the LEDs already had writes nothing: every write wakes a
+    // running Glowzone. However the file is laid out, only its values count.
+    void unchangedMergeWritesNothing()
+    {
+        writeState(1, {{u"0x13"_s, entry("static", 1)}, {u"0x99"_s, u"kept"_s}});
+        const auto inode = [] {
+            struct stat st{};
+            return ::stat(QFile::encodeName(FanState::filePath()).constData(), &st) == 0 ? st.st_ino : ino_t(0);
+        };
+        const ino_t before = inode();
+        QString error;
+        const HeaderSetting same{0x13, Mode::Static, 1, 2, Rgb{0xff, 0, 0}};
+        QVERIFY2(FanState::merge(FanState::Lock(), {same}, &error), qPrintable(error));
+        QCOMPARE(inode(), before);
+        QVERIFY(FanState::merge(FanState::Lock(), {{0x13, Mode::Static, 2, 2, Rgb{0xff, 0, 0}}}, &error));
+        QVERIFY(inode() != before);
     }
 
     // A model offers a subset of what the controller can do: anything else in

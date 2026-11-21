@@ -126,13 +126,52 @@ private Q_SLOTS:
         QString error;
         QVERIFY(Profiles::save(legionModel(), sample(u"Night"_s), &error));
         Profile other = sample(u"NIGHT"_s);
-        other.lights.clear();
+        other.fans.insert(0x13, {0x13, Mode::Static, 2, 3, Rgb{1, 2, 3}});
+        other.lights.insert(1, {1, 2, 4});
+        other.temperatureRange = TemperatureRange{40, 90};
         QVERIFY(Profiles::save(legionModel(), other, &error));
         QCOMPARE(fileCount(), 1);
         const auto loaded = Profiles::find(legionModel(), u"night"_s);
         QVERIFY(loaded);
-        QVERIFY(loaded->lights.isEmpty());
         QCOMPARE(loaded->name, u"NIGHT"_s);
+        QVERIFY(sameSettings(*loaded, other));
+    }
+
+    // Replacing a profile while some LEDs or lights aren't known (e.g. the
+    // window has only just opened) keeps their saved settings, and whatever
+    // another version wrote stays too.
+    void replacingKeepsWhatIsNotKnown()
+    {
+        QString error;
+        QVERIFY(Profiles::save(legionModel(), sample(u"Night"_s), &error));
+        const QString path = QDir(Profiles::directory()).filePath(u"night.json"_s);
+        QFile f(path);
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        QJsonObject root = QJsonDocument::fromJson(f.readAll()).object();
+        f.close();
+        root.insert(u"future"_s, u"kept"_s);
+        QJsonObject lights = root.value(u"lights"_s).toObject();
+        lights.insert(u"underglow"_s, QJsonObject{{u"mode"_s, u"on"_s}});
+        root.insert(u"lights"_s, lights);
+        QVERIFY(f.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        f.write(QJsonDocument(root).toJson());
+        f.close();
+
+        Profile now = sample(u"Night"_s);
+        now.lights.clear();   // not read yet
+        now.fans.remove(0x12); // never set by Glowzone
+        now.fans.insert(0x13, {0x13, Mode::Off, 1, 2, Rgb{0x15, 0x8d, 0xdd}});
+        QVERIFY(Profiles::save(legionModel(), now, &error));
+
+        const auto loaded = Profiles::find(legionModel(), u"Night"_s);
+        QVERIFY(loaded);
+        QCOMPARE(loaded->lights, sample(QString()).lights);
+        QCOMPARE(loaded->fans.value(0x12), sample(QString()).fans.value(0x12));
+        QCOMPARE(loaded->fans.value(0x13).mode, Mode::Off);
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        root = QJsonDocument::fromJson(f.readAll()).object();
+        QCOMPARE(root.value(u"future"_s).toString(), u"kept"_s);
+        QVERIFY(root.value(u"lights"_s).toObject().contains(u"underglow"_s));
     }
 
     void slugCollisions()
@@ -150,14 +189,22 @@ private Q_SLOTS:
     void sortedNaturally()
     {
         QString error;
-        for (const char *n : {"b", "Profile 10", "a", "Profile 2"}) {
-            QVERIFY(Profiles::save(legionModel(), sample(QLatin1String(n)), &error));
+        // Numbers past 64 bits still count by value, leading zeros don't count.
+        const QStringList sorted{u"a"_s,
+                                 u"b"_s,
+                                 u"Profile 2"_s,
+                                 u"Profile 010"_s,
+                                 u"Profile 18446744073709551616"_s,
+                                 u"Profile 18446744073709551617 x"_s,
+                                 u"Profile 184467440737095516160"_s};
+        for (const QString &n : {sorted[6], sorted[1], sorted[4], sorted[3], sorted[0], sorted[5], sorted[2]}) {
+            QVERIFY(Profiles::save(legionModel(), sample(n), &error));
         }
         QStringList names;
         for (const Profile &p : Profiles::loadAll(legionModel())) {
             names << p.name;
         }
-        QCOMPARE(names, (QStringList{u"a"_s, u"b"_s, u"Profile 2"_s, u"Profile 10"_s}));
+        QCOMPARE(names, sorted);
     }
 
     void rejectsBadNames()
@@ -191,8 +238,8 @@ private Q_SLOTS:
         QVERIFY(Profiles::save(legionModel(), sample(u"Night"_s), &error));
         QVERIFY(Profiles::save(legionModel(), sample(u"Day"_s), &error));
         QVERIFY(!Profiles::rename(legionModel(), u"night"_s, u"DAY"_s, &error)); // taken
-        QVERIFY(Profiles::rename(legionModel(), u"night"_s, u"NIGHT"_s, &error)); // case only
-        QVERIFY(Profiles::rename(legionModel(), u"Night"_s, u"Evening"_s, &error));
+        QCOMPARE(Profiles::rename(legionModel(), u"night"_s, u"NIGHT"_s, &error), std::optional(u"Night"_s)); // case only
+        QCOMPARE(Profiles::rename(legionModel(), u"night"_s, u"Evening"_s, &error), std::optional(u"NIGHT"_s));
         QVERIFY(!Profiles::find(legionModel(), u"Night"_s));
         const auto p = Profiles::find(legionModel(), u"evening"_s);
         QVERIFY(p);
@@ -217,7 +264,7 @@ private Q_SLOTS:
     {
         QString error;
         QVERIFY(Profiles::save(legionModel(), sample(u"Night"_s), &error));
-        QVERIFY(Profiles::remove(legionModel(), u"night"_s, &error));
+        QCOMPARE(Profiles::remove(legionModel(), u"night"_s, &error), std::optional(u"Night"_s)); // as stored
         QCOMPARE(fileCount(), 0);
         QVERIFY(!Profiles::remove(legionModel(), u"night"_s, &error));
     }

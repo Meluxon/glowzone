@@ -3,6 +3,7 @@
 #include "gui.h"
 #include "app.h"
 
+#include "core/instance.h"
 #include "core/messages.h"
 #include "core/settings.h"
 
@@ -34,6 +35,19 @@ int run(bool background)
     // (unless it's the login start, which has nothing to show). This process
     // then exits here.
     KDBusService service(KDBusService::Unique | KDBusService::NoExitOnFailure);
+    // Not registered: without a session bus there is nobody to ask, so go on.
+    // But if the running Glowzone just didn't answer (KDBusService waits
+    // minutes for it), a second one would drive the same fans next to it.
+    if (const uint pid = service.isRegistered() ? 0 : Instance::processId()) {
+        if (!background) {
+            QMessageBox::critical(nullptr,
+                                  i18nc("@title:window", "Glowzone Is Not Responding"),
+                                  i18n("Glowzone is already running (process %1), but it doesn’t respond. End that process – for example in "
+                                       "System Monitor, or with “kill %1” – and start Glowzone again.",
+                                       pid));
+        }
+        return 1;
+    }
 
     // Model lock, as in the CLI: no profile, no window.
     const DmiInfo dmi = DmiInfo::readSystem();

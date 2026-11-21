@@ -143,7 +143,9 @@ void LightPage::refresh()
     const auto state = m_lighting->light(m_light.index);
     const QSignalBlocker b1(m_mode), b2(m_brightness->slider());
     m_mode->setCurrentIndex(state ? m_mode->findData(int(state->mode)) : -1);
-    if (state) {
+    // Not under the user's drag: without tracking, the light still has the old
+    // value, and setting it would move the handle back.
+    if (state && !m_brightness->slider()->isSliderDown()) {
         m_brightness->slider()->setValue(state->brightness);
     }
     m_waiting->setText(m_lighting->lightsFailed() ? i18nc("@info", "Not available – see the message below.")

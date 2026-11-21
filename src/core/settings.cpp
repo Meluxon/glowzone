@@ -13,7 +13,6 @@
 #include <QSettings>
 #include <QStandardPaths>
 
-#include <initializer_list>
 #include <utility>
 
 using namespace Qt::StringLiterals;
@@ -35,7 +34,7 @@ static QSettings file()
 // Written only when a value changes: each write makes a running Glowzone read
 // the settings again. Values that belong together go in one write, so nobody
 // reads half of them. (The file stores text: compare as the value's type.)
-static void store(std::initializer_list<std::pair<QString, QVariant>> values)
+static void store(const QList<std::pair<QString, QVariant>> &values)
 {
     QSettings s = file();
     for (const auto &[key, value] : values) {
@@ -77,6 +76,22 @@ TemperatureRange temperatureRange(const CpuTemperatureDef &def)
 void setTemperatureRange(TemperatureRange range)
 {
     store({{CoolestKey, range.coolest}, {HottestKey, range.hottest}});
+}
+
+void setApplied(const QMap<QString, bool> &links, std::optional<TemperatureRange> range, const std::optional<QString> &profile)
+{
+    QList<std::pair<QString, QVariant>> values;
+    for (auto it = links.cbegin(); it != links.cend(); ++it) {
+        values.append({LinksGroup + it.key(), it.value()});
+    }
+    if (range) {
+        values.append({CoolestKey, range->coolest});
+        values.append({HottestKey, range->hottest});
+    }
+    if (profile) {
+        values.append({CurrentProfileKey, *profile});
+    }
+    store(values);
 }
 
 QString currentProfile()

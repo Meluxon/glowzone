@@ -4,7 +4,9 @@
 # Fuzzer for the root helper's request checks (clang only):
 #   cmake -B build-fuzz -DCMAKE_CXX_COMPILER=clang++ -DGLOWZONE_FUZZ=ON
 #   cmake --build build-fuzz --target fuzz_setled
-#   build-fuzz/bin/fuzz_setled -max_total_time=300
+#   mkdir -p corpus && build-fuzz/bin/fuzz_setled -max_total_time=300 corpus fuzz/seeds
+# The seeds are valid requests, so SetLED is reached from the start; new
+# inputs go to corpus/.
 
 if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR "GLOWZONE_FUZZ needs clang (libFuzzer)")

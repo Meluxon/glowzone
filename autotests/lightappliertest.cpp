@@ -234,23 +234,70 @@ private Q_SLOTS:
         QTRY_VERIFY(f.helper.running());
     }
 
+    // A window opened while the fan-layout read runs still gets the lights:
+    // a refresh asked for meanwhile follows the running call.
+    void refreshDuringAnotherCall()
+    {
+        FakeHelper helper;
+        LightApplier applier(helper, nullptr);
+        QSignalSpy states(&applier, &LightApplier::stateChanged);
+        applier.readLayout();
+        QCOMPARE(helper.running()->kind, HelperCall::Layout);
+        applier.refresh();
+        helper.answer();
+        QVERIFY(helper.running());
+        QCOMPARE(helper.running()->kind, HelperCall::Status);
+        helper.answer();
+        QCOMPARE(states.count(), 1);
+    }
+
     // What the command line records for a running window.
     void commandLineStateRoundTrip()
     {
-        EcLights::saveState({{1, 2, 3}, {2, 5, 1}});
-        QCOMPARE(EcLights::loadState(legionModel()), (QList<EcLightState>{{1, 2, 3}, {2, 5, 1}}));
+        EcLights::saveState(legionModel(), {{1, 2, 3}, {2, 5, 1}});
+        auto recorded = EcLights::loadState(legionModel());
+        QVERIFY(recorded);
+        QCOMPARE(recorded->lights, (QList<EcLightState>{{1, 2, 3}, {2, 5, 1}}));
 
         // Only lights, modes and levels the model has.
         QFile f(EcLights::stateFilePath());
         QVERIFY(f.open(QIODevice::WriteOnly));
-        f.write(R"({"version": 1, "lights": {"1": {"mode": 258, "brightness": 3}, "2": {"mode": 2, "brightness": 1}, "7": {"mode": 2, "brightness": 1}}})");
+        f.write(R"({"version": 2, "written": "x", "lights": {"logo": {"mode": "dazzle", "brightness": 3}, )"
+                R"("ambient": {"mode": "on", "brightness": 1}, "underglow": {"mode": "on", "brightness": 1}}})");
         f.close();
-        QCOMPARE(EcLights::loadState(legionModel()), (QList<EcLightState>{{2, 2, 1}}));
+        recorded = EcLights::loadState(legionModel());
+        QVERIFY(recorded);
+        QCOMPARE(recorded->lights, (QList<EcLightState>{{2, 2, 1}}));
 
+        // Another format, or no id: no record.
         QVERIFY(f.open(QIODevice::WriteOnly));
-        f.write(R"({"version": 2, "lights": {"1": {"mode": 2, "brightness": 1}}})");
+        f.write(R"({"version": 1, "written": "x", "lights": {"1": {"mode": 2, "brightness": 1}}})");
         f.close();
         QVERIFY(!EcLights::loadState(legionModel()));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(R"({"version": 2, "lights": {"logo": {"mode": "on", "brightness": 1}}})");
+        f.close();
+        QVERIFY(!EcLights::loadState(legionModel()));
+        QFile::remove(EcLights::stateFilePath());
+    }
+
+    // Two records are told apart even if the file system gives them the same
+    // time (coarse timestamps, two commands in a row).
+    void everyRecordIsNew()
+    {
+        EcLights::saveState(legionModel(), {{1, 2, 3}});
+        const auto first = EcLights::loadState(legionModel());
+        QFile f(EcLights::stateFilePath());
+        QVERIFY(f.open(QIODevice::ReadWrite));
+        const QDateTime time = f.fileTime(QFileDevice::FileModificationTime);
+        f.close();
+        EcLights::saveState(legionModel(), {{1, 2, 3}});
+        QVERIFY(f.open(QIODevice::ReadWrite));
+        QVERIFY(f.setFileTime(time, QFileDevice::FileModificationTime));
+        f.close();
+        const auto second = EcLights::loadState(legionModel());
+        QVERIFY(first && second);
+        QVERIFY(first->written != second->written);
         QFile::remove(EcLights::stateFilePath());
     }
 };

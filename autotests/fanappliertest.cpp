@@ -113,6 +113,27 @@ private Q_SLOTS:
         QCOMPARE(sent(), QStringList());
     }
 
+    // Applying a profile: its LEDs are queued, then a new range, then the
+    // batch is sent. Every following LED gets the new colour once – the
+    // profile's in the batch, the others with it, none again later.
+    void rangeWithQueuedChangesSendsEachLedOnce()
+    {
+        FanApplier fans(legionModel(), nullptr, m_hwmon.path());
+        QString error;
+        QVERIFY(fans.open(&error));
+        fans.queue({follows(0x13), follows(0x3a)});
+        fans.flushNow();
+        FakeHid::reports.clear();
+        fans.queue({follows(0x13), {0x11, Mode::Static, 1, 2, Rgb{0, 0, 0xff}}});
+        fans.setTemperatureRange({35, 60}); // 60 °C: the last colour
+        fans.flushNow();
+        QTest::qWait(200);
+        const QStringList reports = sent();
+        QCOMPARE(coloursFor(reports, u"13"_s), QStringList{u"ff0000"_s});
+        QCOMPARE(coloursFor(reports, u"3a"_s), QStringList{u"ff0000"_s});
+        QCOMPARE(coloursFor(reports, u"11"_s), QStringList{u"0000ff"_s});
+    }
+
     // A new step: only the following LEDs, nothing saved.
     void newStepSendsOnlyFollowers()
     {
