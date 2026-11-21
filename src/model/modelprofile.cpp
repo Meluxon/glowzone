@@ -14,37 +14,37 @@ const QList<ModelProfile> &supportedModels()
     // and add a profile here. There is deliberately no way to run on an unknown model.
     static const QList<ModelProfile> models = {
         {
-            .vendor = "LENOVO",
-            .productVersion = "Legion T5 26IOB6",
-            .boardName = "3733",
+            .vendor = "LENOVO"_L1,
+            .productVersion = "Legion T5 26IOB6"_L1,
+            .boardName = "3733"_L1,
             .usbVendorId = 0x17ef,
             .usbProductId = 0xc955,
             .fans = {
-                {"cpu", kli18nc("@item fan", "CPU fan"), {{0x13, nullptr, {}, {}}}},
-                {"rear", kli18nc("@item fan", "Rear fan"), {{0x11, nullptr, {}, {}}}},
+                {"cpu"_L1, kli18nc("@item fan", "CPU fan"), {{0x13, {}, {}, {}}}},
+                {"rear"_L1, kli18nc("@item fan", "Rear fan"), {{0x11, {}, {}, {}}}},
                 // Positions found by lighting each header in a different colour.
-                {"front",
+                {"front"_L1,
                  kli18nc("@item fan", "Front fans"),
-                 {{0x3a, "upper", kli18nc("@item fan position", "Upper"), kli18nc("@title one fan of a pair", "Upper fan")},
-                  {0x38, "lower", kli18nc("@item fan position", "Lower"), kli18nc("@title one fan of a pair", "Lower fan")}}},
-                {"top",
+                 {{0x3a, "upper"_L1, kli18nc("@item fan position", "Upper"), kli18nc("@title one fan of a pair", "Upper fan")},
+                  {0x38, "lower"_L1, kli18nc("@item fan position", "Lower"), kli18nc("@title one fan of a pair", "Lower fan")}}},
+                {"top"_L1,
                  kli18nc("@item fan", "Top fans"),
-                 {{0x39, "front", kli18nc("@item fan position", "Front"), kli18nc("@title one fan of a pair", "Front fan")},
-                  {0x12, "rear", kli18nc("@item fan position", "Rear"), kli18nc("@title one fan of a pair", "Rear fan")}}},
+                 {{0x39, "front"_L1, kli18nc("@item fan position", "Front"), kli18nc("@title one fan of a pair", "Front fan")},
+                  {0x12, "rear"_L1, kli18nc("@item fan position", "Rear"), kli18nc("@title one fan of a pair", "Rear fan")}}},
             },
-            .acpiGameZone = "\\WMI2.WMG0",
+            .acpiGameZone = "\\WMI2.WMG0"_L1,
             .biosLedPresence = 0x3,
             // Both lights are cyan with a deep blue glow (the Legion logo colours).
             .ecLights = {
-                {"logo", kli18nc("@item light", "Front logo"), 1, 0x3ac7fe, 0x1b50b2},
-                {"ambient", kli18nc("@item light", "Internal light"), 2, 0x3ac7fe, 0x1b50b2},
+                {"logo"_L1, kli18nc("@item light", "Front logo"), 1, 0x3ac7fe, 0x1b50b2},
+                {"ambient"_L1, kli18nc("@item light", "Internal light"), 2, 0x3ac7fe, 0x1b50b2},
             },
             // Decoded from the DSDT (WMG0, method 0x0A) for this cooler type
             // (COL2/COL3); 0x0B observed with all fans present.
             .normalFanLayout = 0x0B,
             .fanLayouts = {
-                {0x0C, {"top"}},
-                {0x0D, {"front", "top"}},
+                {0x0C, {"top"_L1}},
+                {0x0D, {"front"_L1, "top"_L1}},
             },
             // As Vantage offers them on this model, each confirmed on the hardware
             // (off, static, sparkle, breathing, wave, specter, rainbow, random);
@@ -66,8 +66,8 @@ const QList<ModelProfile> &supportedModels()
             // The default range gives exactly Vantage's steps: 13 colours over
             // 35–100 °C are 5 °C each, the second one starting at 40 °C.
             .cpuTemperature = CpuTemperatureDef{
-                .hwmonName = "coretemp",
-                .sensorLabel = "Package id 0",
+                .hwmonName = "coretemp"_L1,
+                .sensorLabel = "Package id 0"_L1,
                 .offset = 1.0,
                 .averageSamples = 3,
                 .maxChangePerSecond = 4.0,
@@ -101,13 +101,12 @@ const LedDef *FanDef::led(const QString &idOrNumber) const
     if (isNumber) {
         return (n >= 1 && n <= leds.size()) ? &leds.at(n - 1) : nullptr;
     }
-    return findIf(leds, [&idOrNumber](const LedDef &l) { return l.id && idOrNumber == QLatin1String(l.id); });
+    return findIf(leds, [&idOrNumber](const LedDef &l) { return !l.id.isNull() && idOrNumber == l.id; });
 }
 
 bool ModelProfile::matches(const DmiInfo &dmi) const
 {
-    return dmi.vendor == QLatin1String(vendor) && dmi.productVersion == QLatin1String(productVersion)
-        && dmi.boardName == QLatin1String(boardName);
+    return dmi.vendor == vendor && dmi.productVersion == productVersion && dmi.boardName == boardName;
 }
 
 QString ModelProfile::usbId() const
@@ -117,12 +116,12 @@ QString ModelProfile::usbId() const
 
 QString ModelProfile::displayName() const
 {
-    return QLatin1String(vendor) + u' ' + QLatin1String(productVersion);
+    return vendor + u' ' + productVersion;
 }
 
 const FanDef *ModelProfile::fan(const QString &id) const
 {
-    return findIf(fans, [&id](const FanDef &f) { return id == QLatin1String(f.id); });
+    return findIf(fans, [&id](const FanDef &f) { return id == f.id; });
 }
 
 QList<const FanDef *> ModelProfile::undetectedFans(int layout) const
@@ -130,8 +129,8 @@ QList<const FanDef *> ModelProfile::undetectedFans(int layout) const
     QList<const FanDef *> list;
     for (const FanLayoutDef &def : fanLayouts) {
         if (def.code == layout) {
-            for (const char *id : def.undetectedFans) {
-                if (const FanDef *f = fan(QLatin1String(id))) {
+            for (const QLatin1StringView id : def.undetectedFans) {
+                if (const FanDef *f = fan(id)) {
                     list << f;
                 }
             }
@@ -142,7 +141,7 @@ QList<const FanDef *> ModelProfile::undetectedFans(int layout) const
 
 const EcLightDef *ModelProfile::ecLight(const QString &id) const
 {
-    return findIf(ecLights, [&id](const EcLightDef &l) { return id == QLatin1String(l.id); });
+    return findIf(ecLights, [&id](const EcLightDef &l) { return id == l.id; });
 }
 
 const EcLightDef *ModelProfile::ecLightByIndex(quint8 index) const

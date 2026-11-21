@@ -23,11 +23,11 @@ namespace Glowzone::EcLights
 const QList<ModeInfo> &modes()
 {
     static const QList<ModeInfo> list = {
-        {1, "off", kli18nc("@item light mode", "Off")},
-        {2, "on", kli18nc("@item light mode", "On")},
-        {3, "blink-fast", kli18nc("@item light mode", "Blink fast")},
-        {4, "blink-slow", kli18nc("@item light mode", "Blink slow")},
-        {5, "breathe", kli18nc("@item light mode", "Breathing")},
+        {1, "off"_L1, kli18nc("@item light mode", "Off")},
+        {2, "on"_L1, kli18nc("@item light mode", "On")},
+        {3, "blink-fast"_L1, kli18nc("@item light mode", "Blink fast")},
+        {4, "blink-slow"_L1, kli18nc("@item light mode", "Blink slow")},
+        {5, "breathe"_L1, kli18nc("@item light mode", "Breathing")},
     };
     return list;
 }
@@ -50,7 +50,7 @@ const ModeInfo *modeInfo(quint8 value)
 
 const ModeInfo *modeInfo(const QString &id)
 {
-    return findIf(modes(), [&id](const ModeInfo &m) { return id == QLatin1String(m.id); });
+    return findIf(modes(), [&id](const ModeInfo &m) { return id == m.id; });
 }
 
 QJsonObject lightsToJson(const ModelProfile &model, const QList<EcLightState> &lights)
@@ -60,7 +60,7 @@ QJsonObject lightsToJson(const ModelProfile &model, const QList<EcLightState> &l
         const EcLightDef *def = model.ecLightByIndex(l.index);
         const ModeInfo *mode = modeInfo(l.mode);
         if (def && mode) {
-            json.insert(QLatin1String(def->id), QJsonObject{{"mode"_L1, QLatin1String(mode->id)}, {"brightness"_L1, l.brightness}});
+            json.insert(def->id, QJsonObject{{"mode"_L1, mode->id}, {"brightness"_L1, l.brightness}});
         }
     }
     return json;
@@ -70,7 +70,7 @@ QMap<quint8, EcLightState> lightsFromJson(const ModelProfile &model, const QJson
 {
     QMap<quint8, EcLightState> lights;
     for (const EcLightDef &def : model.ecLights) {
-        const QJsonObject o = json.value(QLatin1String(def.id)).toObject();
+        const QJsonObject o = json.value(def.id).toObject();
         const ModeInfo *mode = modeInfo(o.value("mode"_L1).toString());
         const int brightness = o.value("brightness"_L1).toInt();
         if (mode && model.hasEcLightMode(mode->value) && brightness >= MinBrightness && brightness <= model.ecBrightnessLevels) {

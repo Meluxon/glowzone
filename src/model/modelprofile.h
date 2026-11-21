@@ -5,6 +5,7 @@
 #include "dmi.h"
 
 #include <KLazyLocalizedString>
+#include <QLatin1StringView>
 #include <QList>
 
 #include <optional>
@@ -15,7 +16,7 @@ namespace Glowzone
 // One LED of a fan, on its own ITE 8297 board header.
 struct LedDef {
     quint8 header;                // ITE 8297 zone ID
-    const char *id;               // "upper", "rear", ... (nullptr for a single-LED fan)
+    QLatin1StringView id;         // "upper", "rear", ... (null for a single-LED fan)
     KLazyLocalizedString name;    // where it sits, on its own: "Upper"
     KLazyLocalizedString heading; // the fan of a pair: "Upper fan"
 };
@@ -23,7 +24,7 @@ struct LedDef {
 // One fan as the user sees it. A "double" fan has two LEDs on two board headers,
 // and each can be coloured on its own.
 struct FanDef {
-    const char *id;            // stable key for the CLI and presets, e.g. "cpu"
+    QLatin1StringView id;      // stable key for the CLI and presets, e.g. "cpu"
     KLazyLocalizedString name; // shown to the user
     QList<LedDef> leds;
 
@@ -36,7 +37,7 @@ struct FanDef {
 // A light driven by the EC through GameZone WMI SetLED. Its colour is fixed
 // in hardware; the sidebar draws it with these two (0xRRGGBB).
 struct EcLightDef {
-    const char *id;            // stable key for the CLI and profiles
+    QLatin1StringView id;      // stable key for the CLI and profiles
     KLazyLocalizedString name;
     quint8 index;              // SetLED/GetLED light index
     quint32 colour;            // the light itself
@@ -48,7 +49,7 @@ struct EcLightDef {
 // moment counts as missing – the LEDs themselves may be fine.
 struct FanLayoutDef {
     int code;
-    QList<const char *> undetectedFans; // fan ids; empty = all detected
+    QList<QLatin1StringView> undetectedFans; // fan ids; empty = all detected
 };
 
 // The temperatures the colour list is spread over (whole °C): the first colour
@@ -71,8 +72,8 @@ struct TemperatureRange {
 // and imitates the EC: the average of the last few readings plus an offset,
 // moving by at most a few °C per second.
 struct CpuTemperatureDef {
-    const char *hwmonName;       // hwmon driver, e.g. "coretemp"
-    const char *sensorLabel;     // tempN_label of the sensor to use, e.g. "Package id 0"
+    QLatin1StringView hwmonName;   // hwmon driver, e.g. "coretemp"
+    QLatin1StringView sensorLabel; // tempN_label of the sensor to use, e.g. "Package id 0"
     double offset;               // °C added to the reading (the EC reads a little higher)
     int averageSamples;          // readings averaged (at least 1: modeltest)
     double maxChangePerSecond;   // °C the shown temperature may move per second
@@ -93,15 +94,15 @@ inline constexpr quint8 CpuTemperatureMode = 0xF0;
 // Everything Glowzone needs to know about one PC model. A machine is supported
 // only if vendor, product version and board name all match exactly.
 struct ModelProfile {
-    const char *vendor;
-    const char *productVersion;
-    const char *boardName;
+    QLatin1StringView vendor;
+    QLatin1StringView productVersion;
+    QLatin1StringView boardName;
 
     quint16 usbVendorId;       // ITE 8297 fan LED controller
     quint16 usbProductId;
     QList<FanDef> fans;
 
-    const char *acpiGameZone;  // ACPI path of the GameZone WMI method
+    QLatin1StringView acpiGameZone; // ACPI path of the GameZone WMI method
     int biosLedPresence;       // expected IsSupportBIOSLED (0x0E) result
     QList<EcLightDef> ecLights;
 

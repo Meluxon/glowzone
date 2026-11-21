@@ -44,7 +44,7 @@ static QString headerKey(quint8 header)
 static QJsonObject settingToJson(Ite8297::HeaderSetting s)
 {
     return {
-        {"mode"_L1, QLatin1String(Ite8297::modeInfo(s.mode)->id)},
+        {"mode"_L1, Ite8297::modeInfo(s.mode)->id},
         {"speed"_L1, s.speed},
         {"brightness"_L1, s.brightness},
         {"colour"_L1, Ite8297::rgbToString(s.colour)},
@@ -96,7 +96,7 @@ Headers headersFromJson(const QJsonObject &headers, const ModelProfile &model)
 
 bool linked(const FanDef &fan, const Headers &saved)
 {
-    if (const auto chosen = Settings::linked(QLatin1String(fan.id))) {
+    if (const auto chosen = Settings::linked(fan.id)) {
         return *chosen;
     }
     QList<Ite8297::HeaderSetting> known;

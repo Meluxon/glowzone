@@ -182,7 +182,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
             args.insert(r.key(), r.value(0));
         }
         CheckingAcpi acpi(model);
-        EcService service(DmiInfo{QLatin1String(model.vendor), QLatin1String(model.productVersion), QLatin1String(model.boardName)}, acpi);
+        EcService service(DmiInfo{model.vendor, model.productVersion, model.boardName}, acpi);
         service.set(args);
     }
     return 0;

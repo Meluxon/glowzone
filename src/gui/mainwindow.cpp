@@ -133,7 +133,7 @@ QWidget *MainWindow::buildSidebarPanel()
 
     QHBoxLayout *header = headerRow(panel);
     QWidget *headerWidget = header->parentWidget();
-    auto *modelName = new QLabel(QLatin1String(m_model.productVersion), headerWidget);
+    auto *modelName = new QLabel(m_model.productVersion, headerWidget);
     modelName->setToolTip(i18nc("@info:tooltip", "Controlling: %1", m_model.displayName()));
     auto *menuButton = new QToolButton(headerWidget);
     menuButton->setIcon(QIcon::fromTheme(u"application-menu"_s));

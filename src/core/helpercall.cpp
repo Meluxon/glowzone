@@ -130,9 +130,10 @@ private:
             return;
         }
 
-        const char *slot = m_kind == Status ? HP::ActionStatus : m_kind == Set ? HP::ActionSetLed : HP::ActionLayout;
-        KAuth::Action action(QLatin1String(GLOWZONE_HELPER_ID ".") + QLatin1String(slot));
-        action.setHelperId(QStringLiteral(GLOWZONE_HELPER_ID));
+        const QLatin1StringView slot = m_kind == Status ? HP::ActionStatus : m_kind == Set ? HP::ActionSetLed : HP::ActionLayout;
+        const QString helperId = QStringLiteral(GLOWZONE_HELPER_ID);
+        KAuth::Action action(helperId + u'.' + slot);
+        action.setHelperId(helperId);
         if (m_kind == Set) {
             action.setArguments(HP::lightsToVariant(m_requests));
         }
@@ -156,7 +157,7 @@ private:
             r.error = errorMessage(job->error(), job->errorText());
         } else if (m_kind == Layout) {
             bool ok = false;
-            r.layout = job->data().value(QLatin1String(HP::KeyLayout)).toInt(&ok);
+            r.layout = job->data().value(HP::KeyLayout).toInt(&ok);
             if (!ok) {
                 r.error = errorMessage(HP::UnexpectedReply, {});
             }

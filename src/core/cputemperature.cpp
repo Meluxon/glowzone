@@ -52,13 +52,13 @@ bool TemperatureSensor::find(QString *error)
     bool driverFound = false;
     for (const QString &device : devices) {
         const QDir dir(root.filePath(device));
-        if (readLine(dir.filePath(u"name"_s)) != QLatin1String(m_def.hwmonName)) {
+        if (readLine(dir.filePath(u"name"_s)) != m_def.hwmonName) {
             continue;
         }
         driverFound = true;
         const QStringList labels = dir.entryList({u"temp*_label"_s}, QDir::Files | QDir::System);
         for (const QString &label : labels) {
-            if (readLine(dir.filePath(label)) == QLatin1String(m_def.sensorLabel)) {
+            if (readLine(dir.filePath(label)) == m_def.sensorLabel) {
                 QString input = label;
                 input.replace("_label"_L1, "_input"_L1);
                 m_input = dir.filePath(input);
@@ -72,8 +72,8 @@ bool TemperatureSensor::find(QString *error)
             }
         }
     }
-    *error = driverFound ? i18n("The CPU sensor “%1” of %2 was not found.", QLatin1String(m_def.sensorLabel), QLatin1String(m_def.hwmonName))
-                         : i18n("The CPU temperature sensor (%1) was not found. Is its kernel module loaded?", QLatin1String(m_def.hwmonName));
+    *error = driverFound ? i18n("The CPU sensor “%1” of %2 was not found.", m_def.sensorLabel, m_def.hwmonName)
+                         : i18n("The CPU temperature sensor (%1) was not found. Is its kernel module loaded?", m_def.hwmonName);
     return false;
 }
 

@@ -130,7 +130,7 @@ void setKeepRunning(bool on)
 
 QString autostartPath()
 {
-    return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + "/autostart/"_L1 + QLatin1String(GLOWZONE_APP_ID)
+    return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + "/autostart/"_L1 + QStringLiteral(GLOWZONE_APP_ID)
         + ".desktop"_L1;
 }
 
@@ -200,7 +200,7 @@ QString autostartEntry(const QString &program)
            "Terminal=false\n"
            "NoDisplay=true\n"
            "X-GNOME-Autostart-enabled=true\n"_s
-        .arg(desktopString(comment), desktopString(program), execProgram(program), QLatin1String(GLOWZONE_APP_ID));
+        .arg(desktopString(comment), desktopString(program), execProgram(program), QStringLiteral(GLOWZONE_APP_ID));
 }
 
 } // namespace Glowzone::Settings

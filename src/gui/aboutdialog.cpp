@@ -90,7 +90,7 @@ AboutDialog::AboutDialog(const Lighting *lighting, QWidget *parent)
         form->addRow(label, v);
     };
     addRow(i18nc("@label", "Computer:"), model.displayName());
-    addRow(i18nc("@label", "Board:"), QLatin1String(model.boardName));
+    addRow(i18nc("@label", "Board:"), model.boardName);
     addRow(i18nc("@label", "Fan controller:"), i18nc("@info USB id, state", "USB %1 – %2", usbId, fans.shown));
     if (!model.ecLights.isEmpty()) {
         addRow(i18nc("@label", "Case lights:"), lights.shown);
@@ -102,7 +102,7 @@ AboutDialog::AboutDialog(const Lighting *lighting, QWidget *parent)
 
     m_report = QStringList{
         u"Glowzone "_s + about.version(),
-        u"Computer: %1 (board %2)"_s.arg(model.displayName(), QLatin1String(model.boardName)),
+        u"Computer: %1 (board %2)"_s.arg(model.displayName(), model.boardName),
         u"Fan controller: USB %1 – %2"_s.arg(usbId, fans.report),
         u"Case lights: "_s + lights.report,
         u"BIOS fan layout: "_s + detection.report,

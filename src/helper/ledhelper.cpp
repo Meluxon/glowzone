@@ -46,7 +46,7 @@ public Q_SLOTS:
             return errorReply(result.error, result.detail);
         }
         ActionReply reply = ActionReply::SuccessReply();
-        reply.setData({{QLatin1String(HelperProtocol::KeyLayout), result.layout}});
+        reply.setData({{HelperProtocol::KeyLayout, result.layout}});
         return reply;
     }
 

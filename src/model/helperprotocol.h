@@ -6,6 +6,7 @@
 // codes below; the app turns them into translated messages (the helper runs
 // without the user's locale).
 
+#include <QLatin1StringView>
 #include <QList>
 #include <QVariantMap>
 
@@ -25,16 +26,16 @@ namespace HelperProtocol
 {
 
 // Action names: <helper id>.<slot name>
-inline constexpr const char *ActionStatus = "status";
-inline constexpr const char *ActionSetLed = "setled";
-inline constexpr const char *ActionLayout = "layout"; // fan layout as the BIOS detects it
+inline constexpr QLatin1StringView ActionStatus{"status"};
+inline constexpr QLatin1StringView ActionSetLed{"setled"};
+inline constexpr QLatin1StringView ActionLayout{"layout"}; // fan layout as the BIOS detects it
 
 // Argument / reply keys
-inline constexpr const char *KeyLights = "lights";         // QVariantList of QVariantMap
-inline constexpr const char *KeyIndex = "index";           // EcLightDef::index
-inline constexpr const char *KeyMode = "mode";
-inline constexpr const char *KeyBrightness = "brightness";
-inline constexpr const char *KeyLayout = "layout";         // IsSupportLightingFeature result
+inline constexpr QLatin1StringView KeyLights{"lights"};         // QVariantList of QVariantMap
+inline constexpr QLatin1StringView KeyIndex{"index"};           // EcLightDef::index
+inline constexpr QLatin1StringView KeyMode{"mode"};
+inline constexpr QLatin1StringView KeyBrightness{"brightness"};
+inline constexpr QLatin1StringView KeyLayout{"layout"};         // IsSupportLightingFeature result
 
 // Kept clear of KAuth's and KJob's own error codes.
 enum Error {

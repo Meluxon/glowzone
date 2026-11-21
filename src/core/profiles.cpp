@@ -73,7 +73,7 @@ static std::optional<int> wholeNumber(const QJsonValue &v)
 static std::optional<Profile> fromJson(const ModelProfile &model, const QJsonObject &root)
 {
     if (root.value("version"_L1).toInt() != FormatVersion
-        || root.value("model"_L1).toString() != QLatin1String(model.productVersion)) {
+        || root.value("model"_L1).toString() != model.productVersion) {
         return std::nullopt;
     }
     Profile p;
@@ -86,9 +86,9 @@ static std::optional<Profile> fromJson(const ModelProfile &model, const QJsonObj
 
     const QJsonObject links = root.value("links"_L1).toObject();
     for (const FanDef &fan : model.fans) {
-        const QJsonValue v = links.value(QLatin1String(fan.id));
+        const QJsonValue v = links.value(fan.id);
         if (fan.isDouble() && v.isBool()) {
-            p.links.insert(QLatin1String(fan.id), v.toBool());
+            p.links.insert(fan.id, v.toBool());
         }
     }
 
@@ -113,7 +113,7 @@ static QJsonObject toJson(const ModelProfile &model, const Profile &p)
     QJsonObject root{
         {"version"_L1, FormatVersion},
         {"name"_L1, p.name},
-        {"model"_L1, QLatin1String(model.productVersion)},
+        {"model"_L1, model.productVersion},
         {"fans"_L1, FanState::headersToJson(p.fans)},
         {"links"_L1, links},
         {"lights"_L1, EcLights::lightsToJson(model, p.lights.values())},

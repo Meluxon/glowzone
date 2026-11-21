@@ -301,7 +301,7 @@ HeaderSetting Lighting::led(quint8 header) const
 
 bool Lighting::isLinked(const FanDef &fan) const
 {
-    return m_links.value(QLatin1String(fan.id), true);
+    return m_links.value(fan.id, true);
 }
 
 // Choosing what an LED already shows sends nothing (and writes nothing).
@@ -328,7 +328,7 @@ void Lighting::setLed(const FanDef &fan, quint8 header, HeaderSetting values)
 
 void Lighting::setLinked(const FanDef &fan, bool linked)
 {
-    const QString id = QLatin1String(fan.id);
+    const QString id = fan.id;
     m_links.insert(id, linked);
     Settings::setLinked(id, linked);
     const quint8 first = fan.leds.constFirst().header;
@@ -464,7 +464,7 @@ void Lighting::loadFans()
     m_fans.insert(m_fanApplier->unsaved());
     for (const FanDef &fan : m_model.fans) {
         if (fan.isDouble()) {
-            m_links.insert(QLatin1String(fan.id), FanState::linked(fan, m_fans));
+            m_links.insert(fan.id, FanState::linked(fan, m_fans));
         }
     }
     m_fanApplier->setCurrent(m_fans);

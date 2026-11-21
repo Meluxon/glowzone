@@ -9,9 +9,9 @@ using namespace Qt::StringLiterals;
 namespace Glowzone
 {
 
-static QString readField(const char *name)
+static QString readField(QLatin1StringView name)
 {
-    QFile f("/sys/class/dmi/id/"_L1 + QLatin1String(name));
+    QFile f("/sys/class/dmi/id/"_L1 + name);
     if (!f.open(QIODevice::ReadOnly)) {
         return {};
     }
@@ -20,7 +20,7 @@ static QString readField(const char *name)
 
 DmiInfo DmiInfo::readSystem()
 {
-    return {readField("sys_vendor"), readField("product_version"), readField("board_name")};
+    return {readField("sys_vendor"_L1), readField("product_version"_L1), readField("board_name"_L1)};
 }
 
 } // namespace Glowzone

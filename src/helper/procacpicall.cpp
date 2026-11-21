@@ -25,9 +25,9 @@ bool ProcAcpiCall::ensureReady(QString *detail)
 
     // Load the module on demand (no boot-time setup). Fixed path, fixed argument.
     QString modprobe;
-    for (const char *candidate : {"/usr/bin/modprobe", "/usr/sbin/modprobe", "/sbin/modprobe"}) {
-        if (QFileInfo(QLatin1String(candidate)).isExecutable()) {
-            modprobe = QLatin1String(candidate);
+    for (const QLatin1StringView candidate : {"/usr/bin/modprobe"_L1, "/usr/sbin/modprobe"_L1, "/sbin/modprobe"_L1}) {
+        if (QFileInfo(candidate).isExecutable()) {
+            modprobe = candidate;
             break;
         }
     }

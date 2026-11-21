@@ -190,7 +190,7 @@ EcService::LayoutResult EcService::layout()
 
 std::optional<QList<EcRequest>> EcService::parseRequest(const QVariantMap &args, QString *detail) const
 {
-    const QVariant listVariant = args.value(QLatin1String(HP::KeyLights));
+    const QVariant listVariant = args.value(HP::KeyLights);
     if (listVariant.typeId() != QMetaType::QVariantList) {
         *detail = u"missing light list"_s;
         return std::nullopt;
@@ -202,8 +202,8 @@ std::optional<QList<EcRequest>> EcService::parseRequest(const QVariantMap &args,
     }
 
     // Integers only – no text, fractions or booleans that Qt would convert.
-    auto readByte = [](const QVariantMap &m, const char *key, uint max, quint8 *out) {
-        const QVariant v = m.value(QLatin1String(key));
+    auto readByte = [](const QVariantMap &m, QLatin1StringView key, uint max, quint8 *out) {
+        const QVariant v = m.value(key);
         switch (v.typeId()) {
         case QMetaType::Int:
         case QMetaType::UInt:

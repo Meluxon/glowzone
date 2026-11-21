@@ -29,7 +29,7 @@ class FanApplier : public QObject
     Q_OBJECT
 
 public:
-    FanApplier(const ModelProfile &model, QObject *parent, const QString &hwmonRoot = QLatin1String(HwmonRoot));
+    FanApplier(const ModelProfile &model, QObject *parent, const QString &hwmonRoot = HwmonRoot);
 
     bool open(QString *error);
     bool isOpen() const { return m_open; }

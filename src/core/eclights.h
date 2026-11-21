@@ -17,7 +17,7 @@ namespace Glowzone::EcLights
 // Modes of the EC-driven case lights (GameZone SetLED values).
 struct ModeInfo {
     quint8 value;
-    const char *id;
+    QLatin1StringView id;
     KLazyLocalizedString name;
 };
 

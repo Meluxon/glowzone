@@ -85,12 +85,12 @@ static const DmiInfo legion{u"LENOVO"_s, u"Legion T5 26IOB6"_s, u"3733"_s};
 
 static QVariantMap request(const QVariantList &lights)
 {
-    return {{QLatin1String(HP::KeyLights), lights}};
+    return {{HP::KeyLights, lights}};
 }
 
 static QVariantMap light(uint index, uint mode, uint brightness)
 {
-    return {{QLatin1String(HP::KeyIndex), index}, {QLatin1String(HP::KeyMode), mode}, {QLatin1String(HP::KeyBrightness), brightness}};
+    return {{HP::KeyIndex, index}, {HP::KeyMode, mode}, {HP::KeyBrightness, brightness}};
 }
 
 class EcServiceTest : public QObject
@@ -189,7 +189,7 @@ private Q_SLOTS:
         QTest::newRow("too many") << request({light(1, 2, 1), light(2, 2, 1), light(1, 1, 1)});
         QTest::newRow("not a map") << request({u"b01020300"_s});
         auto typed = [](const QVariant &mode) {
-            return request({QVariantMap{{QLatin1String(HP::KeyIndex), 1u}, {QLatin1String(HP::KeyMode), mode}, {QLatin1String(HP::KeyBrightness), 1u}}});
+            return request({QVariantMap{{HP::KeyIndex, 1u}, {HP::KeyMode, mode}, {HP::KeyBrightness, 1u}}});
         };
         QTest::newRow("text mode") << typed(u"0x10"_s);
         QTest::newRow("numeric text") << typed(u"2"_s);
@@ -212,7 +212,7 @@ private Q_SLOTS:
     {
         FakeAcpi acpi;
         EcService service(legion, acpi);
-        const QVariantMap entry{{QLatin1String(HP::KeyIndex), 1}, {QLatin1String(HP::KeyMode), qlonglong(2)}, {QLatin1String(HP::KeyBrightness), qulonglong(3)}};
+        const QVariantMap entry{{HP::KeyIndex, 1}, {HP::KeyMode, qlonglong(2)}, {HP::KeyBrightness, qulonglong(3)}};
         QCOMPARE(service.set(request({entry})).error, 0);
         QVERIFY(acpi.commands.contains("\\WMI2.WMG0 0 0x10 b01020300"));
     }

@@ -15,14 +15,14 @@
 namespace Glowzone
 {
 
-inline constexpr const char *HwmonRoot = "/sys/class/hwmon"; // tests pass a fake tree
+inline constexpr QLatin1StringView HwmonRoot{"/sys/class/hwmon"}; // tests pass a fake tree
 
 // The CPU sensor named in the model profile, found through hwmon
 // (/sys/class/hwmon/hwmon*/name and tempN_label). Readable by any user.
 class TemperatureSensor
 {
 public:
-    explicit TemperatureSensor(const CpuTemperatureDef &def, const QString &hwmonRoot = QLatin1String(HwmonRoot));
+    explicit TemperatureSensor(const CpuTemperatureDef &def, const QString &hwmonRoot = HwmonRoot);
 
     // °C, or nullopt with a translated error. The sensor is looked up again
     // after a failure (hwmon numbers can change when a driver reloads).
@@ -105,7 +105,7 @@ class CpuTemperature : public QObject
     Q_OBJECT
 
 public:
-    CpuTemperature(const CpuTemperatureDef &def, QObject *parent, const QString &hwmonRoot = QLatin1String(HwmonRoot));
+    CpuTemperature(const CpuTemperatureDef &def, QObject *parent, const QString &hwmonRoot = HwmonRoot);
 
     void start(); // reads right away
     void stop();

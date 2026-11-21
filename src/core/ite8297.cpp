@@ -16,15 +16,15 @@ const QList<ModeInfo> &modes()
     // and the value in the fanModes of every model that offers it.
     // Each row: mode, id, name, uses colour, uses speed.
     static const QList<ModeInfo> list = {
-        {Mode::Off, "off", kli18nc("@item fan LED mode", "Off"), false, false},
-        {Mode::Static, "static", kli18nc("@item fan LED mode", "Static"), true, false},
-        {Mode::Sparkle, "sparkle", kli18nc("@item fan LED mode", "Sparkle"), true, true},
-        {Mode::Breathing, "breathing", kli18nc("@item fan LED mode", "Breathing"), true, true},
-        {Mode::Wave, "wave", kli18nc("@item fan LED mode", "Wave"), true, true},
-        {Mode::Specter, "specter", kli18nc("@item fan LED mode", "Specter"), false, true},
-        {Mode::Rainbow, "rainbow", kli18nc("@item fan LED mode", "Rainbow wave"), false, true},
-        {Mode::Random, "random", kli18nc("@item fan LED mode", "Random"), false, true},
-        {Mode::CpuTemperature, "cpu-temperature", kli18nc("@item fan LED mode", "CPU temperature"), false, false},
+        {Mode::Off, "off"_L1, kli18nc("@item fan LED mode", "Off"), false, false},
+        {Mode::Static, "static"_L1, kli18nc("@item fan LED mode", "Static"), true, false},
+        {Mode::Sparkle, "sparkle"_L1, kli18nc("@item fan LED mode", "Sparkle"), true, true},
+        {Mode::Breathing, "breathing"_L1, kli18nc("@item fan LED mode", "Breathing"), true, true},
+        {Mode::Wave, "wave"_L1, kli18nc("@item fan LED mode", "Wave"), true, true},
+        {Mode::Specter, "specter"_L1, kli18nc("@item fan LED mode", "Specter"), false, true},
+        {Mode::Rainbow, "rainbow"_L1, kli18nc("@item fan LED mode", "Rainbow wave"), false, true},
+        {Mode::Random, "random"_L1, kli18nc("@item fan LED mode", "Random"), false, true},
+        {Mode::CpuTemperature, "cpu-temperature"_L1, kli18nc("@item fan LED mode", "CPU temperature"), false, false},
     };
     return list;
 }
@@ -47,7 +47,7 @@ const ModeInfo *modeInfo(Mode mode)
 
 const ModeInfo *modeInfo(const QString &id)
 {
-    return findIf(modes(), [&id](const ModeInfo &m) { return id == QLatin1String(m.id); });
+    return findIf(modes(), [&id](const ModeInfo &m) { return id == m.id; });
 }
 
 std::optional<Rgb> parseRgb(const QString &text)

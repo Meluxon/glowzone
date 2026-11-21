@@ -110,7 +110,7 @@ private Q_SLOTS:
         QDir().mkpath(Profiles::directory());
         const QJsonObject root{{u"version"_s, 1},
                                {u"name"_s, u"Hand-edited"_s},
-                               {u"model"_s, QLatin1String(legionModel().productVersion)},
+                               {u"model"_s, legionModel().productVersion},
                                {u"cpuTemperature"_s, range}};
         QFile f(Profiles::directory() + "/hand-edited.json"_L1);
         QVERIFY(f.open(QIODevice::WriteOnly));

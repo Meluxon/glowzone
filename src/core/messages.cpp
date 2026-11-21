@@ -17,7 +17,7 @@ QString unsupportedModelMessage(const DmiInfo &dmi)
     };
     QStringList supported;
     for (const ModelProfile &m : supportedModels()) {
-        supported << i18nc("@item model, board", "%1 (board %2)", m.displayName(), QLatin1String(m.boardName));
+        supported << i18nc("@item model, board", "%1 (board %2)", m.displayName(), m.boardName);
     }
     return i18n("This computer is not supported (vendor: %1, model: %2, board: %3).\nGlowzone only runs on: %4",
                 orUnknown(dmi.vendor),

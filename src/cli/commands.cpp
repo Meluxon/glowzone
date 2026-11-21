@@ -97,7 +97,7 @@ QString idList(const List &list)
 {
     QStringList ids;
     for (const auto &item : list) {
-        ids << QLatin1String(item.id);
+        ids << item.id;
     }
     return ids.join(", "_L1);
 }
@@ -334,7 +334,7 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
     std::optional<TemperatureRange> range;
     if (p.isSet(rangeOption())) {
         if (!followsTemperature(mode->mode) || !model.cpuTemperature) {
-            return usageError(i18n("--range only works with the mode %1.", QLatin1String(modeInfo(Mode::CpuTemperature)->id)));
+            return usageError(i18n("--range only works with the mode %1.", modeInfo(Mode::CpuTemperature)->id));
         }
         range = parseRange(*model.cpuTemperature, p.value(rangeOption()), &exitCode);
         if (!range) {
@@ -397,7 +397,7 @@ int cmdFan(const ModelProfile &model, const QStringList &args, const QCommandLin
     }
     if (onlyLed) {
         // One LED set on its own: the pair is now set separately (as in the window).
-        Settings::setLinked(QLatin1String(fans.constFirst()->id), false);
+        Settings::setLinked(fans.constFirst()->id, false);
     }
 
     if (onlyLed) {
@@ -575,7 +575,7 @@ int cmdProfileSave(const ModelProfile &model, const QString &rawName)
     p.fans = FanState::load(model);
     for (const FanDef &fan : model.fans) {
         if (fan.isDouble()) {
-            p.links.insert(QLatin1String(fan.id), FanState::linked(fan, p.fans));
+            p.links.insert(fan.id, FanState::linked(fan, p.fans));
         }
     }
     if (model.cpuTemperature) {
@@ -762,7 +762,7 @@ static QString helpText()
         QStringList positions;
         for (const FanDef &f : model->fans) {
             if (f.isDouble()) {
-                positions << QLatin1String(f.id) + ": "_L1 + idList(f.leds);
+                positions << f.id + ": "_L1 + idList(f.leds);
             }
         }
         if (!positions.isEmpty()) {

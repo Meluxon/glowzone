@@ -26,7 +26,7 @@ using namespace Glowzone::Ite8297;
 
 static QJsonObject entry(const char *mode, int speed)
 {
-    return {{u"mode"_s, QLatin1String(mode)},
+    return {{u"mode"_s, QLatin1StringView(mode)},
             {u"speed"_s, speed},
             {u"brightness"_s, 2},
             {u"colour"_s, u"#ff0000"_s}};

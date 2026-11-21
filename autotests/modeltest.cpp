@@ -78,7 +78,7 @@ private Q_SLOTS:
             QCOMPARE(Ite8297::modesFor(m).size(), m.fanModes.size() + (m.cpuTemperature ? 1 : 0));
             if (m.cpuTemperature) {
                 const CpuTemperatureDef &t = *m.cpuTemperature;
-                QVERIFY2(t.hwmonName && *t.hwmonName && t.sensorLabel && *t.sensorLabel, name.constData());
+                QVERIFY2(!t.hwmonName.isEmpty() && !t.sensorLabel.isEmpty(), name.constData());
                 QVERIFY2(t.averageSamples >= 1 && t.maxChangePerSecond > 0 && t.intervalMs >= 500, name.constData());
                 // A few °C at most: with 1 °C steps (the fades, the narrowest range) the colour
                 // going down trails by that much.
