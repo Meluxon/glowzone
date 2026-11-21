@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
+#include "core/appliers.h"
 #include "core/helpercall.h"
 #include "core/profiles.h"
 
@@ -9,13 +10,6 @@
 #include <QTimer>
 
 class QWindow;
-
-namespace Glowzone
-{
-class FanApplier;
-class TemperatureScale;
-class LightApplier;
-}
 
 namespace Glowzone::Gui
 {
@@ -29,7 +23,7 @@ class Lighting : public QObject
     Q_OBJECT
 
 public:
-    Lighting(const ModelProfile &model, QObject *parent);
+    explicit Lighting(const ModelProfile &model, QObject *parent = nullptr);
 
     // Opens the fan controller – from then on LEDs in the CPU-temperature mode
     // follow it, window or not. If that failed, each new window tries again.
@@ -144,9 +138,9 @@ private:
     ErrorSource m_errorSource = NoErrors; // where the shown error came from
     bool m_settingsChanged = false; // glowzone.conf or the profiles, since the last reload
     QTimer m_savedReload;
-    KAuthHelperCalls m_helper; // before the appliers: the light queue uses it
-    FanApplier *m_fanApplier;
-    LightApplier *m_lightApplier;
+    KAuthHelperCalls m_helper; // before the appliers: the light queue uses it, so it is made first and goes last
+    FanApplier m_fanApplier;
+    LightApplier m_lightApplier;
 };
 
 } // namespace Glowzone::Gui

@@ -182,7 +182,7 @@ static QList<Stored> loadStored(const ModelProfile &model)
             out.append({*p, f.fileName(), std::move(root)});
         }
     }
-    std::sort(out.begin(), out.end(), [](const Stored &a, const Stored &b) {
+    std::ranges::sort(out, [](const Stored &a, const Stored &b) {
         return naturalLess(a.profile.name, b.profile.name);
     });
     return out;

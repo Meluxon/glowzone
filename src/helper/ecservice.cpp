@@ -35,7 +35,7 @@ static std::optional<quint32> parseInteger(const QByteArray &reply)
     return ok ? std::optional<quint32>(v) : std::nullopt;
 }
 
-// acpi_call prints buffers as "{0x01, 0x02, 0x03}".
+// acpi_call prints buffers as "{0x01, 0x02, 0x03}". Never empty: "{}" doesn't parse.
 static std::optional<QList<quint8>> parseBuffer(const QByteArray &reply)
 {
     const QByteArray s = reply.trimmed();
@@ -105,14 +105,6 @@ int EcService::prepareBios(QString *detail)
     return 0;
 }
 
-int EcService::preflight(QString *detail)
-{
-    if (const int error = checkModel(detail)) {
-        return error;
-    }
-    return prepareBios(detail);
-}
-
 // The state of every light, as the EC sees it now.
 bool EcService::readAll(Result *r)
 {
@@ -149,7 +141,10 @@ std::optional<EcLightState> EcService::getLed(quint8 index, int *error, QString 
 EcService::Result EcService::status()
 {
     Result r;
-    r.error = preflight(&r.detail);
+    r.error = checkModel(&r.detail);
+    if (!r.error) {
+        r.error = prepareBios(&r.detail);
+    }
     if (!r.error) {
         readAll(&r);
     }
@@ -177,7 +172,7 @@ EcService::LayoutResult EcService::layout()
         return r;
     }
     // A buffer {code, 0, 0, 0} – or a plain 0 when no layout matches.
-    if (const auto bytes = parseBuffer(*reply); bytes && !bytes->isEmpty()) {
+    if (const auto bytes = parseBuffer(*reply)) {
         r.layout = bytes->constFirst();
     } else if (const auto value = parseInteger(*reply)) {
         r.layout = int(*value);

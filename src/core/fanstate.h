@@ -48,9 +48,9 @@ QJsonObject headersToJson(const Headers &headers);
 Headers headersFromJson(const QJsonObject &headers, const ModelProfile &model);
 bool fitsModel(const ModelProfile &model, Ite8297::HeaderSetting setting);
 
-// Are the LEDs of a double fan set together? As the user chose (glowzone.conf);
-// never chosen: linked unless the saved state shows they differ.
-bool linked(const FanDef &fan, const Headers &saved);
+// Fan id -> are the LEDs of this double fan set together? As the user chose
+// (glowzone.conf); never chosen: linked unless the saved state shows they differ.
+QMap<QString, bool> links(const ModelProfile &model, const Headers &saved);
 
 } // namespace FanState
 } // namespace Glowzone

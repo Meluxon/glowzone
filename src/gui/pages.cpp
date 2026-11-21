@@ -15,7 +15,6 @@
 #include <QLabel>
 #include <QSignalBlocker>
 #include <QSlider>
-#include <QVBoxLayout>
 
 namespace Glowzone::Gui
 {
@@ -25,10 +24,7 @@ FanPage::FanPage(const FanDef &fan, Lighting *lighting, QWidget *parent)
     , m_fan(fan)
     , m_lighting(lighting)
 {
-    const auto [page, form] = centredForm(this);
-    auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(page);
+    QFormLayout *form = centredForm(this);
 
     if (fan.isDouble()) {
         m_separately = new QCheckBox(i18nc("@option:check LEDs of a double fan", "Set separately"), this);
@@ -111,15 +107,11 @@ LightPage::LightPage(const EcLightDef &light, Lighting *lighting, QWidget *paren
     : QWidget(parent)
     , m_light(light)
     , m_lighting(lighting)
+    , m_form(centredForm(this))
     , m_mode(new QComboBox(this))
     , m_brightness(new LevelSlider(EcLights::MinBrightness, lighting->model().ecBrightnessLevels, i18nc("@item:inrange", "Dim"), i18nc("@item:inrange", "Bright"), this))
     , m_waiting(new QLabel(i18nc("@info", "Reading the current state…"), this))
 {
-    auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    const CentredForm centred = centredForm(this);
-    m_form = centred.form;
-    layout->addWidget(centred.page);
 
     for (const EcLights::ModeInfo &m : EcLights::modesFor(lighting->model())) {
         m_mode->addItem(m.name.toString(), int(m.value));

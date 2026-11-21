@@ -77,23 +77,30 @@ bool TemperatureSensor::find(QString *error)
     return false;
 }
 
+// The value of a temperature input in °C, if it reads as a plausible one.
+static std::optional<double> readCelsius(const QString &input)
+{
+    bool ok = false;
+    const int milli = readLine(input).toInt(&ok);
+    return ok && milli > 0 && milli <= MaxPlausibleMilli ? std::optional(milli / double(MilliPerDegree)) : std::nullopt;
+}
+
 std::optional<double> TemperatureSensor::read(QString *error)
 {
-    // A sensor found earlier that fails gets one new search at once: the hwmon
-    // numbers change when a driver is loaded again.
-    for (bool searched = false; !searched;) {
-        searched = m_input.isEmpty();
-        if (searched && !find(error)) {
-            return std::nullopt;
+    if (!m_input.isEmpty()) {
+        if (const auto celsius = readCelsius(m_input)) {
+            return celsius;
         }
-        bool ok = false;
-        const int milli = readLine(m_input).toInt(&ok);
-        if (ok && milli > 0 && milli <= MaxPlausibleMilli) {
-            return milli / double(MilliPerDegree);
-        }
-        *error = i18n("The CPU temperature could not be read from %1.", m_input);
-        m_input.clear();
+        m_input.clear(); // the hwmon numbers change when a driver is loaded again: search anew
     }
+    if (!find(error)) {
+        return std::nullopt;
+    }
+    if (const auto celsius = readCelsius(m_input)) {
+        return celsius;
+    }
+    *error = i18n("The CPU temperature could not be read from %1.", m_input);
+    m_input.clear();
     return std::nullopt;
 }
 

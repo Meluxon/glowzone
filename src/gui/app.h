@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
+#include "lighting.h"
+
 #include "model/modelprofile.h"
 
 #include <QObject>
@@ -13,7 +15,6 @@ class QAction;
 namespace Glowzone::Gui
 {
 
-class Lighting;
 class MainWindow;
 
 // The running Glowzone: the lighting state, the window when it's open, and –
@@ -51,7 +52,7 @@ private:
     void updateTray();
     void updateTrayToolTip();
 
-    Lighting *m_lighting;
+    Lighting m_lighting;
     QPointer<MainWindow> m_window;
     KStatusNotifierItem *m_tray = nullptr;
     QAction *m_trayShow = nullptr;

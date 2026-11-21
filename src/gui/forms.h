@@ -74,12 +74,8 @@ private:
 // A bold heading for a section of a form, with some space above it.
 QLabel *sectionHeading(const QString &text, QWidget *parent);
 
-// A centred form like a System Settings page: labels right-aligned, fields at
-// their natural size, everything at the top.
-struct CentredForm {
-    QWidget *page;
-    QFormLayout *form;
-};
-CentredForm centredForm(QWidget *parent);
+// The page's layout: a centred form like a System Settings page – labels
+// right-aligned, fields at their natural size, everything at the top.
+QFormLayout *centredForm(QWidget *page);
 
 } // namespace Glowzone::Gui

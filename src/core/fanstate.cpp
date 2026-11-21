@@ -63,7 +63,7 @@ QJsonObject headersToJson(const Headers &headers)
 bool fitsModel(const ModelProfile &model, Ite8297::HeaderSetting setting)
 {
     const bool ownHeader = std::ranges::any_of(model.fans, [&setting](const FanDef &fan) {
-        return fan.headers().contains(setting.header);
+        return std::ranges::any_of(fan.leds, [&setting](const LedDef &led) { return led.header == setting.header; });
     });
     return ownHeader && model.hasFanMode(quint8(setting.mode)) && setting.speed >= Ite8297::MinLevel && setting.speed <= model.fanLevels
         && setting.brightness >= Ite8297::MinLevel && setting.brightness <= model.fanLevels;
@@ -94,7 +94,7 @@ Headers headersFromJson(const QJsonObject &headers, const ModelProfile &model)
     return result;
 }
 
-bool linked(const FanDef &fan, const Headers &saved)
+static bool linked(const FanDef &fan, const Headers &saved)
 {
     if (const auto chosen = Settings::linked(fan.id)) {
         return *chosen;
@@ -108,6 +108,17 @@ bool linked(const FanDef &fan, const Headers &saved)
         }
     }
     return known.size() < 2 || known.count(known.constFirst()) == known.size();
+}
+
+QMap<QString, bool> links(const ModelProfile &model, const Headers &saved)
+{
+    QMap<QString, bool> result;
+    for (const FanDef &fan : model.fans) {
+        if (fan.isDouble()) {
+            result.insert(fan.id, linked(fan, saved));
+        }
+    }
+    return result;
 }
 
 Headers load(const ModelProfile &model)

@@ -26,8 +26,8 @@ static constexpr int SavedReloadDelayMs = 300;
 Lighting::Lighting(const ModelProfile &model, QObject *parent)
     : QObject(parent)
     , m_model(model)
-    , m_fanApplier(new FanApplier(model, this))
-    , m_lightApplier(new LightApplier(m_helper, this))
+    , m_fanApplier(model, nullptr)
+    , m_lightApplier(m_helper, nullptr)
 {
     loadTemperatureRange();
     loadFans();
@@ -65,24 +65,24 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
 
     // Not a lasting problem: the sensor may come back. The fan page and the
     // tray show it while it lasts.
-    connect(m_fanApplier, &FanApplier::temperatureUpdated, this, &Lighting::temperatureChanged);
-    connect(m_fanApplier, &FanApplier::temperatureScaleChanged, this, &Lighting::changed);
-    connect(m_fanApplier, &FanApplier::temperatureFailed, this, [this](const QString &text) {
+    connect(&m_fanApplier, &FanApplier::temperatureUpdated, this, &Lighting::temperatureChanged);
+    connect(&m_fanApplier, &FanApplier::temperatureScaleChanged, this, &Lighting::changed);
+    connect(&m_fanApplier, &FanApplier::temperatureFailed, this, [this](const QString &text) {
         m_temperatureError = text;
         Q_EMIT temperatureChanged();
     });
-    connect(m_fanApplier, &FanApplier::temperatureRecovered, this, [this] {
+    connect(&m_fanApplier, &FanApplier::temperatureRecovered, this, [this] {
         m_temperatureError.clear();
         Q_EMIT temperatureChanged();
     });
 
-    connect(m_fanApplier, &FanApplier::failed, this, [this](const QString &text) {
+    connect(&m_fanApplier, &FanApplier::failed, this, [this](const QString &text) {
         // Show what was last sent successfully, not values that never arrived.
         loadFans();
         setError(text, FanErrors);
         Q_EMIT changed();
     });
-    connect(m_fanApplier, &FanApplier::applied, this, [this] {
+    connect(&m_fanApplier, &FanApplier::applied, this, [this] {
         clearError(FanErrors);
         if (!m_fanProblem.isEmpty()) { // the controller came back
             setProblem(m_fanProblem, {});
@@ -90,16 +90,16 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
         }
     });
     // The LEDs show the change, so the window keeps showing it too.
-    connect(m_fanApplier, &FanApplier::saveFailed, this, [this](const QString &text) {
+    connect(&m_fanApplier, &FanApplier::saveFailed, this, [this](const QString &text) {
         setError(text, SaveErrors);
     });
-    connect(m_fanApplier, &FanApplier::saved, this, [this] {
+    connect(&m_fanApplier, &FanApplier::saved, this, [this] {
         clearError(SaveErrors);
     });
-    connect(m_lightApplier, &LightApplier::succeeded, this, [this] {
+    connect(&m_lightApplier, &LightApplier::succeeded, this, [this] {
         clearError(LightErrors);
     });
-    connect(m_lightApplier, &LightApplier::stateChanged, this, [this](const QList<EcLightState> &lights) {
+    connect(&m_lightApplier, &LightApplier::stateChanged, this, [this](const QList<EcLightState> &lights) {
         if (!m_windowOpen) {
             return; // a change made just before the window closed
         }
@@ -112,7 +112,7 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
         Q_EMIT changed();
         checkFanLayout();
     });
-    connect(m_lightApplier, &LightApplier::failed, this, [this](const QString &text) {
+    connect(&m_lightApplier, &LightApplier::failed, this, [this](const QString &text) {
         if (!m_windowOpen) {
             return;
         }
@@ -124,8 +124,8 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
             Q_EMIT changed();
         }
     });
-    connect(m_lightApplier, &LightApplier::idle, this, &Lighting::idle);
-    connect(m_lightApplier, &LightApplier::layoutRead, this, [this](int code) {
+    connect(&m_lightApplier, &LightApplier::idle, this, &Lighting::idle);
+    connect(&m_lightApplier, &LightApplier::layoutRead, this, [this](int code) {
         m_fanLayout = code;
         setProblem(m_layoutProblem, EcLights::layoutWarning(m_model, code));
         Q_EMIT changed(); // mark undetected fans in the sidebar
@@ -134,9 +134,9 @@ Lighting::Lighting(const ModelProfile &model, QObject *parent)
 
 void Lighting::start(QWindow *window)
 {
-    if (!m_fanApplier->isOpen()) { // the first time, or the controller was missing
+    if (!m_fanApplier.isOpen()) { // the first time, or the controller was missing
         QString error;
-        m_fanApplier->open(&error);
+        m_fanApplier.open(&error);
         setProblem(m_fanProblem, error);
         Q_EMIT changed();
     }
@@ -144,7 +144,7 @@ void Lighting::start(QWindow *window)
     m_helper.setWindow(window);
     if (window && !m_model.ecLights.isEmpty() && !m_lightsLoaded) {
         m_lightsFailed = false; // try again with this window
-        m_lightApplier->refresh();
+        m_lightApplier.refresh();
     }
 }
 
@@ -154,13 +154,13 @@ void Lighting::windowClosed()
     m_lights.clear();
     m_lightsLoaded = false;
     m_lightsFailed = false;
-    m_lightApplier->forget();
+    m_lightApplier.forget();
     setProblem(m_lightProblem, {});
 }
 
 bool Lighting::fansAvailable() const
 {
-    return m_fanApplier->isOpen();
+    return m_fanApplier.isOpen();
 }
 
 QStringList Lighting::problems() const
@@ -180,30 +180,30 @@ void Lighting::setProblem(QString &problem, const QString &text)
 
 bool Lighting::followsCpuTemperature() const
 {
-    return m_fanApplier->followsTemperature();
+    return m_fanApplier.followsTemperature();
 }
 
 std::optional<double> Lighting::cpuTemperature() const
 {
-    const CpuTemperature *t = m_fanApplier->temperature();
+    const CpuTemperature *t = m_fanApplier.temperature();
     return t && t->isRunning() ? t->temperature() : std::nullopt;
 }
 
 Ite8297::Rgb Lighting::cpuTemperatureColour() const
 {
-    const CpuTemperature *t = m_fanApplier->temperature();
+    const CpuTemperature *t = m_fanApplier.temperature();
     return t ? t->colour() : Ite8297::Rgb{};
 }
 
 const TemperatureScale *Lighting::temperatureScale() const
 {
-    const CpuTemperature *t = m_fanApplier->temperature();
+    const CpuTemperature *t = m_fanApplier.temperature();
     return t ? &t->scale() : nullptr;
 }
 
 std::optional<TemperatureRange> Lighting::temperatureRange() const
 {
-    const CpuTemperature *t = m_fanApplier->temperature();
+    const CpuTemperature *t = m_fanApplier.temperature();
     return t ? std::optional(t->range()) : std::nullopt;
 }
 
@@ -212,7 +212,7 @@ void Lighting::setTemperatureRange(TemperatureRange range)
     if (temperatureRange().value_or(range) == range) {
         return; // the same, or no such mode
     }
-    m_fanApplier->setTemperatureRange(range);
+    m_fanApplier.setTemperatureRange(range);
     m_rangeSave.start();
     Q_EMIT changed();
 }
@@ -220,7 +220,7 @@ void Lighting::setTemperatureRange(TemperatureRange range)
 void Lighting::loadTemperatureRange()
 {
     if (m_model.cpuTemperature) {
-        m_fanApplier->setTemperatureRange(Settings::temperatureRange(*m_model.cpuTemperature));
+        m_fanApplier.setTemperatureRange(Settings::temperatureRange(*m_model.cpuTemperature));
     }
 }
 
@@ -275,7 +275,7 @@ void Lighting::takeCommandLineLights()
     for (const EcLightState &l : recorded->lights) {
         m_lights.insert(l.index, l);
     }
-    m_lightApplier->setKnown(recorded->lights);
+    m_lightApplier.setKnown(recorded->lights);
 }
 
 // Read-only: tells whether the BIOS currently sees every fan. Never changes
@@ -286,7 +286,7 @@ void Lighting::checkFanLayout()
         return;
     }
     m_layoutChecked = true;
-    m_lightApplier->readLayout(); // an error is not worth a message: the lights already work
+    m_lightApplier.readLayout(); // an error is not worth a message: the lights already work
 }
 
 bool Lighting::isUndetected(const FanDef &fan) const
@@ -322,7 +322,7 @@ void Lighting::setLed(const FanDef &fan, quint8 header, HeaderSetting values)
     if (changedLeds.isEmpty()) {
         return;
     }
-    m_fanApplier->queue(changedLeds);
+    m_fanApplier.queue(changedLeds);
     Q_EMIT changed();
 }
 
@@ -350,7 +350,7 @@ std::optional<EcLightState> Lighting::light(quint8 index) const
 void Lighting::setLight(quint8 index, quint8 mode, quint8 brightness)
 {
     m_lights.insert(index, {index, mode, brightness});
-    m_lightApplier->queue({index, mode, brightness}); // dropped if nothing changes
+    m_lightApplier.queue({index, mode, brightness}); // dropped if nothing changes
     Q_EMIT changed();
 }
 
@@ -402,20 +402,20 @@ void Lighting::apply(const Profile &profile)
     for (const HeaderSetting &s : profile.fans) {
         m_fans.insert(s.header, s);
     }
-    m_fanApplier->queue(profile.fans.values());
+    m_fanApplier.queue(profile.fans.values());
     // With the profile's fans queued, the new range's colour goes out with
     // them: the queued LEDs in the batch, the other following ones just before.
     if (profile.temperatureRange && temperatureRange()) {
-        m_fanApplier->setTemperatureRange(*profile.temperatureRange);
+        m_fanApplier.setTemperatureRange(*profile.temperatureRange);
     }
-    m_fanApplier->flushNow();
+    m_fanApplier.flushNow();
 
     for (auto it = profile.links.cbegin(); it != profile.links.cend(); ++it) {
         m_links.insert(it.key(), it.value());
     }
     for (const EcLightState &l : profile.lights) {
         m_lights.insert(l.index, l);
-        m_lightApplier->queue(l);
+        m_lightApplier.queue(l);
     }
     m_rangeSave.stop(); // the range goes with the rest, in one write
     m_currentProfile = profile.name;
@@ -440,13 +440,13 @@ void Lighting::turnAllOff()
             off << s;
         }
     }
-    m_fanApplier->queue(off);
-    m_fanApplier->flushNow();
+    m_fanApplier.queue(off);
+    m_fanApplier.flushNow();
 
     if (m_lightsLoaded) {
         for (EcLightState &l : m_lights) {
             l.mode = EcLights::ModeOff;
-            m_lightApplier->queue(l);
+            m_lightApplier.queue(l);
         }
     }
     Q_EMIT changed();
@@ -454,20 +454,16 @@ void Lighting::turnAllOff()
 
 bool Lighting::isBusy() const
 {
-    return m_fanApplier->isBusy() || m_lightApplier->isBusy();
+    return m_fanApplier.isBusy() || m_lightApplier.isBusy();
 }
 
 // What the LEDs show: the saved state, and what was sent but couldn't be saved.
 void Lighting::loadFans()
 {
     m_fans = FanState::load(m_model);
-    m_fans.insert(m_fanApplier->unsaved());
-    for (const FanDef &fan : m_model.fans) {
-        if (fan.isDouble()) {
-            m_links.insert(fan.id, FanState::linked(fan, m_fans));
-        }
-    }
-    m_fanApplier->setCurrent(m_fans);
+    m_fans.insert(m_fanApplier.unsaved());
+    m_links = FanState::links(m_model, m_fans);
+    m_fanApplier.setCurrent(m_fans);
 }
 
 void Lighting::setError(const QString &text, ErrorSource source)
@@ -489,8 +485,8 @@ void Lighting::finish()
     if (m_rangeSave.isActive()) {
         saveTemperatureRange();
     }
-    m_fanApplier->flushNow();
-    m_lightApplier->finish();
+    m_fanApplier.flushNow();
+    m_lightApplier.finish();
 }
 
 } // namespace Glowzone::Gui

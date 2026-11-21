@@ -9,6 +9,7 @@
 #include "testmodel.h"
 
 #include <QFile>
+#include <QSet>
 #include <QTest>
 
 using namespace Qt::StringLiterals;
@@ -88,13 +89,33 @@ private Q_SLOTS:
                 QVERIFY2(usableRange(t, t.defaultRange, t.hottestLimit) == t.defaultRange, name.constData());
             }
             QVERIFY2(m.fanLevels >= Ite8297::MinLevel, name.constData());
+            QSet<quint8> headers;
+            QSet<QString> fanIds;
             for (const FanDef &f : m.fans) {
-                for (quint8 h : f.headers()) {
-                    QVERIFY2(Ite8297::groupOf(h), name.constData());
-                    QVERIFY2(FanState::fitsModel(m, {.header = h}), name.constData()); // e.g. its brightness
+                QVERIFY2(!f.id.isEmpty() && !fanIds.contains(f.id), name.constData());
+                fanIds.insert(f.id);
+                QSet<QString> ledIds;
+                for (const LedDef &led : f.leds) {
+                    QVERIFY2(Ite8297::groupOf(led.header), name.constData());
+                    QVERIFY2(FanState::fitsModel(m, {.header = led.header}), name.constData()); // e.g. its brightness
+                    QVERIFY2(!headers.contains(led.header), name.constData()); // one LED per header
+                    headers.insert(led.header);
+                    // A double fan names its LEDs (the CLI's --led), a single one doesn't.
+                    QVERIFY2(f.isDouble() == !led.id.isEmpty() && !ledIds.contains(led.id), name.constData());
+                    ledIds.insert(led.id);
                 }
             }
+            for (const FanLayoutDef &layout : m.fanLayouts) {
+                QVERIFY2(m.undetectedFans(layout.code).size() == layout.undetectedFans.size(), name.constData()); // no typo
+            }
 
+            QSet<QString> lightIds;
+            QSet<quint8> lightIndices;
+            for (const EcLightDef &l : m.ecLights) {
+                QVERIFY2(!l.id.isEmpty() && !lightIds.contains(l.id) && !lightIndices.contains(l.index), name.constData());
+                lightIds.insert(l.id);
+                lightIndices.insert(l.index);
+            }
             QVERIFY2(m.hasEcLightMode(EcLights::ModeOff), name.constData());
             for (quint8 v : m.ecLightModes) {
                 QVERIFY2(EcLights::modeInfo(v), name.constData());

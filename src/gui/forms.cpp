@@ -166,9 +166,8 @@ QLabel *sectionHeading(const QString &text, QWidget *parent)
     return l;
 }
 
-CentredForm centredForm(QWidget *parent)
+QFormLayout *centredForm(QWidget *page)
 {
-    auto *page = new QWidget(parent);
     auto *outer = new QVBoxLayout(page);
     auto *row = new QHBoxLayout;
     auto *inner = new QWidget(page);
@@ -181,7 +180,7 @@ CentredForm centredForm(QWidget *parent)
     row->addStretch();
     outer->addLayout(row);
     outer->addStretch();
-    return {page, form};
+    return form;
 }
 
 } // namespace Glowzone::Gui

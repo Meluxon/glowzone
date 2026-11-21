@@ -149,7 +149,7 @@ QString describe(EcLightState s)
 template<typename List>
 bool anyFollowsTemperature(const List &settings)
 {
-    return std::any_of(settings.cbegin(), settings.cend(), [](HeaderSetting s) {
+    return std::ranges::any_of(settings, [](HeaderSetting s) {
         return followsTemperature(s.mode);
     });
 }
@@ -573,11 +573,7 @@ int cmdProfileSave(const ModelProfile &model, const QString &rawName)
 
     // The current state as Glowzone knows it.
     p.fans = FanState::load(model);
-    for (const FanDef &fan : model.fans) {
-        if (fan.isDouble()) {
-            p.links.insert(fan.id, FanState::linked(fan, p.fans));
-        }
-    }
+    p.links = FanState::links(model, p.fans);
     if (model.cpuTemperature) {
         p.temperatureRange = Settings::temperatureRange(*model.cpuTemperature);
     }

@@ -15,7 +15,7 @@ namespace Glowzone::Instance
 QString serviceName()
 {
     QStringList parts = QCoreApplication::organizationDomain().split(u'.', Qt::SkipEmptyParts);
-    std::reverse(parts.begin(), parts.end());
+    std::ranges::reverse(parts);
     parts << QCoreApplication::applicationName();
     return parts.join(u'.');
 }

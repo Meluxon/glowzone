@@ -57,7 +57,7 @@ private:
 
     const EcLightDef &m_light;
     Lighting *m_lighting;
-    QFormLayout *m_form = nullptr;
+    QFormLayout *m_form;
     QComboBox *m_mode;
     LevelSlider *m_brightness;
     QLabel *m_waiting;

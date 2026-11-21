@@ -41,7 +41,6 @@ public:
 private:
     int checkModel(QString *detail) const;
     int prepareBios(QString *detail);
-    int preflight(QString *detail); // both of the above
     bool readAll(Result *r);
     std::optional<QList<EcRequest>> parseRequest(const QVariantMap &args, QString *detail) const;
     std::optional<EcLightState> getLed(quint8 index, int *error, QString *detail);

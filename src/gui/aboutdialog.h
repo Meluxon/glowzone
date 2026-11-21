@@ -10,7 +10,8 @@ namespace Glowzone::Gui
 class Lighting;
 
 // Version, the detected computer and what's available on it, licence and the
-// "vibecoded" note. "Copy to Clipboard" gives everything a bug report needs.
+// note that it was written with an AI assistant. "Copy to Clipboard" gives
+// everything a bug report needs.
 class AboutDialog : public QDialog
 {
     Q_OBJECT

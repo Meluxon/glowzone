@@ -8,6 +8,8 @@
 #include "helper/procacpicall.h"
 
 #include <QTest>
+
+#include <algorithm>
 #include <functional>
 
 using namespace Qt::StringLiterals;
@@ -75,7 +77,7 @@ public:
 
     int setCalls() const
     {
-        return int(std::count_if(commands.cbegin(), commands.cend(), [](const QByteArray &c) {
+        return int(std::ranges::count_if(commands, [](const QByteArray &c) {
             return c.startsWith("\\WMI2.WMG0 0 0x10 ");
         }));
     }

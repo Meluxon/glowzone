@@ -58,7 +58,7 @@ std::optional<Rgb> parseRgb(const QString &text)
     }
     // Exactly six ASCII hex digits – no "0x", sign, spaces or other scripts'
     // digits, which toUInt() or QChar::isDigit() would accept.
-    const bool hex = std::all_of(t.cbegin(), t.cend(), [](QChar c) {
+    const bool hex = std::ranges::all_of(t, [](QChar c) {
         const char16_t u = c.unicode();
         return (u >= u'0' && u <= u'9') || (u >= u'a' && u <= u'f') || (u >= u'A' && u <= u'F');
     });

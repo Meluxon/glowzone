@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Meluxon
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "app.h"
-#include "lighting.h"
 #include "mainwindow.h"
 
 #include "core/settings.h"
@@ -24,21 +23,21 @@ namespace Glowzone::Gui
 
 App::App(const ModelProfile &model, QObject *parent)
     : QObject(parent)
-    , m_lighting(new Lighting(model, this))
+    , m_lighting(model)
     , m_keepRunning(Settings::keepRunning())
 {
     // Closing the window decides itself whether Glowzone goes on.
     QApplication::setQuitOnLastWindowClosed(false);
-    connect(m_lighting, &Lighting::temperatureChanged, this, &App::updateTrayToolTip);
-    connect(m_lighting, &Lighting::changed, this, &App::updateTrayToolTip);
-    connect(m_lighting, &Lighting::problemsChanged, this, &App::updateTrayToolTip);
+    connect(&m_lighting, &Lighting::temperatureChanged, this, &App::updateTrayToolTip);
+    connect(&m_lighting, &Lighting::changed, this, &App::updateTrayToolTip);
+    connect(&m_lighting, &Lighting::problemsChanged, this, &App::updateTrayToolTip);
 }
 
 App::~App() = default;
 
 void App::start(bool background)
 {
-    m_lighting->start(nullptr);
+    m_lighting.start(nullptr);
     updateTray();
     if (!background) {
         showWindow();
@@ -51,7 +50,7 @@ void App::showWindow()
         disconnect(m_quitWhenIdle); // started again while finishing: stay
     }
     if (!m_window) {
-        m_window = new MainWindow(m_lighting, this);
+        m_window = new MainWindow(&m_lighting, this);
         m_window->setAttribute(Qt::WA_DeleteOnClose);
         connect(m_window, &MainWindow::closed, this, &App::windowClosed);
         connect(m_window, &MainWindow::quitRequested, this, &App::quit);
@@ -77,7 +76,7 @@ void App::toggleWindow()
 
 void App::windowClosed()
 {
-    m_lighting->windowClosed();
+    m_lighting.windowClosed();
     updateTray();
     if (!m_quitting && !m_keepRunning) {
         quit();
@@ -96,8 +95,8 @@ void App::quit()
     updateTray(); // removes it
     // Don't lose a change made in the last moment: idle() follows once
     // everything is sent (at once if nothing is pending).
-    m_quitWhenIdle = connect(m_lighting, &Lighting::idle, qApp, &QApplication::quit, Qt::QueuedConnection);
-    m_lighting->finish();
+    m_quitWhenIdle = connect(&m_lighting, &Lighting::idle, qApp, &QApplication::quit, Qt::QueuedConnection);
+    m_lighting.finish();
 }
 
 void App::setKeepRunning(bool on)
@@ -180,12 +179,12 @@ void App::updateTrayToolTip()
         return;
     }
     QString text = i18nc("@info:tooltip", "Running in the background");
-    if (!m_lighting->fansAvailable()) {
-        text = m_lighting->fanProblem();
-    } else if (m_lighting->followsCpuTemperature()) {
-        const auto celsius = m_lighting->cpuTemperature();
-        if (!m_lighting->cpuTemperatureError().isEmpty()) {
-            text = m_lighting->cpuTemperatureError();
+    if (!m_lighting.fansAvailable()) {
+        text = m_lighting.fanProblem();
+    } else if (m_lighting.followsCpuTemperature()) {
+        const auto celsius = m_lighting.cpuTemperature();
+        if (!m_lighting.cpuTemperatureError().isEmpty()) {
+            text = m_lighting.cpuTemperatureError();
         } else if (celsius) {
             text = i18nc("@info:tooltip", "Fans follow the CPU temperature: %1 °C", QString::number(*celsius, 'f', 0));
         }

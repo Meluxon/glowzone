@@ -21,9 +21,8 @@ class LedHelper : public QObject
     Q_OBJECT
 
 public Q_SLOTS:
-    KAuth::ActionReply status(const QVariantMap &args)
+    KAuth::ActionReply status(const QVariantMap &)
     {
-        Q_UNUSED(args)
         ProcAcpiCall acpi;
         EcService service(DmiInfo::readSystem(), acpi);
         return toReply(service.status());
@@ -36,9 +35,8 @@ public Q_SLOTS:
         return toReply(service.set(args));
     }
 
-    KAuth::ActionReply layout(const QVariantMap &args)
+    KAuth::ActionReply layout(const QVariantMap &)
     {
-        Q_UNUSED(args)
         ProcAcpiCall acpi;
         EcService service(DmiInfo::readSystem(), acpi);
         const EcService::LayoutResult result = service.layout();

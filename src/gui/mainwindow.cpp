@@ -240,7 +240,7 @@ QWidget *MainWindow::buildPagePanel()
     m_backgroundMessage->setText(i18n("Fans following the CPU temperature only change colour while Glowzone is running. "
                                       "Closing the window quits it."));
     auto *runOn = new QAction(i18nc("@action:button", "Keep Running in Background"), m_backgroundMessage);
-    connect(runOn, &QAction::triggered, m_app, [this] {
+    connect(runOn, &QAction::triggered, this, [this] {
         m_app->setKeepRunning(true);
     });
     m_backgroundMessage->addAction(runOn);
@@ -365,9 +365,8 @@ void MainWindow::applyProfile(const QString &name)
 {
     for (const Profile &p : std::as_const(m_profiles)) {
         if (p.name == name) {
-            m_lighting->apply(p); // also stores it as the current profile
-            m_sidebar->setProfiles(m_profiles, p.name);
-            updateBanner();
+            m_sidebar->setProfiles(m_profiles, p.name); // marked current before apply() shows the change
+            m_lighting->apply(p);                        // also stores it as the current profile
             return;
         }
     }
@@ -485,7 +484,7 @@ void MainWindow::confirm(const QString &title, const QString &question, const st
 void MainWindow::updateProblems()
 {
     const QStringList problems = m_lighting->problems();
-    const bool added = std::any_of(problems.cbegin(), problems.cend(), [this](const QString &p) {
+    const bool added = std::ranges::any_of(problems, [this](const QString &p) {
         return !m_problems.contains(p);
     });
     m_problems = problems;

@@ -42,14 +42,18 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
+    // Computed once per paint: it asks the style.
     struct Axis {
         double left;  // groove ends
         double right;
         double first; // handle centres at minimum and maximum
         double last;
+        int minimum;
+        int maximum;
+        double x(double celsius) const { return first + (celsius - minimum) / double(maximum - minimum) * (last - first); }
+        double celsius(double x) const { return minimum + (x - first) / (last - first) * (maximum - minimum); }
     };
     Axis axis() const;
-    double xFor(double celsius) const;
     int stripTop() const;
     int stripHeight() const;
 

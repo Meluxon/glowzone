@@ -108,7 +108,7 @@ public:
                 job->disconnect(this);
                 job->deleteLater();
             }
-            finish({i18n("The Glowzone helper didn’t answer. Try again in a moment."), {}, -1});
+            finish({.error = i18n("The Glowzone helper didn’t answer. Try again in a moment."), .lights = {}});
         });
     }
 
@@ -123,7 +123,7 @@ private:
     {
         if (!m_lock.tryLock(0)) {
             if (m_waiting.durationElapsed() > LockWait) {
-                finish({i18n("Another Glowzone window or command is using the case lights. Try again in a moment."), {}, -1});
+                finish({.error = i18n("Another Glowzone window or command is using the case lights. Try again in a moment."), .lights = {}});
             } else {
                 QTimer::singleShot(100ms, this, &KAuthCall::tryStart);
             }

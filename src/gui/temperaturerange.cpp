@@ -108,13 +108,7 @@ TemperatureStrip::Axis TemperatureStrip::axis() const
     };
     const double first = handleCentre(m_minimum);
     const double last = std::max(first + 1, handleCentre(m_maximum));
-    return {double(groove.left()), double(groove.right() + 1), first, last};
-}
-
-double TemperatureStrip::xFor(double celsius) const
-{
-    const Axis a = axis();
-    return a.first + (celsius - m_minimum) / double(m_maximum - m_minimum) * (a.last - a.first);
+    return {double(groove.left()), double(groove.right() + 1), first, last, m_minimum, m_maximum};
 }
 
 void TemperatureStrip::paintEvent(QPaintEvent *)
@@ -135,8 +129,7 @@ void TemperatureStrip::paintEvent(QPaintEvent *)
     QImage colours(pixels, 1, QImage::Format_RGB32);
     for (int i = 0; i < pixels; ++i) {
         const double x = strip.left() + (i + 0.5) / dpr;
-        const double celsius = m_minimum + (x - a.first) / (a.last - a.first) * (m_maximum - m_minimum);
-        const Ite8297::Rgb c = m_scale->colourAt(celsius);
+        const Ite8297::Rgb c = m_scale->colourAt(a.celsius(x));
         colours.setPixel(i, 0, qRgb(c.r, c.g, c.b));
     }
     QPainterPath shape;
@@ -154,8 +147,8 @@ void TemperatureStrip::paintEvent(QPaintEvent *)
     // The range: a bracket under the strip, in the selection colour like the
     // sliders' filled grooves.
     const QColor accent = palette().color(isEnabled() ? QPalette::Active : QPalette::Disabled, QPalette::Highlight);
-    const double from = std::round(xFor(m_scale->range().coolest)) + 0.5;
-    const double to = std::round(xFor(m_scale->range().hottest)) - 0.5;
+    const double from = std::round(a.x(m_scale->range().coolest)) + 0.5;
+    const double to = std::round(a.x(m_scale->range().hottest)) - 0.5;
     const double top = strip.bottom() + 1;
     const double bottom = strip.bottom() + BracketHeight - 2; // 1 px apart from the labels
     p.setPen(QPen(accent, BracketPenWidth, Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin));
@@ -171,12 +164,12 @@ void TemperatureStrip::paintEvent(QPaintEvent *)
     for (int t = firstLabel; t <= m_maximum; t += LabelEvery) {
         const QString text = QString::number(t);
         const int w = small.horizontalAdvance(text);
-        const int left = std::clamp(int(std::lround(xFor(t) - w / 2.0)), 0, width() - w);
+        const int left = std::clamp(int(std::lround(a.x(t) - w / 2.0)), 0, width() - w);
         p.drawText(left, baseline, text);
     }
 
     if (m_temperature) {
-        const double x = xFor(std::clamp(*m_temperature, double(m_minimum), double(m_maximum)));
+        const double x = a.x(std::clamp(*m_temperature, double(m_minimum), double(m_maximum)));
         const QColor ink = palette().color(QPalette::WindowText);
         // The line gets a halo in the window colour, to show on dark and light colours alike.
         p.setPen(QPen(palette().color(QPalette::Window), MarkerHaloWidth, Qt::SolidLine, Qt::FlatCap));
